@@ -4,6 +4,7 @@ import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { createStackNavigator } from 'react-navigation-stack';
 import { Icon, withTheme } from 'react-native-elements'
+import AsyncStorage from '@react-native-community/async-storage';
 
 class BuyScreen extends Component {
   constructor(props) {
@@ -16,7 +17,15 @@ class BuyScreen extends Component {
       entity: "",
       date: "",
       invoiceNumber: "",
-      total: ""
+      total: "",
+      getEntity: false,
+      setEntity: false,
+      getDate: false,
+      setDate: false,
+      getInvoiceNumber: false,
+      setInvoiceNumber: false,
+      getTotal: false,
+      setTotal: false,
     };
     Voice.onSpeechStart = this.onSpeechStart.bind(this);
     Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
@@ -46,21 +55,25 @@ class BuyScreen extends Component {
       this.setState({
         entity: word[0],
       });
+      this.setState({getEntity: true})
     } else {
       if (this.state.date == "") {
         this.setState({
           date: word[0],
         });
+        this.setState({getDate: true})
       } else {
         if (this.state.invoiceNumber == "") {
           this.setState({
             invoiceNumber: word[0],
           });
+          this.setState({getInvoiceNumber: true})
         } else {
           if (this.state.total == "") {
             this.setState({
               total: word[0],
             });
+            this.setState({getTotal: true})
           }
         }
       } 
@@ -149,47 +162,127 @@ class BuyScreen extends Component {
     />
   }
 
+  setEntity = () => {
+    this.setState({setEntity: true})
+  }
+
+  setDate = () => {
+    this.setState({setDate: true})
+  }
+
+  setInvoiceNumber = () => {
+    this.setState({setInvoiceNumber: true})
+  }
+
+  setTotal = () => {
+    this.setState({setTotal: true})
+  }
+
   render () {
     return (
       <View style={{flex: 1}}>
         <View style={styles.navBar}><Text style={styles.navBarHeader}>Compra</Text></View>
         <View style={styles.mainView}>
-          {this.state.entity == "" &&
+          {!this.state.getEntity &&
           (<View style={styles.section}>
-            <Text style={styles.transcript}>Diga su entidad</Text>
+            <Text style={styles.title}>Diga su entidad</Text>
           </View>)}
-          {this.state.entity != "" &&
+          {this.state.getEntity && !this.state.setEntity  &&
             (<View style={styles.section}>
-              <Text style={styles.title}>Entidad:</Text>
-              <TextInput style={styles.transcript}>{this.state.entity} </TextInput>
+              <Text style={styles.title}>Entidad</Text>
+              <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.entity}</Text>
+              <Text style={styles.text}>Texto interpretado:</Text><TextInput style={styles.changeTranscript}>{this.state.entity} </TextInput>
+              <Text style={styles.transcript}>¿Qué desea hacer ahora?</Text>
+              <Icon
+                name='window-close'
+                type='font-awesome'
+                color='#1A5276'
+                size={32}
+                onPress={this._cancel}
+              />
+              <Icon
+                name='arrow-circle-right'
+                type='font-awesome'
+                color='#1A5276'
+                size={32}
+                onPress={this.setEntity}
+              />
             </View>)}
-            {this.state.entity != "" && this.state.date == "" &&
-          (<View style={styles.section}>
-            <Text style={styles.transcript}>Diga la fecha</Text>
-          </View>)}
-          {this.state.date != "" &&
+            {this.state.setEntity && !this.state.getDate &&
             (<View style={styles.section}>
-              <Text style={styles.title}>Fecha:</Text>
-              <TextInput style={styles.transcript}>{this.state.date} </TextInput>
-            </View>)}   
-            {this.state.date != "" && this.state.invoiceNumber == "" &&
-          (<View style={styles.section}>
-            <Text style={styles.transcript}>Diga el número de factura</Text>
-          </View>)}
-          {this.state.invoiceNumber != "" &&
-            (<View style={styles.section}>
-              <Text style={styles.title}>Número de factura:</Text>
-              <TextInput style={styles.transcript}>{this.state.invoiceNumber} </TextInput>
-            </View>)} 
-            {this.state.invoiceNumber != "" && this.state.total == "" &&
-          (<View style={styles.section}>
-            <Text style={styles.transcript}>Diga el total</Text>
-          </View>)}
-          {this.state.total != "" &&
-            (<View style={styles.section}>
-              <Text style={styles.title}>Total:</Text>
-              <TextInput style={styles.transcript}>{this.state.total} </TextInput>
-            </View>)} 
+              <Text style={styles.title}>Diga la fecha</Text>
+            </View>)}
+            {this.state.getDate && !this.state.setDate  &&
+              (<View style={styles.section}>
+                <Text style={styles.title}>Fecha</Text>
+                <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.date}</Text>
+                <Text style={styles.text}>Texto interpretado:</Text><TextInput style={styles.changeTranscript}>{this.state.date} </TextInput>
+                <Text style={styles.transcript}>¿Qué desea hacer ahora?</Text>
+                <Icon
+                  name='window-close'
+                  type='font-awesome'
+                  color='#1A5276'
+                  size={32}
+                  onPress={this._cancel}
+                />
+                <Icon
+                  name='arrow-circle-right'
+                  type='font-awesome'
+                  color='#1A5276'
+                  size={32}
+                  onPress={this.setDate}
+                />
+              </View>)} 
+                {this.state.setDate && !this.state.getInvoiceNumber &&
+                (<View style={styles.section}>
+                  <Text style={styles.title}>Diga el número de factura</Text>
+                </View>)}
+                  {this.state.getInvoiceNumber && !this.state.setInvoiceNumber  &&
+                  (<View style={styles.section}>
+                    <Text style={styles.title}>Número de factura</Text>
+                    <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.invoiceNumber}</Text>
+                    <Text style={styles.text}>Texto interpretado:</Text><TextInput style={styles.changeTranscript}>{this.state.invoiceNumber} </TextInput>
+                    <Text style={styles.transcript}>¿Qué desea hacer ahora?</Text>
+                    <Icon
+                      name='window-close'
+                      type='font-awesome'
+                      color='#1A5276'
+                      size={32}
+                      onPress={this._cancel}
+                    />
+                    <Icon
+                      name='arrow-circle-right'
+                      type='font-awesome'
+                      color='#1A5276'
+                      size={32}
+                      onPress={this.setInvoiceNumber}
+                    />
+                  </View>)} 
+                  {this.state.setInvoiceNumber && !this.state.getTotal &&
+                (<View style={styles.section}>
+                  <Text style={styles.title}>Diga el total</Text>
+                </View>)}
+                  {this.state.getTotal && !this.state.setTotal  &&
+                  (<View style={styles.section}>
+                    <Text style={styles.title}>Total</Text>
+                    <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.invoiceNumber}</Text>
+                    <Text style={styles.text}>Texto interpretado:</Text><TextInput style={styles.changeTranscript}>{this.state.invoiceNumber} </TextInput>
+                    <Text style={styles.transcript}>¿Qué desea hacer ahora?</Text>
+                    <Icon
+                      name='window-close'
+                      type='font-awesome'
+                      color='#1A5276'
+                      size={32}
+                      onPress={this._cancel}
+                    />
+                    <Icon
+                      name='arrow-circle-right'
+                      type='font-awesome'
+                      color='#1A5276'
+                      size={32}
+                      onPress={this.setTotal}
+                    />
+              </View>)} 
         </View>
         <View style={styles.footBar}>
         <Icon
@@ -261,16 +354,29 @@ class MainScreen extends Component {
     super(props);
   }
 
-  goBuyScreen = () => {
+  goBuyScreen = async () => {
+    var today = new Date()
+    var id = "C_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)
+    await AsyncStorage.setItem('id', id)
     this.props.navigation.push('Buy')
   }
 
-  goSaleScreen = () => {
+  goSaleScreen = async () => {
+    var today = new Date()
+    var id = "V_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)
+    await AsyncStorage.setItem('id', id)
     this.props.navigation.push('Sale')
   }
 
-  goPayScreen = () => {
+  goPayScreen = async () => {
+    var today = new Date()
+    var id = "P_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)
+    await AsyncStorage.setItem('id', id)
     this.props.navigation.push('Pay')
+  }
+
+  goHelp = () => {
+    this.props.navigation.push('Help')
   }
 
   render () {
@@ -278,6 +384,7 @@ class MainScreen extends Component {
       <View style={styles.mainView}>
         <View style={styles.navBar}><Text style={styles.navBarHeader}>Contabilidad</Text></View>
         <View style={styles.text}></View>
+        <View style={styles.mainView}>
         <Text style={styles.text}>Seleccione una opción</Text>
         <View style={styles.text}></View>
         <View style={styles.text}> 
@@ -294,6 +401,16 @@ class MainScreen extends Component {
         <TouchableOpacity onPress={this.goPayScreen}>
             <Text style={styles.payButton}>Pago</Text>
         </TouchableOpacity>  
+        </View>
+        </View>
+        <View style={styles.footBar}>
+        <Icon
+            name='question-circle'
+            type='font-awesome'
+            color='#1A5276'
+            size={40}
+            onPress={this.goHelp}
+          />
         </View>
       </View>
     );
@@ -324,6 +441,13 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: 'bold',
     fontSize: 20
+  },
+  changeTranscript: {
+    textAlign: 'center',
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 20,
+    fontStyle: 'italic'
   },
   navBar: {
     alignItems: 'center',
@@ -424,12 +548,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#1B5E8B',
     fontWeight: 'bold',
-    fontSize: 20
+    fontSize: 25
   },
   section: {
-    flexDirection:'row',
     paddingTop: 50,
     justifyContent: "center",
     textAlign: "center"
-  }
+  },
 });
