@@ -1,10 +1,115 @@
 import React, {Component} from 'react';
-import {StyleSheet, Text, View, TouchableOpacity, Alert, TextInput} from 'react-native';
+import {StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image} from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { createStackNavigator } from 'react-navigation-stack';
 import { Icon, withTheme } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+
+class ImagesScreen extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { 
+      images: []
+    }
+    //this.init(); // get images from native storage
+  }
+
+  addImage = async () => {
+    const AsyncAlert = () => new Promise((resolve) => {
+      Alert.alert(
+        "Subir foto",
+        "¿Qué desea hacer?",
+        [
+          {
+            text: 'Cerrar',
+            onPress: () => {
+              resolve(resolve("No"));
+            },
+          },
+          {
+            text: 'Tomar foto',
+            onPress: () => {
+              resolve(this.takePhoto());
+            },
+          },
+          {
+            text: 'Ir a galería',
+            onPress: () => {
+              resolve(this.goGallery());
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+    });
+    await AsyncAlert();
+  }
+
+  async takePhoto() {
+    let options = {
+      title: 'Hacer una foto',
+      customButtons: [
+        { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
+      ],
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+    };
+    launchCamera(options, (response) => {
+      if (response.didCancel || response.error || response.customButton) {
+        console.log('Something happened');
+      } else {
+        var arrayImages = this.state.images
+        var uri = JSON.stringify(response.assets[0]["uri"])
+        arrayImages.push(uri)
+        this.setState({images: arrayImages})
+      }
+    })
+  }
+
+  getImages = () => {
+    let imgs = []
+    for (let i = 0; i < this.state.images.length; i++) {
+      imgs.push(<Image
+      source={{
+        uri: this.state.images[i].replace(/['"]+/g, ''),
+      }}
+      resizeMethod="contain"
+      key={this.state.images[i]}
+      style={{ width: 100, height: 100,  borderWidth: 2, borderColor: '#1A5276', textAlign: "center"}}
+    />)
+    }
+    return imgs
+  }
+
+  render () {
+    return (
+      <View style={styles.mainView}>
+        <View style={styles.navBar}><Text style={styles.navBarHeader}>Imágenes adjuntadas</Text></View>
+        {this.state.images.length == 0 && 
+        (<View style={styles.section}>
+        <Text style={styles.title}>No hay ninguna aún</Text>
+      </View>)}
+      {this.state.images.length > 0 && 
+        (<View style={styles.imagesSection}>
+        {this.getImages()}
+      </View>)}
+      <View style={styles.footBar}>
+        <Icon
+            name='plus'
+            type='font-awesome'
+            color='#1A5276'
+            size={40}
+            onPress={this.addImage}
+          />
+        </View>
+      </View>
+    );
+  }
+}
 
 class BuyScreen extends Component {
   constructor(props) {
@@ -26,10 +131,25 @@ class BuyScreen extends Component {
       setInvoiceNumber: false,
       getTotal: false,
       setTotal: false,
+      finalView: false,
+      started: false,
+      startVoice: false,
+      images: []
     };
     Voice.onSpeechStart = this.onSpeechStart.bind(this);
     Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
     Voice.onSpeechResults = this.onSpeechResults.bind(this);
+    this.init()
+  }
+
+  async init() {
+    await AsyncStorage.getItem("images").then((value) => {
+      if (value != null) {
+        console.log("images="+JSON.parse(value))
+        this.setState({ images: JSON.parse(value) })
+        //this.setState({ images: [] }) //CLEAN
+      }
+    })
   }
 
   componentWillUnmount() {
@@ -114,7 +234,8 @@ class BuyScreen extends Component {
   }
 
   _cancel = async() => {
-    const AsyncAlert = () => new Promise((resolve) => {
+    this.props.navigation.push('Main')
+    /*const AsyncAlert = () => new Promise((resolve) => {
       Alert.alert(
         "Cancelar",
         "¿Está seguro que desea perder el documento?",
@@ -135,15 +256,14 @@ class BuyScreen extends Component {
         { cancelable: false },
       );
     });
-    await AsyncAlert();
+    await AsyncAlert();*/
   }
 
-  _getImages() {
-    console.log("_getImages")
+  _getImages = () => {
+    this.props.navigation.push('Images')
   }
 
   setMicrophoneIcon() {
-    console.log(!this.state.is_recording)
     if (this.state.is_recording) {
       return <Icon
         name='microphone-slash'
@@ -176,6 +296,74 @@ class BuyScreen extends Component {
 
   setTotal = () => {
     this.setState({setTotal: true})
+    this.setState({finalView: true})
+  }
+
+   takePhoto = async() =>{
+    let options = {
+      title: 'Hacer una foto',
+      customButtons: [
+        { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
+      ],
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+    };
+    launchCamera(options, (response) => {
+      if (response.didCancel || response.error || response.customButton) {
+        console.log('Something happened');
+      } else {
+        var arrayImages = this.state.images
+        var uri = JSON.stringify(response.assets[0]["uri"])
+        arrayImages.push(uri)
+        this.setState({images: arrayImages})
+        this.saveInMemory("images", JSON.stringify(arrayImages))
+      }
+    })
+  }
+
+  async saveInMemory(key, value) {
+    await AsyncStorage.setItem(key, value)
+  }
+
+  setImages = () => {
+    let imgs = []
+    for (let i = 0; i < this.state.images.length; i++) {
+      imgs.push(<Image
+      source={{
+        uri: this.state.images[i].replace(/['"]+/g, ''),
+      }}
+      resizeMethod="resize"
+      key={this.state.images[i]}
+      style={{ width: '80%', height: '80%',  borderWidth: 2, borderColor: '#1A5276', textAlign: "center"}}
+    />)
+    }
+    return imgs
+  }
+
+  goGallery = async() =>{
+    let options = {
+      title: 'Foto desde la galería',
+      customButtons: [
+        { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
+      ],
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+    };
+    launchImageLibrary(options, (response) => {
+      if (response.didCancel || response.error || response.customButton) {
+        console.log('Something happened');
+      } else {
+        var arrayImages = this.state.images
+        var uri = JSON.stringify(response.assets[0]["uri"])
+        arrayImages.push(uri)
+        this.setState({images: arrayImages})
+        this.saveInMemory("images", JSON.stringify(arrayImages))
+      }
+    })
   }
 
   render () {
@@ -183,7 +371,11 @@ class BuyScreen extends Component {
       <View style={{flex: 1}}>
         <View style={styles.navBar}><Text style={styles.navBarHeader}>Compra</Text></View>
         <View style={styles.mainView}>
-          {!this.state.getEntity &&
+        {this.state.images.length > 0 && 
+        (<View style={styles.imagesSection}>
+        {this.setImages()}
+      </View>)}
+          {this.state.startVoice && !this.state.getEntity &&
           (<View style={styles.section}>
             <Text style={styles.title}>Diga su entidad</Text>
           </View>)}
@@ -285,12 +477,12 @@ class BuyScreen extends Component {
               </View>)} 
         </View>
         <View style={styles.footBar}>
-        <Icon
-            name='window-close'
+          <Icon
+            name='camera'
             type='font-awesome'
             color='#1A5276'
             size={32}
-            onPress={this._cancel}
+            onPress={this.takePhoto}
           />
           <Icon
             name='window-close'
@@ -305,43 +497,24 @@ class BuyScreen extends Component {
             size={32}
           />
           {this.setMicrophoneIcon()}
-          <Icon
+           <Icon
+            name='window-close'
+            type='font-awesome'
+            color='#FFFFFF'
+            size={32}
+          />
+           <Icon
             name='window-close'
             type='font-awesome'
             color='#FFFFFF'
             size={32}
           />
           <Icon
-            name='window-close'
-            type='font-awesome'
-            color='#FFFFFF'
-            size={32}
-          />
-          <Icon
-            name='camera'
+            name='image'
             type='font-awesome'
             color='#1A5276'
             size={32}
-            onPress={this._getImages}
-          />
-          <Icon
-            name='window-close'
-            type='font-awesome'
-            color='#FFFFFF'
-            size={32}
-          />
-          <Icon
-            name='window-close'
-            type='font-awesome'
-            color='#FFFFFF'
-            size={32}
-          />
-          <Icon
-            name='chevron-circle-right'
-            type='font-awesome'
-            color='#1A5276'
-            size={32}
-            onPress={this._continue.bind(this)}
+            onPress={this.goGallery}
           />
         </View>
       </View>
@@ -427,6 +600,13 @@ const AppNavigator = createStackNavigator({
   },
   Buy: {
     screen: BuyScreen,
+    navigationOptions: {
+      header: null,
+      animationEnabled: false
+    }
+  },
+  Images: {
+    screen: ImagesScreen,
     navigationOptions: {
       header: null,
       animationEnabled: false
@@ -553,6 +733,12 @@ const styles = StyleSheet.create({
   section: {
     paddingTop: 50,
     justifyContent: "center",
-    textAlign: "center"
+    textAlign: "center",
+    flex: 1
   },
+  imagesSection: {
+    flex: 1,
+    alignItems: 'center',
+    textAlign: "center",
+  }
 });
