@@ -6,6 +6,7 @@ import { createStackNavigator } from 'react-navigation-stack';
 import { Icon, withTheme } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import LinearGradient from 'react-native-linear-gradient';
 
 class ImageViewerScreen extends Component {
 
@@ -84,8 +85,8 @@ class ImageViewerScreen extends Component {
 
   render () {
     return (
-      <View style={styles.mainView}>
-        <View style={styles.imagesSection}>
+      <View style={styles.imageView}>
+        <View style={styles.selectedImageView}>
           <Image
             source={{
               uri: this.state.image.uri.replace(/['"]+/g, '')
@@ -95,24 +96,30 @@ class ImageViewerScreen extends Component {
             style={{ width: "100%", height: "100%" }}
           />
       </View>
-        <View style={styles.footBar}>
+        <View style={styles.darkFootBar}>
           <Icon
               name='edit'
               type='font-awesome'
-              color='#1A5276'
+              color='#E5E7E9'
               size={35}
               onPress={this._update}
             />
             <Icon
               name='plus'
               type='font-awesome'
-              color='#FFF'
+              color='#000'
+              size={40}
+            />
+            <Icon
+              name='plus'
+              type='font-awesome'
+              color='#000'
               size={40}
             />
             <Icon
               name='trash'
               type='font-awesome'
-              color='#1A5276'
+              color='#E5E7E9'
               size={35}
               onPress={this._delete}
             />
@@ -225,8 +232,8 @@ class BuyScreen extends Component {
   }
 
   async _startRecognition(e) {
-    console.log("_startRecognition")
     this.setState({is_recording: !this.state.is_recording})
+    this.setState({startVoice: JSON.stringify(true)})
     this.setState({
       recognized: '',
       started: '',
@@ -324,7 +331,6 @@ class BuyScreen extends Component {
         })
         this.setState({images: arrayImages})
         this.saveInMemory("images", JSON.stringify(arrayImages))
-        this.saveInMemory("isBuyDoc", JSON.stringify(true))
       }
     })
   }
@@ -356,7 +362,6 @@ class BuyScreen extends Component {
         })
         this.setState({images: arrayImages})
         this.saveInMemory("images", JSON.stringify(arrayImages))
-        this.saveInMemory("isBuyDoc", JSON.stringify(true))
       }
     })
   }
@@ -391,9 +396,55 @@ class BuyScreen extends Component {
     this.setState({startVoice: false})
     this.setState({images: []})
     this.saveInMemory("images", JSON.stringify([]))
-    this.saveInMemory("isBuyDoc", JSON.stringify(false))
     this.props.navigation.push('Main')
   }
+
+    async askFinish() {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "Enviar documento",
+          "¿Está seguro que desea enviar este documento?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(resolve("Si"));
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve(resolve("No"));
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+        await AsyncAlert();
+    }
+
+   _finish = async () => {
+      if (this.state.images.length > 0) {
+        this.askFinish()
+      } else {
+        this.showAlert("Finalizar el proceso", "Tiene que adjuntar al menos una imagen del documento o utilizar el control por voz")
+      }
+    }
+
+    showAlert = (title, message) => {
+      Alert.alert(
+        title,
+        message,
+        [
+          {
+            text: "Ok",
+            style: "cancel"
+          },
+        ],
+        { cancelable: false }
+      );
+    }
 
    _delete = async () => {
     const AsyncAlert = () => new Promise((resolve) => {
@@ -420,126 +471,117 @@ class BuyScreen extends Component {
     await AsyncAlert();
   }
 
+  setMenuButtons() {
+    if (this.state.images.length > 0) {
+      return(
+        <View style={styles.navBarButtons}>
+          <TouchableOpacity onPress={this._delete}>
+            <Text style={styles.exitText}>Salir y eliminar</Text>
+          </TouchableOpacity>
+        <Icon
+          name='window-close'
+          type='font-awesome'
+          color='#E5E7E9'
+          size={32}
+        />
+        <Icon
+          name='window-close'
+          type='font-awesome'
+          color='#E5E7E9'
+          size={32}
+        />
+        <TouchableOpacity onPress={this._finish}>
+          <Text style={styles.saveText}>Guardar y finalizar</Text>
+        </TouchableOpacity>
+      </View>
+      )}
+    return null
+  }
+
   setMenu() {
     return(
-      <View style={styles.navBar}>
-      <Icon
-          name='times'
-          type='font-awesome'
-          color='#FFFFFF'
-          size={32}
-          onPress={this._delete}
-        />
-        <Icon
-          name='window-close'
-          type='font-awesome'
-          color='#1A5276'
-          size={32}
-        /> 
-        <Icon
-          name='window-close'
-          type='font-awesome'
-          color='#1A5276'
-          size={32}
-        />  
-        <Icon
-          name='window-close'
-          type='font-awesome'
-          color='#1A5276'
-          size={32}
-        />
-        <Text style={styles.navBarHeader}>Compra</Text>
-        <Icon
-          name='window-close'
-          type='font-awesome'
-          color='#1A5276'
-          size={32}
-        /> 
-        <Icon
-          name='window-close'
-          type='font-awesome'
-          color='#1A5276'
-          size={32}
-        />  
-        <Icon
-          name='window-close'
-          type='font-awesome'
-          color='#1A5276'
-          size={32}
-        />        
-        <Icon
-        name='arrow-circle-right'
-        type='font-awesome'
-        color='#FFFFFF'
-        size={32}
-        onPress={this.takePhoto}
-      />
+      <View style={styles.menuView}>
+        <Text style={styles.mainHeader}>Contabilidad para compra</Text>
+        {this.setMenuButtons()}
       </View>
     )
   }
+
+  setImages() {
+    if (this.state.images.length > 0 && !this.state.startVoice) {
+      return (
+        <View style={styles.imagesSection}>
+          <Text style={styles.imageText}>Imágenes del documento:</Text>
+          <FlatList 
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={this.state.images}
+            renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => this.seeImage(item)}>
+                    <Image
+                      source={{
+                        uri:item.uri.replace(/['"]+/g, ''),
+                      }}
+                      resizeMethod="resize"
+                      key={item}
+                      style={{
+                        width:260,
+                        height:300,
+                        borderWidth:2,
+                        borderColor:'#1B5E8B',
+                        resizeMode:'contain',
+                        margin:8
+                      }}
+                    />
+                  </TouchableOpacity>
+                )}
+            />
+        </View>
+      )
+    }
+    if (this.state.images.length > 0 && this.state.startVoice) {
+      return (
+      <View>
+        <TouchableOpacity onPress={this.goBuyScreen}>
+            <Text style={styles.mainButtonText}>Ver imágenes del documento</Text>
+          </TouchableOpacity>
+        </View>)
+    }
+    return null
+  }
+
+  setEntityVoiceControl() {
+    if (this.state.startVoice && !this.state.getEntity) {
+      return (<View>
+        <Text style={styles.title}>¿Cuál es su entidad?</Text>
+      </View>)
+    }
+    if (this.state.getEntity && !this.state.setEntity ) {
+      return (<View>
+        <Text style={styles.title}>Resultados para entidad</Text>
+        <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.entity}</Text>
+        <Text style={styles.text}>Texto interpretado:</Text><Text style={styles.transcript}>{this.state.entity} </Text>
+        <Text style={styles.transcript}></Text>
+        <TouchableOpacity onPress={this._cancel}>
+            <Text style={styles.exitText}>Cancelar resultado</Text>
+          </TouchableOpacity>
+          <Text style={styles.transcript}></Text>
+          <TouchableOpacity onPress={this.setEntity}>
+            <Text style={styles.saveText}>Continuar</Text>
+          </TouchableOpacity>
+      </View>)
+    } 
+    return null
+  }
+
   render () {
     return (
       <View style={{flex: 1}}>
         {this.setMenu()}
-        <View style={styles.mainView}>
-        {this.state.images.length == 0 && 
-          (<View style={styles.imagesSection}>
-              <Text style={styles.text}>No hay imágenes adjuntadas</Text>
-          </View>)
-        }
-        {this.state.images.length > 0 && 
-        (<View style={styles.imagesSection}>
-            <FlatList 
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={this.state.images}
-              renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => this.seeImage(item)}>
-                  <Image
-                        source={{
-                          uri:item.uri.replace(/['"]+/g, ''),
-                        }}
-                        resizeMethod="resize"
-                        key={item}
-                        style={{
-                          width:260,
-                          height:300,
-                          borderWidth:2,
-                          borderColor:'#1B5E8B',
-                          resizeMode:'contain',
-                          margin:8
-                        }}
-                      />
-                </TouchableOpacity>
-              )}
-          />
-      </View>)}
-      
-          {this.state.startVoice && !this.state.getEntity &&
-          (<View style={styles.section}>
-            <Text style={styles.title}>Diga su entidad</Text>
-          </View>)}
-          {this.state.getEntity && !this.state.setEntity  &&
-            (<View style={styles.section}>
-              <Text style={styles.title}>Entidad</Text>
-              <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.entity}</Text>
-              <Text style={styles.text}>Texto interpretado:</Text><TextInput style={styles.changeTranscript}>{this.state.entity} </TextInput>
-              <Text style={styles.transcript}>¿Qué desea hacer ahora?</Text>
-              <Icon
-                name='window-close'
-                type='font-awesome'
-                color='#1A5276'
-                size={32}
-                onPress={this._cancel}
-              />
-              <Icon
-                name='arrow-circle-right'
-                type='font-awesome'
-                color='#1A5276'
-                size={32}
-                onPress={this.setEntity}
-              />
-            </View>)}
+        <View style={styles.sections}>
+          {this.setImages()}
+          {this.setEntityVoiceControl()}
+
             {this.state.setEntity && !this.state.getDate &&
             (<View style={styles.section}>
               <Text style={styles.title}>Diga la fecha</Text>
@@ -627,26 +669,26 @@ class BuyScreen extends Component {
           <Icon
             name='window-close'
             type='font-awesome'
-            color='#FFFFFF'
+            color='#E5E7E9'
             size={32}
           />
           <Icon
             name='window-close'
             type='font-awesome'
-            color='#FFFFFF'
+            color='#E5E7E9'
             size={32}
           />
           {this.setMicrophoneIcon()}
            <Icon
             name='window-close'
             type='font-awesome'
-            color='#FFFFFF'
+            color='#E5E7E9'
             size={32}
           />
            <Icon
             name='window-close'
             type='font-awesome'
-            color='#FFFFFF'
+            color='#E5E7E9'
             size={32}
           />
           <Icon
@@ -666,16 +708,16 @@ class MainScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      isBuyDoc: false
+      images: []
     }
     this.init()
   }
 
   async init() {
-    await AsyncStorage.getItem("isBuyDoc").then((value) => {
-      if (value != null) {
-        this.setState({ isBuyDoc: JSON.parse(value) })
-      }
+      await AsyncStorage.getItem("images").then((value) => {
+        if (value != null) {
+          this.setState({ images: JSON.parse(value) })
+        }
     })
   }
 
@@ -706,44 +748,128 @@ class MainScreen extends Component {
 
   render () {
     return (
-      <View style={styles.mainView}>
-        <View style={styles.navBar}><Text style={styles.navBarHeader}>Contabilidad</Text></View>
-        <View style={styles.text}></View>
-        <View style={styles.mainView}>
-        <Text style={styles.text}>Seleccione una opción</Text>
-        <View style={styles.text}></View>
-        <View style={styles.text}> 
-        {this.state.isBuyDoc && 
-          (<TouchableOpacity onPress={this.goBuyScreen}>
-            <Text style={styles.buyButton}>Seguir compra</Text>
-          </TouchableOpacity>)
-        }
-        {!this.state.isBuyDoc && 
-          (<TouchableOpacity onPress={this.goBuyScreen}>
-            <Text style={styles.buyButton}>Compra</Text>
-          </TouchableOpacity>)
-        }
-        </View>
-        <View style={styles.text}> 
-        <TouchableOpacity onPress={this.goSaleScreen}>
-            <Text style={styles.saleButton}>Venta</Text>
-        </TouchableOpacity> 
-        </View>
-        <View style={styles.text}>
-        <TouchableOpacity onPress={this.goPayScreen}>
-            <Text style={styles.payButton}>Pago</Text>
-        </TouchableOpacity>  
-        </View>
-        </View>
-        <View style={styles.footBar}>
+      <View style={styles.mainView}> 
+        <View style={styles.accountingView}>
         <Icon
-            name='question-circle'
+            name='balance-scale'
             type='font-awesome'
-            color='#1A5276'
-            size={40}
-            onPress={this.goHelp}
+            color='#000'
+            size={45}
           />
-        </View>
+          </View>
+        <Text style={styles.mainHeader}>Contabilidad inteligente</Text>
+        <Text style={styles.text}>Seleccione tipo de documento</Text>
+        <View style={styles.twoColumnsInARow}>
+        {this.state.images.length > 0 && 
+          (<View>
+          <TouchableOpacity onPress={this.goBuyScreen}>
+            <View style={styles.mainIcon}>
+              <Icon
+                name='shopping-cart'
+                type='font-awesome'
+                color='#E67E22'
+                size={40}
+              />
+              </View>
+            <Text style={styles.mainButtonText}>Seguir compra</Text>
+          </TouchableOpacity>
+          </View>)}
+        {this.state.images.length == 0 && 
+          (<View>
+            <TouchableOpacity onPress={this.goBuyScreen}>
+              <View style={styles.mainIcon}>
+                <Icon
+                  name='shopping-cart'
+                  type='font-awesome'
+                  color='#E67E22'
+                  size={40}
+                />
+                </View>
+              <Text style={styles.mainButtonText}>Compra</Text>
+            </TouchableOpacity>
+            </View>)}
+            <Icon
+                name='shopping-cart'
+                type='font-awesome'
+                color='#E5E7E9'
+                size={40}
+              />
+        {this.state.images.length > 0 && 
+          (<View>
+          <TouchableOpacity onPress={this.goBuyScreen}>
+            <View style={styles.mainIcon}>
+              <Icon
+                name='shopping-cart'
+                type='font-awesome'
+                color='#186A3B'
+                size={40}
+              />
+              </View>
+            <Text style={styles.mainButtonText}>Seguir venta</Text>
+          </TouchableOpacity>
+          </View>)}
+        {this.state.images.length == 0 && 
+          (<View>
+            <TouchableOpacity onPress={this.goBuyScreen}>
+              <View style={styles.mainIcon}>
+                <Icon
+                  name='tags'
+                  type='font-awesome'
+                  color='#21618C'
+                  size={40}
+                />
+                </View>
+              <Text style={styles.mainButtonText}>Venta</Text>
+            </TouchableOpacity>
+            </View>)}
+          </View>
+          <View style={styles.twoColumnsInARow}>
+        {this.state.images.length > 0 && 
+          (<View>
+          <TouchableOpacity onPress={this.goBuyScreen}>
+            <View style={styles.mainIcon}>
+              <Icon
+                name='tags'
+                type='font-awesome'
+                color='#196F3D'
+                size={40}
+              />
+              </View>
+            <Text style={styles.mainButtonText}>Seguir pago</Text>
+          </TouchableOpacity>
+          </View>)}
+        {this.state.images.length == 0 && 
+          (<View>
+            <TouchableOpacity onPress={this.goBuyScreen}>
+              <View style={styles.mainIcon}>
+                <Icon
+                  name='money'
+                  type='font-awesome'
+                  color='#196F3D'
+                  size={40}
+                />
+                </View>
+              <Text style={styles.mainButtonText}>Pago</Text>
+            </TouchableOpacity>
+            </View>)}
+            <Icon
+                name='money'
+                type='font-awesome'
+                color='#E5E7E9'
+                size={40}
+              />
+          <TouchableOpacity onPress={this.goHelp}>
+            <View style={styles.mainIcon}>
+              <Icon
+                name='info'
+                type='font-awesome'
+                color='#922B21'
+                size={40}
+              />
+              </View>
+            <Text style={styles.mainButtonText}>Ayuda</Text>
+          </TouchableOpacity>
+      </View>
       </View>
     );
   }
@@ -803,14 +929,50 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
     height: 50
   },
+  navBarButtons: {
+    backgroundColor:"#E5E7E9", 
+    paddingTop: 30,
+    flexDirection:'row',
+    alignSelf: 'center'
+  },
   mainView: {
     flex: 1,
-    backgroundColor:"#fff", 
+    backgroundColor:"#E5E7E9",
+    paddingTop: 30,
+  },
+  menuView: {
+    backgroundColor:"#E5E7E9",
+    paddingTop: 30,
+    paddingBottom: 40,
+  },
+  sections: {
+    flex: 1,
+    backgroundColor:"#E5E7E9",
+  },
+  imageView: {
+    flex: 1,
+    backgroundColor:"#000",
+    paddingTop: 30,
+  },
+  accountingView: {
+    flexDirection: 'row',
+    textAlign: "center",
+    alignSelf: "center",
+    paddingTop: 50,
+    paddingBottom: 15
   },
   footBar: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor:"#fff", 
+    backgroundColor:"#E5E7E9", 
+    flexDirection:'row', 
+    textAlignVertical: 'center',
+    height: 50
+  },
+  darkFootBar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor:"#000", 
     flexDirection:'row', 
     textAlignVertical: 'center',
     height: 50
@@ -845,20 +1007,63 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     color: "#000",
   },
+  imageText: {
+    fontSize: 17,
+    textAlign: "center",
+    paddingTop: 15,
+    paddingBottom: 40,
+    color: "#000",
+  },
+  twoColumnsInARow: {
+    paddingTop: 30,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    alignSelf: "center",
+  },
+  mainButtonText: {
+    fontSize: 17,
+    textAlign: "center",
+    color: "#000",
+    paddingTop: 10,
+    fontWeight: 'bold'
+  },
+  saveText: {
+    fontSize: 17,
+    textAlign: "center",
+    color: "#196F3D",
+    paddingTop: 10,
+    fontWeight: 'bold',
+    fontStyle: 'italic'
+  },
+  exitText: {
+    fontSize: 17,
+    textAlign: "center",
+    color: "#943126",
+    paddingTop: 10,
+    fontWeight: 'bold',
+    fontStyle: 'italic'
+  },
+  mainIcon: {
+    backgroundColor: "#fff",
+    alignSelf: "center",
+    paddingTop: 10,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingBottom: 10,
+    borderRadius: 10
+  },
   buyButton: {
     fontSize: 17,
     backgroundColor: "#186A3B",
     textTransform: "uppercase",
     fontWeight: "bold",
     color: "#fff",
-    paddingTop: 10,
-    paddingLeft: 10,
-    paddingRight: 10,
-    paddingBottom: 10,
+    paddingTop: 50,
+    paddingLeft: 50,
+    paddingRight: 50,
+    paddingBottom: 50,
     textAlign: "center",
-    width: "50%",
     alignSelf: "center",
-    borderRadius: 20
   },
   saleButton: {
     fontSize: 17,
@@ -866,14 +1071,12 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     fontWeight: "bold",
     color: "#fff",
-    paddingTop: 10,
-    paddingLeft: 10,
-    paddingRight: 10,
-    paddingBottom: 10,
+    paddingTop: 50,
+    paddingLeft: 50,
+    paddingRight: 50,
+    paddingBottom: 50,
     textAlign: "center",
-    width: "50%",
     alignSelf: "center",
-    borderRadius: 20
   },
   payButton: {
     fontSize: 17,
@@ -881,14 +1084,12 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     fontWeight: "bold",
     color: "#fff",
-    paddingTop: 10,
-    paddingLeft: 10,
-    paddingRight: 10,
-    paddingBottom: 10,
+    paddingTop: 50,
+    paddingLeft: 50,
+    paddingRight: 50,
+    paddingBottom: 50,
     textAlign: "center",
-    width: "50%",
     alignSelf: "center",
-    borderRadius: 20
   },
   title: {
     textAlign: 'center',
@@ -906,5 +1107,29 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     textAlign: "center",
+  },
+  selectedImageView: {
+    flex: 1,
+    alignItems: 'center',
+    textAlign: "center",
+    backgroundColor: "#000",
+  },
+  gradient: {
+    flex: 1,
+  },
+  mainHeader: {
+    paddingTop: 20,
+    alignItems: 'center',
+    textAlign: "center",
+    fontWeight: "bold",
+    color: "#000",
+    fontSize: 25,
+  },
+  howStart: {
+    paddingTop: 100,
+    alignItems: 'center',
+    textAlign: "center",
+    color: "#000",
+    fontSize: 20,
   }
 });
