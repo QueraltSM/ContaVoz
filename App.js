@@ -6,7 +6,6 @@ import { createStackNavigator } from 'react-navigation-stack';
 import { Icon, withTheme } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
-import LinearGradient from 'react-native-linear-gradient';
 
 class ImageViewerScreen extends Component {
 
@@ -15,7 +14,8 @@ class ImageViewerScreen extends Component {
     this.state = {
       images: [],
       image: this.props.navigation.state.params.image,
-      back: this.props.navigation.state.params.back
+      back: this.props.navigation.state.params.back,
+      id: ""
     }
     this.init()
   }
@@ -30,6 +30,11 @@ class ImageViewerScreen extends Component {
         this.setState({ images: JSON.parse(value) })
       }
     })
+    await AsyncStorage.getItem("id").then((value) => {
+      if (value != null) {
+        this.setState({ id: value })
+      }
+    })
   }
 
   goBack = () => {
@@ -37,11 +42,11 @@ class ImageViewerScreen extends Component {
     return true
   }
 
-  _update = () => {
-
+  async saveInMemory(key, value) {
+    await AsyncStorage.setItem(key, value)
   }
 
-  async delete() {
+  updateImage = async(uri) => {
     var arrayImages = []
     for (let i = 0; i < this.state.images.length; i++) {
       if (this.state.images[i].id != this.state.image.id) {
@@ -50,7 +55,69 @@ class ImageViewerScreen extends Component {
           uri: this.state.images[i].uri
         })
       } else {
-        console.log("deleted was:"+this.state.images[i].id)
+        var newImage = {
+          id: this.state.image.id,
+          uri: uri
+        }
+        arrayImages.push(newImage)
+        this.setState({image: newImage})
+      }
+    }
+    this.setState({images: arrayImages})
+    await AsyncStorage.setItem("images", JSON.stringify([]))
+    await AsyncStorage.setItem("images", JSON.stringify(arrayImages))
+  }
+
+  takePhoto = async() =>{
+    let options = {
+      title: 'Hacer una foto',
+      customButtons: [
+        { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
+      ],
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+    };
+    launchCamera(options, (response) => {
+      if (response.didCancel || response.error || response.customButton) {
+        console.log('Something happened');
+      } else {
+        var uri = JSON.stringify(response.assets[0]["uri"])
+        this.updateImage(uri)
+      }
+    })
+  }
+
+  goGallery = async () => {
+    let options = {
+      title: 'Foto desde la galería',
+      customButtons: [
+        { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
+      ],
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+    };
+    launchImageLibrary(options, (response) => {
+      if (response.didCancel || response.error || response.customButton) {
+        console.log('Something happened');
+      } else {
+        var uri = JSON.stringify(response.assets[0]["uri"])
+        this.updateImage(uri)
+      }
+    })
+  }
+
+  async delete() {
+    var arrayImages = []
+    for (let i = 0; i < this.state.images.length; i++) {
+      if (this.state.images[i].id != this.state.image.id) {
+        arrayImages.push({
+          id: this.state.id + "_" + parseInt(this.state.images.length - 1),
+          uri: this.state.images[i].uri
+        })
       }
     }
     await AsyncStorage.setItem("images", JSON.stringify([]))
@@ -98,11 +165,30 @@ class ImageViewerScreen extends Component {
       </View>
         <View style={styles.darkFootBar}>
           <Icon
-              name='edit'
+              name='camera'
+              type='font-awesome'
+              color='#E5E7E9'
+              size={32}
+              onPress={this.takePhoto}
+            />
+            <Icon
+              name='plus'
+              type='font-awesome'
+              color='#000'
+              size={40}
+            />
+            <Icon
+              name='plus'
+              type='font-awesome'
+              color='#000'
+              size={40}
+            />
+            <Icon
+              name='image'
               type='font-awesome'
               color='#E5E7E9'
               size={35}
-              onPress={this._update}
+              onPress={this.goGallery}
             />
             <Icon
               name='plus'
@@ -153,6 +239,8 @@ class BuyScreen extends Component {
       finalView: false,
       started: false,
       startVoice: false,
+      showImages: true,
+      continue: true,
       images: []
     };
     Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -232,7 +320,8 @@ class BuyScreen extends Component {
   }
 
   async _startRecognition(e) {
-    this.setState({is_recording: !this.state.is_recording})
+    this.setState({is_recording: JSON.stringify(true)})
+    this.setState({showImages: JSON.stringify(false)})
     this.setState({startVoice: JSON.stringify(true)})
     this.setState({
       recognized: '',
@@ -247,8 +336,8 @@ class BuyScreen extends Component {
   }
 
   async _stopRecognition(e) {
-    console.log("_stopRecognition")
-    this.setState({is_recording: !this.state.is_recording})
+    this.setState({is_recording: JSON.stringify(false)})
+    this.setState({continue: JSON.stringify(false)})
     try {
       await Voice.stop()
     } catch (e) {
@@ -260,8 +349,8 @@ class BuyScreen extends Component {
     this.props.navigation.push('Main')
   }
 
-  async _continue() {
-    console.log("_continue")
+  _continue = () => {
+    this.setState({continue: JSON.stringify(true)})
   }
 
   _cancel = async() => {
@@ -273,7 +362,7 @@ class BuyScreen extends Component {
   }
 
   setMicrophoneIcon() {
-    if (this.state.is_recording) {
+    if (JSON.parse(this.state.continue) && JSON.parse(this.state.is_recording)) {
       return <Icon
         name='microphone-slash'
         type='font-awesome'
@@ -293,6 +382,7 @@ class BuyScreen extends Component {
 
   setEntity = () => {
     this.setState({setEntity: true})
+    this._continue()
   }
 
   setDate = () => {
@@ -394,6 +484,7 @@ class BuyScreen extends Component {
     this.setState({finalView: false})
     this.setState({started: false})
     this.setState({startVoice: false})
+    this.setState({showImages: false})
     this.setState({images: []})
     this.saveInMemory("images", JSON.stringify([]))
     this.props.navigation.push('Main')
@@ -507,8 +598,14 @@ class BuyScreen extends Component {
     )
   }
 
+  showImages = async () => {
+    this.setState({showImages: JSON.stringify(true)})
+    this.setState({startVoice: JSON.stringify(false)})
+    this._stopRecognition()
+  }
+
   setImages() {
-    if (this.state.images.length > 0 && !this.state.startVoice) {
+    if (JSON.parse(this.state.showImages) && this.state.images.length > 0 && !JSON.parse(this.state.startVoice)) {
       return (
         <View style={styles.imagesSection}>
           <Text style={styles.imageText}>Imágenes del documento:</Text>
@@ -522,14 +619,11 @@ class BuyScreen extends Component {
                       source={{
                         uri:item.uri.replace(/['"]+/g, ''),
                       }}
-                      resizeMethod="resize"
                       key={item}
                       style={{
                         width:260,
                         height:300,
-                        borderWidth:2,
-                        borderColor:'#1B5E8B',
-                        resizeMode:'contain',
+                        borderRadius: 20,
                         margin:8
                       }}
                     />
@@ -539,10 +633,10 @@ class BuyScreen extends Component {
         </View>
       )
     }
-    if (this.state.images.length > 0 && this.state.startVoice) {
+    if (this.state.images.length > 0 && JSON.parse(this.state.startVoice)) {
       return (
       <View>
-        <TouchableOpacity onPress={this.goBuyScreen}>
+        <TouchableOpacity onPress={this.showImages}>
             <Text style={styles.mainButtonText}>Ver imágenes del documento</Text>
           </TouchableOpacity>
         </View>)
@@ -551,13 +645,13 @@ class BuyScreen extends Component {
   }
 
   setEntityVoiceControl() {
-    if (this.state.startVoice && !this.state.getEntity) {
-      return (<View>
+    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.startVoice) && !JSON.parse(this.state.getEntity)) {
+      return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>¿Cuál es su entidad?</Text>
       </View>)
     }
-    if (this.state.getEntity && !this.state.setEntity ) {
-      return (<View>
+    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.getEntity) && !JSON.parse(this.state.setEntity)) {
+      return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para entidad</Text>
         <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.entity}</Text>
         <Text style={styles.text}>Texto interpretado:</Text><Text style={styles.transcript}>{this.state.entity} </Text>
@@ -574,6 +668,78 @@ class BuyScreen extends Component {
     return null
   }
 
+  setDateVoiceControl() {
+    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.setEntity) && !JSON.parse(this.state.getDate)) {
+      return (<View style={styles.voiceControlView}>
+        <Text style={styles.title}>¿Cuál es la fecha?</Text>
+      </View>)
+    }
+    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.getDate) && !JSON.parse(this.state.setDate)) {
+      return (<View style={styles.voiceControlView}>
+        <Text style={styles.title}>Resultados para fecha</Text>
+        <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.date}</Text>
+        <Text style={styles.text}>Texto interpretado:</Text><Text style={styles.transcript}>{this.state.date} </Text>
+        <Text style={styles.transcript}></Text>
+        <TouchableOpacity onPress={this._cancel}>
+            <Text style={styles.exitText}>Cancelar resultado</Text>
+          </TouchableOpacity>
+          <Text style={styles.transcript}></Text>
+          <TouchableOpacity onPress={this.setDate}>
+            <Text style={styles.saveText}>Continuar</Text>
+          </TouchableOpacity>
+      </View>)
+    } 
+    return null
+  }
+
+  setInvoiceNumberVoiceControl() {
+    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.setDate) && !JSON.parse(this.state.getInvoiceNumber)) {
+      return (<View style={styles.voiceControlView}>
+        <Text style={styles.title}>¿Cuál es el nº de factura?</Text>
+      </View>)
+    }
+    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.getInvoiceNumber) && !JSON.parse(this.state.setInvoiceNumber)) {
+      return (<View style={styles.voiceControlView}>
+        <Text style={styles.title}>Resultados para nº de factura</Text>
+        <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.invoiceNumber}</Text>
+        <Text style={styles.text}>Texto interpretado:</Text><Text style={styles.transcript}>{this.state.invoiceNumber} </Text>
+        <Text style={styles.transcript}></Text>
+        <TouchableOpacity onPress={this._cancel}>
+            <Text style={styles.exitText}>Cancelar resultado</Text>
+          </TouchableOpacity>
+          <Text style={styles.transcript}></Text>
+          <TouchableOpacity onPress={this.setInvoiceNumber}>
+            <Text style={styles.saveText}>Continuar</Text>
+          </TouchableOpacity>
+      </View>)
+    } 
+    return null
+  }
+
+  setTotalVoiceControl() {
+    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.setInvoiceNumber) && !JSON.parse(this.state.getTotal)) {
+      return (<View style={styles.voiceControlView}>
+        <Text style={styles.title}>¿Cuál es el total?</Text>
+      </View>)
+    }
+    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.getTotal) && !JSON.parse(this.state.setTotal)) {
+      return (<View style={styles.voiceControlView}>
+        <Text style={styles.title}>Resultados para el total</Text>
+        <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.total}</Text>
+        <Text style={styles.text}>Texto interpretado:</Text><Text style={styles.transcript}>{this.state.total} </Text>
+        <Text style={styles.transcript}></Text>
+        <TouchableOpacity onPress={this._cancel}>
+            <Text style={styles.exitText}>Cancelar resultado</Text>
+          </TouchableOpacity>
+          <Text style={styles.transcript}></Text>
+          <TouchableOpacity onPress={this.setTotal}>
+            <Text style={styles.saveText}>Ver resumen</Text>
+          </TouchableOpacity>
+      </View>)
+    } 
+    return null
+  }
+
   render () {
     return (
       <View style={{flex: 1}}>
@@ -581,82 +747,9 @@ class BuyScreen extends Component {
         <View style={styles.sections}>
           {this.setImages()}
           {this.setEntityVoiceControl()}
-
-            {this.state.setEntity && !this.state.getDate &&
-            (<View style={styles.section}>
-              <Text style={styles.title}>Diga la fecha</Text>
-            </View>)}
-            {this.state.getDate && !this.state.setDate  &&
-              (<View style={styles.section}>
-                <Text style={styles.title}>Fecha</Text>
-                <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.date}</Text>
-                <Text style={styles.text}>Texto interpretado:</Text><TextInput style={styles.changeTranscript}>{this.state.date} </TextInput>
-                <Text style={styles.transcript}>¿Qué desea hacer ahora?</Text>
-                <Icon
-                  name='window-close'
-                  type='font-awesome'
-                  color='#1A5276'
-                  size={32}
-                  onPress={this._cancel}
-                />
-                <Icon
-                  name='arrow-circle-right'
-                  type='font-awesome'
-                  color='#1A5276'
-                  size={32}
-                  onPress={this.setDate}
-                />
-              </View>)} 
-                {this.state.setDate && !this.state.getInvoiceNumber &&
-                (<View style={styles.section}>
-                  <Text style={styles.title}>Diga el número de factura</Text>
-                </View>)}
-                  {this.state.getInvoiceNumber && !this.state.setInvoiceNumber  &&
-                  (<View style={styles.section}>
-                    <Text style={styles.title}>Número de factura</Text>
-                    <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.invoiceNumber}</Text>
-                    <Text style={styles.text}>Texto interpretado:</Text><TextInput style={styles.changeTranscript}>{this.state.invoiceNumber} </TextInput>
-                    <Text style={styles.transcript}>¿Qué desea hacer ahora?</Text>
-                    <Icon
-                      name='window-close'
-                      type='font-awesome'
-                      color='#1A5276'
-                      size={32}
-                      onPress={this._cancel}
-                    />
-                    <Icon
-                      name='arrow-circle-right'
-                      type='font-awesome'
-                      color='#1A5276'
-                      size={32}
-                      onPress={this.setInvoiceNumber}
-                    />
-                  </View>)} 
-                  {this.state.setInvoiceNumber && !this.state.getTotal &&
-                (<View style={styles.section}>
-                  <Text style={styles.title}>Diga el total</Text>
-                </View>)}
-                  {this.state.getTotal && !this.state.setTotal  &&
-                  (<View style={styles.section}>
-                    <Text style={styles.title}>Total</Text>
-                    <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.invoiceNumber}</Text>
-                    <Text style={styles.text}>Texto interpretado:</Text><TextInput style={styles.changeTranscript}>{this.state.invoiceNumber} </TextInput>
-                    <Text style={styles.transcript}>¿Qué desea hacer ahora?</Text>
-                    <Icon
-                      name='window-close'
-                      type='font-awesome'
-                      color='#1A5276'
-                      size={32}
-                      onPress={this._cancel}
-                    />
-                    <Icon
-                      name='arrow-circle-right'
-                      type='font-awesome'
-                      color='#1A5276'
-                      size={32}
-                      onPress={this.setTotal}
-                    />
-              </View>)} 
+          {this.setDateVoiceControl()}
+          {this.setInvoiceNumberVoiceControl()}
+          {this.setTotalVoiceControl()}
         </View>
         <View style={styles.footBar}>
           <Icon
@@ -723,21 +816,21 @@ class MainScreen extends Component {
 
   goBuyScreen = async () => {
     var today = new Date()
-    var id = "C_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ " " + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
+    var id = "C_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
     await AsyncStorage.setItem('id', id)
     this.props.navigation.push('Buy')
   }
 
   goSaleScreen = async () => {
     var today = new Date()
-    var id = "V_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ " " + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
+    var id = "V_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
     await AsyncStorage.setItem('id', id)
     this.props.navigation.push('Sale')
   }
 
   goPayScreen = async () => {
     var today = new Date()
-    var id = "P_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ " " + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
+    var id = "P_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
     await AsyncStorage.setItem('id', id)
     this.props.navigation.push('Pay')
   }
@@ -1011,7 +1104,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     textAlign: "center",
     paddingTop: 15,
-    paddingBottom: 40,
+    paddingBottom: 20,
     color: "#000",
   },
   twoColumnsInARow: {
@@ -1114,9 +1207,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     backgroundColor: "#000",
   },
-  gradient: {
-    flex: 1,
-  },
   mainHeader: {
     paddingTop: 20,
     alignItems: 'center',
@@ -1131,5 +1221,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#000",
     fontSize: 20,
+  },
+  voiceControlView: {
+    paddingTop: 50
   }
 });
