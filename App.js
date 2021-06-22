@@ -17,7 +17,6 @@ class ResumeViewScreen extends Component {
       date: "",
       invoiceNumber: "",
       total: "",
-      continue: true,
       images: [],
       type: this.props.navigation.state.params.type,
       back: this.props.navigation.state.params.back,
@@ -92,15 +91,37 @@ class ResumeViewScreen extends Component {
     return null
   }
 
-  sendDocument() {
-
+  sendDocument = async () => {
+    alert("Esta acción está desactivada por el momento")
+      /*const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "Enviar documento",
+          "¿Está seguro que desea enviar este documento?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(this.goResumeView());
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve(resolve("No"));
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+        await AsyncAlert();*/
   }
 
   setControlVoice(){
     if (this.state.entity.length>0) {
       return(
         <View style={styles.resumeView}>
-          <Text style={styles.mainButtonText}>Edite el documento si lo desea</Text>
+          <Text style={styles.mainButtonText}>Edite el documento generado</Text>
           <Text style={styles.resumeText}>Entidad</Text>
           <TextInput multiline={true} style={styles.changeTranscript}>{this.state.entity}</TextInput>
           <Text style={styles.resumeText}>Fecha</Text>
@@ -119,7 +140,7 @@ class ResumeViewScreen extends Component {
     return (
       <View style={{flex: 1}}>
         {this.setMenu()}
-        <ScrollView>
+        <ScrollView style={{backgroundColor: "#fff"}}>
         <View style={styles.sections}>
         {this.setImages()}
         {this.setControlVoice()}
@@ -364,7 +385,7 @@ class BuyScreen extends Component {
       setTotal: false,
       started: false,
       startVoice: false,
-      continue: true,
+      saved: false,
       images: []
     };
     Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -411,6 +432,11 @@ class BuyScreen extends Component {
     await AsyncStorage.getItem("id").then((value) => {
       if (value != null) {
         this.setState({ id: value })
+      }
+    })
+    await AsyncStorage.getItem("saved").then((value) => {
+      if (value != null) {
+        this.setState({ saved: JSON.parse(value) })
       }
     })
   }
@@ -461,7 +487,6 @@ class BuyScreen extends Component {
         }
       } 
     }
-    this.setState({continue: false})
   }
 
   async _startRecognition(e) {
@@ -481,7 +506,6 @@ class BuyScreen extends Component {
 
   async _stopRecognition(e) {
     this.setState({is_recording: JSON.stringify(false)})
-    this.setState({continue: JSON.stringify(false)})
     try {
       await Voice.stop()
     } catch (e) {
@@ -494,7 +518,7 @@ class BuyScreen extends Component {
   }
 
   _continue = () => {
-    this.setState({continue: JSON.stringify(true)})
+    this._startRecognition()
   }
 
   _cancel = async() => {
@@ -506,7 +530,7 @@ class BuyScreen extends Component {
   }
 
   setMicrophoneIcon() {
-    if (JSON.parse(this.state.continue) && JSON.parse(this.state.is_recording)) {
+    if (JSON.parse(this.state.is_recording)) {
       return <Icon
         name='microphone-slash'
         type='font-awesome'
@@ -528,25 +552,59 @@ class BuyScreen extends Component {
     this.setState({setEntity: true})
     this.saveInMemory("isBuy", JSON.stringify(true))
     this.saveInMemory("entity", this.state.entity)
+    this.setState({is_recording: true})
     this._continue()
+  }
+
+  cancelEntity = () => {
+    this.setState({setEntity: false})
+    this.setState({is_recording: true})
+    this.setState({entity: ""})
+    this._startRecognition()
   }
 
   setDate = () => {
     this.setState({setDate: true})
     this.saveInMemory("date", this.state.date)
+    this.setState({is_recording: true})
     this._continue()
+  }
+
+  cancelDate = () => {
+    this.setState({setDate: false})
+    this.setState({is_recording: true})
+    this.setState({date: ""})
+    this._startRecognition()
   }
 
   setInvoiceNumber = () => {
     this.setState({setInvoiceNumber: true})
+    this.setState({is_recording: true})
     this.saveInMemory("invoiceNumber", this.state.invoiceNumber)
     this._continue()
+  }
+
+  cancelInvoiceNumber = () => {
+    this.setState({setInvoiceNumber: false})
+    this.setState({is_recording: true})
+    this.setState({invoiceNumber: ""})
+    this._startRecognition()
   }
 
   setTotal = () => {
     this.setState({setTotal: true})
     this.saveInMemory("total", this.state.total)
-    this.askFinish()
+    this.setState({saved: true})
+    this.saveInMemory("saved", JSON.stringify(true))
+  }
+
+  cancelTotal= () => {
+    this.setState({setTotal: false})
+    this.setState({is_recording: true})
+    this.setState({total: ""})
+    this.setState({saved: false})
+    this.saveInMemory("saved", JSON.stringify(false))
+    this._startRecognition()
   }
 
    takePhoto = async() =>{
@@ -644,44 +702,16 @@ class BuyScreen extends Component {
     await AsyncStorage.setItem("total", "")
     await AsyncStorage.setItem("images", JSON.stringify([]))
     await AsyncStorage.setItem("isBuy", JSON.stringify(false))
+    await AsyncStorage.setItem("saved", JSON.stringify(false))
     this.props.navigation.push('Main')
   }
 
-  goResumeView() {
-    this.props.navigation.push('ResumeView', {
-      type: "compra",
-      back: "Buy"
-    })
-  }
-
-    askFinish = async () => {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "Enviar documento",
-          "¿Está seguro que desea enviar este documento?",
-          [
-            {
-              text: 'Sí',
-              onPress: () => {
-                resolve(this.goResumeView());
-              },
-            },
-            {
-              text: 'No',
-              onPress: () => {
-                resolve(resolve("No"));
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-        await AsyncAlert();
-    }
-
     _finish = async () => {
-      if (this.state.images.length > 0 || JSON.parse(this.state.total)) {
-        this.askFinish()
+      if (this.state.images.length > 0 || this.state.total.length>0) {
+        this.props.navigation.push('ResumeView', {
+          type: "compra",
+          back: "Buy"
+        })
       } else {
         this.showAlert("Finalizar el proceso", "Tiene que adjuntar al menos una imagen del documento o utilizar el control por voz")
       }
@@ -724,13 +754,6 @@ class BuyScreen extends Component {
     );
     });
     await AsyncAlert();
-  }
-
-  setEmptyView() {
-    if (this.state.entity.length>0) {
-      return(<View style={styles.imagesSection}></View>)
-    }
-    return (<View></View>)
   }
 
   setMenuButtons() {
@@ -817,8 +840,8 @@ class BuyScreen extends Component {
         <Text style={styles.resultsText}>Texto escuchado: <Text style={styles.transcript}>{this.state.entity}</Text></Text>
         <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.entity} </Text></Text>
         <View style={styles.navBarButtons}>
-        <TouchableOpacity onPress={this._cancel}>
-        <Text style={styles.exitButton}>Cancelar</Text>
+        <TouchableOpacity onPress={this.cancelEntity}>
+        <Text style={styles.exitButton}>Repetir</Text>
           </TouchableOpacity>
           <Icon
           name='window-close'
@@ -828,7 +851,7 @@ class BuyScreen extends Component {
           />
           <Text style={styles.transcript}></Text>
           <TouchableOpacity onPress={this.setEntity}>
-            <Text style={styles.saveButton}>Continuar</Text>
+            <Text style={styles.saveButton}>Guardar</Text>
           </TouchableOpacity>
         </View>
         </View>)
@@ -837,7 +860,7 @@ class BuyScreen extends Component {
   }
 
   setDateVoiceControl() {
-    if (JSON.parse(this.state.continue) && this.state.date.length==0 && this.state.entity.length>0 && !JSON.parse(this.state.getDate)) {
+    if (JSON.parse(this.state.is_recording) && this.state.date.length==0 && this.state.entity.length>0 && !JSON.parse(this.state.getDate)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Escuchando fecha...</Text>
       </View>)
@@ -849,8 +872,8 @@ class BuyScreen extends Component {
         <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.date} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
-        <TouchableOpacity onPress={this._cancel}>
-            <Text style={styles.exitButton}>Cancelar</Text>
+        <TouchableOpacity onPress={this.cancelDate}>
+            <Text style={styles.exitButton}>Repetir</Text>
           </TouchableOpacity>
           <Icon
           name='window-close'
@@ -860,7 +883,7 @@ class BuyScreen extends Component {
           />
           <Text style={styles.transcript}></Text>
           <TouchableOpacity onPress={this.setDate}>
-            <Text style={styles.saveButton}>Continuar</Text>
+            <Text style={styles.saveButton}>Guardar</Text>
           </TouchableOpacity>
         </View>
       </View>)
@@ -869,20 +892,20 @@ class BuyScreen extends Component {
   }
 
   setInvoiceNumberVoiceControl() {
-    if (JSON.parse(this.state.continue) && this.state.invoiceNumber.length==0 && this.state.date.length>0 && !JSON.parse(this.state.getInvoiceNumber)) {
+    if (JSON.parse(this.state.is_recording) && this.state.invoiceNumber.length==0 && this.state.date.length>0 && !JSON.parse(this.state.getInvoiceNumber)) {
       return (<View style={styles.voiceControlView}>
-        <Text style={styles.title}>Escuchando número de factura...</Text>
+        <Text style={styles.title}>Escuchando nº de factura...</Text>
       </View>)
     }
     if (JSON.parse(this.state.getInvoiceNumber) && !JSON.parse(this.state.setInvoiceNumber)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para factura</Text>
-        <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.invoiceNumber}</Text>
-        <Text style={styles.text}>Texto interpretado:</Text><Text style={styles.transcript}>{this.state.invoiceNumber} </Text>
+        <Text style={styles.text}>Texto escuchado: <Text style={styles.transcript}>{this.state.invoiceNumber}</Text></Text>
+        <Text style={styles.text}>Texto interpretado: <Text style={styles.transcript}>{this.state.invoiceNumber} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
-        <TouchableOpacity onPress={this._cancel}>
-            <Text style={styles.exitButton}>Cancelar</Text>
+        <TouchableOpacity onPress={this.cancelInvoiceNumber}>
+            <Text style={styles.exitButton}>Repetir</Text>
           </TouchableOpacity>
           <Icon
           name='window-close'
@@ -892,7 +915,7 @@ class BuyScreen extends Component {
           />
           <Text style={styles.transcript}></Text>
           <TouchableOpacity onPress={this.setInvoiceNumber}>
-            <Text style={styles.saveButton}>Continuar</Text>
+            <Text style={styles.saveButton}>Guardar</Text>
           </TouchableOpacity>
         </View>
       </View>)
@@ -901,21 +924,21 @@ class BuyScreen extends Component {
   }
 
   setTotalVoiceControl() {
-    if (JSON.parse(this.state.continue) && this.state.total.length==0 && this.state.invoiceNumber.length>0 && !JSON.parse(this.state.getTotal)) {
+    if (JSON.parse(this.state.is_recording) && this.state.total.length==0 && this.state.invoiceNumber.length>0 && !JSON.parse(this.state.getTotal)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Escuchando total...</Text>
       </View>)
     }
-    if (this.state.total.length>0) {
+    if (this.state.total.length>0 && !JSON.parse(this.state.saved)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para el total</Text>
-        <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.total}</Text>
-        <Text style={styles.text}>Texto interpretado:</Text><Text style={styles.transcript}>{this.state.total} </Text>
+        <Text style={styles.text}>Texto escuchado: <Text style={styles.transcript}>{this.state.total}</Text></Text>
+        <Text style={styles.text}>Texto interpretado: <Text style={styles.transcript}>{this.state.total} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
-        <TouchableOpacity onPress={this._cancel}>
-            <Text style={styles.exitButton}>Cancelar</Text>
-          </TouchableOpacity>
+        <TouchableOpacity onPress={this.cancelTotal}>
+            <Text style={styles.exitButton}>Repetir</Text>
+        </TouchableOpacity>
           <Icon
           name='window-close'
           type='font-awesome'
@@ -924,11 +947,22 @@ class BuyScreen extends Component {
           />
           <Text style={styles.transcript}></Text>
           <TouchableOpacity onPress={this.setTotal}>
-            <Text style={styles.saveButton}>Ver resumen</Text>
+            <Text style={styles.saveButton}>Guardar</Text>
           </TouchableOpacity>
         </View>
       </View>)
     } 
+    return null
+  }
+
+  setSaveDocument() {
+    if (JSON.parse(this.state.saved)) {
+      return(
+        <View style={styles.voiceControlView}>
+          <Text style={styles.mainButtonText}>El documento de voz ha sido guardado</Text>
+        </View>
+      )
+    }
     return null
   }
 
@@ -943,10 +977,12 @@ class BuyScreen extends Component {
           {this.setDateVoiceControl()}
           {this.setInvoiceNumberVoiceControl()}
           {this.setTotalVoiceControl()}
-          {this.setEmptyView()}
-          {this.setMenuButtons()}
+          {this.setSaveDocument()}
         </View>
         </ScrollView>
+        <View style={styles.setMenuButtons}>
+          {this.setMenuButtons()}
+        </View>
         <View style={styles.footBar}>
           <View style={styles.cameraIcon}>
           <Icon
@@ -1300,29 +1336,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
     height: 50
   },
-  navBarHeader: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 20
-  },
-  playButton: {
-    fontSize: 20,
-    color: "#000",
-    fontWeight: "bold",
-    alignSelf: "center",
-    paddingTop: 13,
-    paddingBottom: 2,
-    textTransform: "uppercase"
-  },
-  stopButton: {
-    fontSize: 20,
-    color: "#922B21",
-    fontWeight: "bold",
-    alignSelf: "center",
-    paddingTop: 13,
-    paddingBottom: 2,
-    textTransform: "uppercase"
-  },
   text: {
     fontSize: 17,
     textAlign: "center",
@@ -1349,13 +1362,6 @@ const styles = StyleSheet.create({
     color: "#000",
     fontWeight: 'bold',
   },
-  imageText: {
-    fontSize: 17,
-    textAlign: "center",
-    paddingTop: 15,
-    paddingBottom: 30,
-    color: "#000",
-  },
   twoColumnsInARow: {
     paddingTop: 30,
     paddingBottom: 20,
@@ -1373,19 +1379,11 @@ const styles = StyleSheet.create({
   mainButtonText: {
     fontSize: 17,
     textAlign: "center",
-    color: "#000",
+    color: "#2874A6",
     paddingTop: 10,
-    paddingBottom: 10,
+    paddingBottom: 30,
     fontWeight: 'bold',
-    width: "90%"
-  },
-  mainButtonTextLight: {
-    fontSize: 17,
-    textAlign: "center",
-    color: "#FFF",
-    paddingTop: 10,
-    paddingBottom: 10,
-    fontWeight: 'bold'
+    width: "100%"
   },
   saveButton: {
     fontSize: 17,
@@ -1435,45 +1433,6 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     borderRadius: 10
   },
-  buyButton: {
-    fontSize: 17,
-    backgroundColor: "#186A3B",
-    textTransform: "uppercase",
-    fontWeight: "bold",
-    color: "#fff",
-    paddingTop: 50,
-    paddingLeft: 50,
-    paddingRight: 50,
-    paddingBottom: 50,
-    textAlign: "center",
-    alignSelf: "center",
-  },
-  saleButton: {
-    fontSize: 17,
-    backgroundColor: "#2E86C1",
-    textTransform: "uppercase",
-    fontWeight: "bold",
-    color: "#fff",
-    paddingTop: 50,
-    paddingLeft: 50,
-    paddingRight: 50,
-    paddingBottom: 50,
-    textAlign: "center",
-    alignSelf: "center",
-  },
-  payButton: {
-    fontSize: 17,
-    backgroundColor: "#922B21",
-    textTransform: "uppercase",
-    fontWeight: "bold",
-    color: "#fff",
-    paddingTop: 50,
-    paddingLeft: 50,
-    paddingRight: 50,
-    paddingBottom: 50,
-    textAlign: "center",
-    alignSelf: "center",
-  },
   title: {
     textAlign: 'center',
     color: '#1B5E8B',
@@ -1505,29 +1464,13 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 25,
   },
-  howStart: {
-    paddingTop: 100,
-    alignItems: 'center',
-    textAlign: "center",
-    color: "#000",
-    fontSize: 20,
-  },
   voiceControlView: {
     flex: 1,
+    backgroundColor: "#FFF",
     paddingTop: 50,
     alignContent: "center",
     alignSelf: "center",
     width: "90%",
-  },
-  imagesBlock: {
-    alignSelf: "center",
-    backgroundColor: "#00749A",
-    paddingTop: 5,
-    paddingLeft: 5,
-    paddingRight: 5,
-    paddingBottom: 5,
-    width: "70%",
-    borderRadius: 10
   },
   cameraIcon: {
     backgroundColor: "#00749A",
@@ -1552,5 +1495,10 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     paddingRight: 15,
     paddingBottom: 15,
+  },
+  setMenuButtons: {
+    flex:1,
+    justifyContent: 'flex-end',
+    backgroundColor: "#fff",
   }
 });
