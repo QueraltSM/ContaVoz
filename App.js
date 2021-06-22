@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler} from 'react-native';
+import {StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView} from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { createStackNavigator } from 'react-navigation-stack';
@@ -17,7 +17,6 @@ class ResumeViewScreen extends Component {
       date: "",
       invoiceNumber: "",
       total: "",
-      showImages: false,
       continue: true,
       images: [],
       type: this.props.navigation.state.params.type,
@@ -71,24 +70,8 @@ class ResumeViewScreen extends Component {
     )
   }
 
-  showImages = async () => {
-    this.setState({showImages: JSON.stringify(true)})
-  }
-
-  hideImages = async () => {
-    this.setState({showImages: JSON.stringify(false)})
-  }
-
   setImages() {
-    if (!JSON.parse(this.state.showImages) && this.state.images.length > 0) {
-      return (
-      <View style={styles.imagesBlock}>
-        <TouchableOpacity onPress={this.showImages}>
-            <Text style={styles.mainButtonTextLight}>Imágenes del documento</Text>
-          </TouchableOpacity>
-        </View>)
-    }
-    if (JSON.parse(this.state.showImages) && this.state.images.length > 0) {
+    if (this.state.images.length > 0) {
       return (
         <View style={styles.imagesSection}>
           <FlatList 
@@ -114,33 +97,34 @@ class ResumeViewScreen extends Component {
   }
 
   setControlVoice(){
-    if (JSON.parse(this.state.showImages) && this.state.images.length > 0) {
-      return (<TouchableOpacity onPress={this.hideImages}>
-        <Text style={styles.mainButtonText}>Ver documento de voz</Text>
-      </TouchableOpacity>)
-    }
-    return(
-      <View style={styles.resumeView}>
-        <Text style={styles.resumeText}>Entidad:</Text>
-        <TextInput style={styles.changeTranscript}>{this.state.entity}</TextInput>
-        <Text style={styles.resumeText}>Fecha:</Text>
-        <TextInput style={styles.changeTranscript}>{this.state.date}</TextInput>
-        <Text style={styles.resumeText}>Número de factura:</Text>
-        <TextInput style={styles.changeTranscript}>{this.state.invoiceNumber}</TextInput>
-        <Text style={styles.resumeText}>Total:</Text>
-        <TextInput style={styles.changeTranscript}>{this.state.total}</TextInput>
-      </View>
-    )
+    if (this.state.entity.length>0) {
+      return(
+        <View style={styles.resumeView}>
+          <Text style={styles.mainButtonText}>Edite el documento si lo desea</Text>
+          <Text style={styles.resumeText}>Entidad</Text>
+          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.entity}</TextInput>
+          <Text style={styles.resumeText}>Fecha</Text>
+          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.date}</TextInput>
+          <Text style={styles.resumeText}>Número de factura</Text>
+          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.invoiceNumber}</TextInput>
+          <Text style={styles.resumeText}>Total</Text>
+          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.total}</TextInput>
+        </View>
+      )
+    } 
+    return null
   }
 
   render () {
     return (
       <View style={{flex: 1}}>
         {this.setMenu()}
+        <ScrollView>
         <View style={styles.sections}>
         {this.setImages()}
         {this.setControlVoice()}
         </View>
+        </ScrollView>
         <View style={styles.sendBar}>
           <TouchableOpacity onPress={this.sendDocument}><Text style={styles.saveText}>Enviar documento</Text></TouchableOpacity>
         </View>
@@ -380,7 +364,6 @@ class BuyScreen extends Component {
       setTotal: false,
       started: false,
       startVoice: false,
-      showImages: false,
       continue: true,
       images: []
     };
@@ -483,7 +466,6 @@ class BuyScreen extends Component {
 
   async _startRecognition(e) {
     this.setState({is_recording: JSON.stringify(true)})
-    this.setState({showImages: JSON.stringify(false)})
     this.setState({startVoice: JSON.stringify(true)})
     this.setState({
       recognized: '',
@@ -655,7 +637,6 @@ class BuyScreen extends Component {
     this.setState({finalView: false})
     this.setState({started: false})
     this.setState({startVoice: false})
-    this.setState({showImages: false})
     this.setState({images: []})
     await AsyncStorage.setItem("entity", "")
     await AsyncStorage.setItem("date", "")
@@ -746,7 +727,7 @@ class BuyScreen extends Component {
   }
 
   setEmptyView() {
-    if (!JSON.parse(this.state.showImages) && this.state.entity.length>0) {
+    if (this.state.entity.length>0) {
       return(<View style={styles.imagesSection}></View>)
     }
     return (<View></View>)
@@ -795,14 +776,8 @@ class BuyScreen extends Component {
     )
   }
 
-  showImages = async () => {
-    this.setState({showImages: JSON.stringify(true)})
-    this.setState({startVoice: JSON.stringify(false)})
-    this._stopRecognition()
-  }
-
   setImages() {
-    if (JSON.parse(this.state.showImages) && this.state.images.length > 0 && !JSON.parse(this.state.startVoice)) {
+    if (this.state.images.length > 0) {
       return (
         <View style={styles.imagesSection}>
           <FlatList 
@@ -827,29 +802,20 @@ class BuyScreen extends Component {
         </View>
       )
     }
-    if (this.state.images.length > 0 && (!JSON.parse(this.state.showImages) || JSON.parse(this.state.startVoice))) {
-      return (
-      <View style={styles.imagesBlock}>
-        <TouchableOpacity onPress={this.showImages}>
-            <Text style={styles.mainButtonTextLight}>Imágenes del documento</Text>
-          </TouchableOpacity>
-        </View>)
-    }
     return null
   }
 
   setEntityVoiceControl() {
-    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.startVoice) && this.state.entity.length == 0) {
+    if (this.state.started.length>0 && this.state.entity.length == 0) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Escuchando entidad...</Text>
       </View>)
     }
-    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.getEntity) && !JSON.parse(this.state.setEntity)) {
+    if (JSON.parse(this.state.getEntity) && !JSON.parse(this.state.setEntity)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para entidad</Text>
-        <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.entity}</Text>
-        <Text style={styles.text}>Texto interpretado:</Text><Text style={styles.transcript}>{this.state.entity} </Text>
-        <Text style={styles.transcript}></Text>
+        <Text style={styles.resultsText}>Texto escuchado: <Text style={styles.transcript}>{this.state.entity}</Text></Text>
+        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.entity} </Text></Text>
         <View style={styles.navBarButtons}>
         <TouchableOpacity onPress={this._cancel}>
         <Text style={styles.exitButton}>Cancelar</Text>
@@ -865,22 +831,22 @@ class BuyScreen extends Component {
             <Text style={styles.saveButton}>Continuar</Text>
           </TouchableOpacity>
         </View>
-      </View>)
+        </View>)
     } 
     return null
   }
 
   setDateVoiceControl() {
-    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.continue) && this.state.date.length==0 && this.state.entity.length>0 && !JSON.parse(this.state.getDate)) {
+    if (JSON.parse(this.state.continue) && this.state.date.length==0 && this.state.entity.length>0 && !JSON.parse(this.state.getDate)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Escuchando fecha...</Text>
       </View>)
     }
-    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.getDate) && !JSON.parse(this.state.setDate)) {
+    if (JSON.parse(this.state.getDate) && !JSON.parse(this.state.setDate)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para fecha</Text>
-        <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.date}</Text>
-        <Text style={styles.text}>Texto interpretado:</Text><Text style={styles.transcript}>{this.state.date} </Text>
+        <Text style={styles.resultsText}>Texto escuchado: <Text style={styles.transcript}>{this.state.date}</Text></Text>
+        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.date} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
         <TouchableOpacity onPress={this._cancel}>
@@ -903,12 +869,12 @@ class BuyScreen extends Component {
   }
 
   setInvoiceNumberVoiceControl() {
-    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.continue) && this.state.invoiceNumber.length==0 && this.state.date.length>0 && !JSON.parse(this.state.getInvoiceNumber)) {
+    if (JSON.parse(this.state.continue) && this.state.invoiceNumber.length==0 && this.state.date.length>0 && !JSON.parse(this.state.getInvoiceNumber)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Escuchando número de factura...</Text>
       </View>)
     }
-    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.getInvoiceNumber) && !JSON.parse(this.state.setInvoiceNumber)) {
+    if (JSON.parse(this.state.getInvoiceNumber) && !JSON.parse(this.state.setInvoiceNumber)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para factura</Text>
         <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.invoiceNumber}</Text>
@@ -935,12 +901,12 @@ class BuyScreen extends Component {
   }
 
   setTotalVoiceControl() {
-    if (!JSON.parse(this.state.showImages) && JSON.parse(this.state.continue) && this.state.total.length==0 && this.state.invoiceNumber.length>0 && !JSON.parse(this.state.getTotal)) {
+    if (JSON.parse(this.state.continue) && this.state.total.length==0 && this.state.invoiceNumber.length>0 && !JSON.parse(this.state.getTotal)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Escuchando total...</Text>
       </View>)
     }
-    if (!JSON.parse(this.state.showImages) && this.state.total.length>0) {
+    if (this.state.total.length>0) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para el total</Text>
         <Text style={styles.text}>Texto escuchado:</Text><Text style={styles.transcript}>{this.state.total}</Text>
@@ -970,6 +936,7 @@ class BuyScreen extends Component {
     return (
       <View style={{flex: 1}}>
         {this.setMenu()}
+        <ScrollView style={{backgroundColor: "#fff"}}>
         <View style={styles.sections}>
           {this.setImages()}
           {this.setEntityVoiceControl()}
@@ -979,6 +946,7 @@ class BuyScreen extends Component {
           {this.setEmptyView()}
           {this.setMenuButtons()}
         </View>
+        </ScrollView>
         <View style={styles.footBar}>
           <View style={styles.cameraIcon}>
           <Icon
@@ -1101,7 +1069,7 @@ class MainScreen extends Component {
                 size={40}
               />
               </View>
-            <Text style={styles.mainButtonText}>Seguir compra</Text>
+            <Text style={styles.mainButton}>Seguir compra</Text>
           </TouchableOpacity>
           </View>)}
         {!this.state.isBuy && 
@@ -1115,7 +1083,7 @@ class MainScreen extends Component {
                   size={40}
                 />
                 </View>
-              <Text style={styles.mainButtonText}>Compra</Text>
+              <Text style={styles.mainButton}>Compra</Text>
             </TouchableOpacity>
             </View>)}
             <Icon
@@ -1135,7 +1103,7 @@ class MainScreen extends Component {
                 size={40}
               />
               </View>
-            <Text style={styles.mainButtonText}>Seguir venta</Text>
+            <Text style={styles.mainButton}>Seguir venta</Text>
           </TouchableOpacity>
           </View>)}
         {!this.state.isSale && 
@@ -1149,7 +1117,7 @@ class MainScreen extends Component {
                   size={40}
                 />
                 </View>
-              <Text style={styles.mainButtonText}>Venta</Text>
+              <Text style={styles.mainButton}>Venta</Text>
             </TouchableOpacity>
             </View>)}
           </View>
@@ -1165,7 +1133,7 @@ class MainScreen extends Component {
                 size={40}
               />
               </View>
-            <Text style={styles.mainButtonText}>Seguir pago</Text>
+            <Text style={styles.mainButton}>Seguir pago</Text>
           </TouchableOpacity>
           </View>)}
         {!this.state.isPay && 
@@ -1179,7 +1147,7 @@ class MainScreen extends Component {
                   size={40}
                 />
                 </View>
-              <Text style={styles.mainButtonText}>Pago</Text>
+              <Text style={styles.mainButton}>Pago</Text>
             </TouchableOpacity>
             </View>)}
             <Icon
@@ -1197,7 +1165,7 @@ class MainScreen extends Component {
                 size={40}
               />
               </View>
-            <Text style={styles.mainButtonText}>Ayuda</Text>
+            <Text style={styles.mainButton}>Ayuda</Text>
           </TouchableOpacity>
       </View>
       </View>
@@ -1254,7 +1222,8 @@ const styles = StyleSheet.create({
   changeTranscript: {
     color: '#000',
     fontSize: 20,
-    fontStyle: 'italic'
+    fontStyle: 'italic',
+    width: "90%"
   },
   navBar: {
     alignItems: 'center',
@@ -1266,7 +1235,7 @@ const styles = StyleSheet.create({
   },
   navBarButtons: {
     backgroundColor:"#FFF", 
-    paddingTop: 40,
+    paddingTop: 20,
     paddingBottom: 50,
     flexDirection:'row',
     alignSelf: 'center',
@@ -1361,6 +1330,13 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     color: "#000",
   },
+  resultsText: {
+    fontSize: 17,
+    paddingTop: 20,
+    paddingBottom: 10,
+    color: "#000",
+    textAlign: "center",
+  },
   resumeView: {
     paddingTop: 40,
     paddingLeft: 40,
@@ -1386,13 +1362,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignSelf: "center",
   },
+  mainButton: {
+    fontSize: 17,
+    textAlign: "center",
+    color: "#000",
+    paddingTop: 10,
+    paddingBottom: 10,
+    fontWeight: 'bold',
+  },
   mainButtonText: {
     fontSize: 17,
     textAlign: "center",
     color: "#000",
     paddingTop: 10,
     paddingBottom: 10,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    width: "90%"
   },
   mainButtonTextLight: {
     fontSize: 17,
@@ -1529,7 +1514,10 @@ const styles = StyleSheet.create({
   },
   voiceControlView: {
     flex: 1,
-    paddingTop: 40
+    paddingTop: 50,
+    alignContent: "center",
+    alignSelf: "center",
+    width: "90%",
   },
   imagesBlock: {
     alignSelf: "center",
