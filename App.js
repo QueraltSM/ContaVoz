@@ -7,6 +7,150 @@ import { Icon, withTheme } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 
+class DictionaryViewScreen extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      words: [],
+      addKey: "",
+      addValue: ""
+    };
+    this.init()
+  }
+
+  async init() {
+    await AsyncStorage.getItem("words").then((value) => {
+      if (value != null) {
+        this.setState({ words: JSON.parse(value) })
+      }
+    })
+  }
+
+  showAlert = (title, message) => {
+    Alert.alert(
+      title,
+      message,
+      [
+        {
+          text: "Ok",
+          style: "cancel"
+        },
+      ],
+      { cancelable: false }
+    );
+  }
+
+  _addWord = () => {
+    if (this.state.addKey == "" || this.state.addValue == "") {
+      this.showAlert("Error", "Complete todos los campos")
+    } else {
+      var entered = false
+      var arrayWords =  this.state.words
+      for (let i = 0; i < this.state.words.length; i++) {
+        if ( this.state.words[i].key == this.state.addKey) {
+          entered = true
+        }
+      }
+      if (!entered) {
+        arrayWords.push({
+          key: this.state.addKey,
+          value: this.state.addValue
+        })
+        this.setState({ words: arrayWords })
+      }
+      this.setState({ addKey: "" })
+      this.setState({ addValue: "" })
+    }
+  }
+
+  setMenuButtons() {
+      return(
+        <View style={styles.resumeView}>
+          <Text style={styles.resumeText}>Palabra</Text>
+          <TextInput value={this.state.addKey} multiline={true} style={styles.changeTranscript} placeholder="Macro" onChangeText={addKey => this.setState({addKey})}></TextInput>
+          <Text style={styles.resumeText}>Valor que debe tomar</Text>
+          <TextInput value={this.state.addValue} multiline={true} style={styles.changeTranscript} placeholder="Makro" onChangeText={addValue => this.setState({addValue})}></TextInput>
+          <Text style={styles.transcript}></Text>
+          <TouchableOpacity onPress={this._addWord}>
+            <Text style={styles.saveNewValue}>Añadir palabra</Text>
+          </TouchableOpacity>
+        </View>
+      )
+  }
+
+  setMenu() {
+    return(
+      <View style={styles.menuViewShort}>
+        <View style={styles.accountingViewShow}>
+        <Icon
+            name='book'
+            type='font-awesome'
+            color='#000'
+            size={45}
+          />
+          </View>
+        <Text style={styles.mainHeader}>Diccionario</Text>
+      </View>
+    )
+  }
+
+  deleteWord = (item) => {
+    console.log("ITEM:"+ item.key + "-" + item.value)
+
+  }
+
+  setWords() {
+    if (this.state.words.length > 0) {
+      return (
+        <View style={styles.resumeView}>
+          <Text style={styles.title}>Listado de palabras</Text>
+        <FlatList 
+          vertical
+          showsVerticalScrollIndicator={false}
+          data={this.state.words}
+          renderItem={({ item }) => (
+            <View style={styles.wordsBox}>
+            <Text style={styles.dictionaryValues}>{item.key } <Icon
+              name='arrow-circle-right'
+              type='font-awesome'
+              color='#154360'
+              size={15}
+              onPress={this.takePhoto}
+            /> {item.value} </Text>
+            <View style={styles.delIcon}>            
+              <TouchableOpacity onPress={() => this.deleteWord(item)}>
+                <Icon
+                  name='times'
+                  type='font-awesome'
+                  color='#B03A2E'
+                  size={28}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      />
+      </View>
+      )
+    }
+    return null
+  }
+
+  render() {
+    return (
+      <View style={{flex: 1}}>
+        {this.setMenu()}
+        <ScrollView style={{backgroundColor: "#fff"}}>
+        <View style={styles.sections}>
+          {this.setMenuButtons()}
+          {this.setWords()}
+        </View>
+        </ScrollView>
+      </View>
+    );
+  }
+}
+
 class ResumeViewScreen extends Component {
 
   constructor(props) {
@@ -14,6 +158,7 @@ class ResumeViewScreen extends Component {
     this.state = {
       id: "",
       entity: "",
+      nif: "",
       date: "",
       invoiceNumber: "",
       total: "",
@@ -28,6 +173,11 @@ class ResumeViewScreen extends Component {
     await AsyncStorage.getItem("entity").then((value) => {
       if (value != null) {
         this.setState({ entity: value })
+      }
+    })
+    await AsyncStorage.getItem("nif").then((value) => {
+      if (value != null) {
+        this.setState({ nif: value })
       }
     })
     await AsyncStorage.getItem("date").then((value) => {
@@ -91,30 +241,13 @@ class ResumeViewScreen extends Component {
     return null
   }
 
+  saveEntity = async () => {
+    
+  }
+
+
   sendDocument = async () => {
     alert("Esta acción está desactivada por el momento")
-      /*const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "Enviar documento",
-          "¿Está seguro que desea enviar este documento?",
-          [
-            {
-              text: 'Sí',
-              onPress: () => {
-                resolve(this.goResumeView());
-              },
-            },
-            {
-              text: 'No',
-              onPress: () => {
-                resolve(resolve("No"));
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-        await AsyncAlert();*/
   }
 
   setControlVoice(){
@@ -124,6 +257,9 @@ class ResumeViewScreen extends Component {
           <Text style={styles.mainButtonText}>Edite el documento generado</Text>
           <Text style={styles.resumeText}>Entidad</Text>
           <TextInput multiline={true} style={styles.changeTranscript}>{this.state.entity}</TextInput>
+          <TouchableOpacity onPress={this.saveEntity}><Text style={styles.saveNewValue}>Guardar entidad</Text></TouchableOpacity>
+          <Text style={styles.resumeText}>NIF</Text>
+          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.nif}</TextInput>
           <Text style={styles.resumeText}>Fecha</Text>
           <TextInput multiline={true} style={styles.changeTranscript}>{this.state.date}</TextInput>
           <Text style={styles.resumeText}>Número de factura</Text>
@@ -142,8 +278,8 @@ class ResumeViewScreen extends Component {
         {this.setMenu()}
         <ScrollView style={{backgroundColor: "#fff"}}>
         <View style={styles.sections}>
-        {this.setImages()}
-        {this.setControlVoice()}
+          {this.setImages()}
+          {this.setControlVoice()}
         </View>
         </ScrollView>
         <View style={styles.sendBar}>
@@ -372,11 +508,14 @@ class BuyScreen extends Component {
       results: [],
       is_recording: false,
       entity: "",
+      nif: "",
       date: "",
       invoiceNumber: "",
       total: "",
       getEntity: false,
       setEntity: false,
+      getNIF: false,
+      setNIF: false,
       getDate: false,
       setDate: false,
       getInvoiceNumber: false,
@@ -407,6 +546,11 @@ class BuyScreen extends Component {
     await AsyncStorage.getItem("entity").then((value) => {
       if (value != null) {
         this.setState({ entity: value })
+      }
+    })
+    await AsyncStorage.getItem("nif").then((value) => {
+      if (value != null) {
+        this.setState({ nif: value })
       }
     })
     await AsyncStorage.getItem("date").then((value) => {
@@ -466,23 +610,30 @@ class BuyScreen extends Component {
       });
       this.setState({getEntity: true})
     } else {
-      if (this.state.date == "") {
+      if (this.state.nif == "") {
         this.setState({
-          date: word[0],
+          nif: word[0],
         });
-        this.setState({getDate: true})
+        this.setState({getNIF: true})
       } else {
-        if (this.state.invoiceNumber == "") {
+        if (this.state.date == "") {
           this.setState({
-            invoiceNumber: word[0],
+            date: word[0],
           });
-          this.setState({getInvoiceNumber: true})
+          this.setState({getDate: true})
         } else {
-          if (this.state.total == "") {
+          if (this.state.invoiceNumber == "") {
             this.setState({
-              total: word[0],
+              invoiceNumber: word[0],
             });
-            this.setState({getTotal: true})
+            this.setState({getInvoiceNumber: true})
+          } else {
+            if (this.state.total == "") {
+              this.setState({
+                total: word[0],
+              });
+              this.setState({getTotal: true})
+            }
           }
         }
       } 
@@ -530,7 +681,7 @@ class BuyScreen extends Component {
   }
 
   setMicrophoneIcon() {
-    if (JSON.parse(this.state.is_recording)) {
+    if (JSON.parse(this.state.is_recording) && !JSON.parse(this.state.saved)) {
       return <Icon
         name='microphone-slash'
         type='font-awesome'
@@ -548,14 +699,6 @@ class BuyScreen extends Component {
     />
   }
 
-  setEntity = () => {
-    this.setState({setEntity: true})
-    this.saveInMemory("isBuy", JSON.stringify(true))
-    this.saveInMemory("entity", this.state.entity)
-    this.setState({is_recording: true})
-    this._continue()
-  }
-
   cancelEntity = () => {
     this.setState({setEntity: false})
     this.setState({is_recording: true})
@@ -563,11 +706,11 @@ class BuyScreen extends Component {
     this._startRecognition()
   }
 
-  setDate = () => {
-    this.setState({setDate: true})
-    this.saveInMemory("date", this.state.date)
+  cancelNIF = () => {
+    this.setState({setNIF: false})
     this.setState({is_recording: true})
-    this._continue()
+    this.setState({nif: ""})
+    this._startRecognition()
   }
 
   cancelDate = () => {
@@ -577,25 +720,11 @@ class BuyScreen extends Component {
     this._startRecognition()
   }
 
-  setInvoiceNumber = () => {
-    this.setState({setInvoiceNumber: true})
-    this.setState({is_recording: true})
-    this.saveInMemory("invoiceNumber", this.state.invoiceNumber)
-    this._continue()
-  }
-
   cancelInvoiceNumber = () => {
     this.setState({setInvoiceNumber: false})
     this.setState({is_recording: true})
     this.setState({invoiceNumber: ""})
     this._startRecognition()
-  }
-
-  setTotal = () => {
-    this.setState({setTotal: true})
-    this.saveInMemory("total", this.state.total)
-    this.setState({saved: true})
-    this.saveInMemory("saved", JSON.stringify(true))
   }
 
   cancelTotal= () => {
@@ -606,6 +735,43 @@ class BuyScreen extends Component {
     this.saveInMemory("saved", JSON.stringify(false))
     this._startRecognition()
   }
+
+  setEntity = () => {
+    this.setState({setEntity: true})
+    this.saveInMemory("isBuy", JSON.stringify(true))
+    this.saveInMemory("entity", this.state.entity)
+    this.setState({is_recording: true})
+    this._continue()
+  }
+
+  setNIF = () => {
+    this.setState({setNIF: true})
+    this.saveInMemory("nif", this.state.nif)
+    this.setState({is_recording: true})
+    this._continue()
+  }
+
+  setDate = () => {
+    this.setState({setDate: true})
+    this.saveInMemory("date", this.state.date)
+    this.setState({is_recording: true})
+    this._continue()
+  }
+
+  setInvoiceNumber = () => {
+    this.setState({setInvoiceNumber: true})
+    this.setState({is_recording: true})
+    this.saveInMemory("invoiceNumber", this.state.invoiceNumber)
+    this._continue()
+  }
+
+  setTotal = () => {
+    this.setState({setTotal: true})
+    this.saveInMemory("total", this.state.total)
+    this.setState({saved: true})
+    this.saveInMemory("saved", JSON.stringify(true))
+  }
+
 
    takePhoto = async() =>{
     let options = {
@@ -680,12 +846,15 @@ class BuyScreen extends Component {
     this.setState({started: ""})
     this.setState({results: ""})
     this.setState({is_recording: false})
-    this.setState({entity: ""})
+    this.setState({entity: "" })
+    this.setState({nif: "" })
     this.setState({date: ""})
     this.setState({invoiceNumber: ""})
     this.setState({total: ""})
     this.setState({getEntity: false})
     this.setState({setEntity: false})
+    this.setState({getNIF: false})
+    this.setState({setNIF: false})
     this.setState({getDate: false})
     this.setState({setDate: false})
     this.setState({getInvoiceNumber: false})
@@ -697,6 +866,7 @@ class BuyScreen extends Component {
     this.setState({startVoice: false})
     this.setState({images: []})
     await AsyncStorage.setItem("entity", "")
+    await AsyncStorage.setItem("nif", "")
     await AsyncStorage.setItem("date", "")
     await AsyncStorage.setItem("invoiceNumber", "")
     await AsyncStorage.setItem("total", "")
@@ -816,7 +986,7 @@ class BuyScreen extends Component {
                       key={item}
                       style={{
                         width:300,
-                        height:400,
+                        height:300,
                       }}
                     />
                   </TouchableOpacity>
@@ -839,6 +1009,7 @@ class BuyScreen extends Component {
         <Text style={styles.title}>Resultados para entidad</Text>
         <Text style={styles.resultsText}>Texto escuchado: <Text style={styles.transcript}>{this.state.entity}</Text></Text>
         <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.entity} </Text></Text>
+        <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
         <TouchableOpacity onPress={this.cancelEntity}>
         <Text style={styles.exitButton}>Repetir</Text>
@@ -859,8 +1030,40 @@ class BuyScreen extends Component {
     return null
   }
 
+  setNIFVoiceControl() {
+    if (JSON.parse(this.state.is_recording) && this.state.nif.length==0 && this.state.entity.length>0 && !JSON.parse(this.state.getNIF)) {
+      return (<View style={styles.voiceControlView}>
+        <Text style={styles.title}>Escuchando NIF...</Text>
+      </View>)
+    }
+    if (JSON.parse(this.state.getNIF) && !JSON.parse(this.state.setNIF)) {
+      return (<View style={styles.voiceControlView}>
+        <Text style={styles.title}>Resultados para NIF</Text>
+        <Text style={styles.resultsText}>Texto escuchado: <Text style={styles.transcript}>{this.state.nif}</Text></Text>
+        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.nif} </Text></Text>
+        <Text style={styles.transcript}></Text>
+        <View style={styles.navBarButtons}>
+          <TouchableOpacity onPress={this.cancelNIF}>
+            <Text style={styles.exitButton}>Repetir</Text>
+          </TouchableOpacity>
+          <Icon
+          name='window-close'
+          type='font-awesome'
+          color='#FFF'
+          size={32}
+          />
+          <Text style={styles.transcript}></Text>
+          <TouchableOpacity onPress={this.setNIF}>
+            <Text style={styles.saveButton}>Guardar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>)
+    } 
+    return null
+  }
+
   setDateVoiceControl() {
-    if (JSON.parse(this.state.is_recording) && this.state.date.length==0 && this.state.entity.length>0 && !JSON.parse(this.state.getDate)) {
+    if (JSON.parse(this.state.is_recording) && this.state.date.length==0 && this.state.nif.length>0 && !JSON.parse(this.state.getDate)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Escuchando fecha...</Text>
       </View>)
@@ -894,7 +1097,7 @@ class BuyScreen extends Component {
   setInvoiceNumberVoiceControl() {
     if (JSON.parse(this.state.is_recording) && this.state.invoiceNumber.length==0 && this.state.date.length>0 && !JSON.parse(this.state.getInvoiceNumber)) {
       return (<View style={styles.voiceControlView}>
-        <Text style={styles.title}>Escuchando nº de factura...</Text>
+        <Text style={styles.title}>Escuchando nº factura...</Text>
       </View>)
     }
     if (JSON.parse(this.state.getInvoiceNumber) && !JSON.parse(this.state.setInvoiceNumber)) {
@@ -955,11 +1158,14 @@ class BuyScreen extends Component {
     return null
   }
 
+
   setSaveDocument() {
     if (JSON.parse(this.state.saved)) {
       return(
         <View style={styles.voiceControlView}>
-          <Text style={styles.mainButtonText}>El documento de voz ha sido guardado</Text>
+          <TouchableOpacity onPress={this._finish}>
+            <Text style={styles.mainButtonText}>Editar documento de voz</Text>
+          </TouchableOpacity>
         </View>
       )
     }
@@ -972,17 +1178,16 @@ class BuyScreen extends Component {
         {this.setMenu()}
         <ScrollView style={{backgroundColor: "#fff"}}>
         <View style={styles.sections}>
+          {this.setMenuButtons()}
           {this.setImages()}
+          {this.setSaveDocument()}
           {this.setEntityVoiceControl()}
+          {this.setNIFVoiceControl()}
           {this.setDateVoiceControl()}
           {this.setInvoiceNumberVoiceControl()}
           {this.setTotalVoiceControl()}
-          {this.setSaveDocument()}
         </View>
         </ScrollView>
-        <View style={styles.setMenuButtons}>
-          {this.setMenuButtons()}
-        </View>
         <View style={styles.footBar}>
           <View style={styles.cameraIcon}>
           <Icon
@@ -1075,9 +1280,8 @@ class MainScreen extends Component {
     this.props.navigation.push('Pay')*/
   }
 
-  goHelp = () => {
-    alert("Ayuda no se encuentra activo de momento")
-    //this.props.navigation.push('Help')
+  goDictionary = () => {
+    this.props.navigation.push('DictionaryView')
   }
 
   render () {
@@ -1192,16 +1396,16 @@ class MainScreen extends Component {
                 color='#FFF'
                 size={40}
               />
-          <TouchableOpacity onPress={this.goHelp}>
+          <TouchableOpacity onPress={this.goDictionary}>
             <View style={styles.mainIcon}>
               <Icon
-                name='info'
+                name='book'
                 type='font-awesome'
                 color='#FFF'
                 size={40}
               />
               </View>
-            <Text style={styles.mainButton}>Ayuda</Text>
+            <Text style={styles.mainButton}>Diccionario</Text>
           </TouchableOpacity>
       </View>
       </View>
@@ -1213,6 +1417,13 @@ export class DocImage {
   constructor(id, uri) {
     this.id = id;
     this.uri = uri;
+  }
+}
+
+export class Dictionary {
+  constructor(key, value) {
+    this.key = key;
+    this.value = value;
   }
 }
 
@@ -1245,6 +1456,13 @@ const AppNavigator = createStackNavigator({
       animationEnabled: false
     }
   },
+  DictionaryView: {    
+    screen: DictionaryViewScreen,
+    navigationOptions: {
+      header: null,
+      animationEnabled: false
+    }
+  },
 });
 export default createAppContainer(AppNavigator);
 
@@ -1270,8 +1488,8 @@ const styles = StyleSheet.create({
     height: 50
   },
   navBarButtons: {
+    flex:1,
     backgroundColor:"#FFF", 
-    paddingTop: 20,
     paddingBottom: 50,
     flexDirection:'row',
     alignSelf: 'center',
@@ -1355,11 +1573,30 @@ const styles = StyleSheet.create({
     paddingLeft: 40,
     backgroundColor: "#FFF"
   },
+  wordsBox: {
+    flexDirection:'row',
+    borderColor:"#FFF",
+    width: "90%",
+    borderWidth:1,
+  },
   resumeText: {
     fontSize: 20,
     textAlign: "justify",
     paddingTop: 20,
     color: "#000",
+    fontWeight: 'bold',
+  },
+  dictionaryText:{
+    fontSize: 20,
+    textAlign: "justify",
+    color: "#000",
+    fontWeight: 'bold',
+  },
+  dictionaryValues: {
+    fontSize: 20,
+    textAlign: "justify",
+    paddingTop: 20,
+    color: "#154360",
     fontWeight: 'bold',
   },
   twoColumnsInARow: {
@@ -1380,7 +1617,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     textAlign: "center",
     color: "#2874A6",
-    paddingTop: 10,
     paddingBottom: 30,
     fontWeight: 'bold',
     width: "100%"
@@ -1388,6 +1624,13 @@ const styles = StyleSheet.create({
   saveButton: {
     fontSize: 17,
     textAlign: "center",
+    fontWeight: 'bold',
+    color: "#2E8B57",
+    fontWeight: 'bold',
+  },
+  saveNewValue: {
+    fontSize: 17,
+    textAlign: "left",
     fontWeight: 'bold',
     color: "#2E8B57",
     fontWeight: 'bold',
@@ -1500,5 +1743,12 @@ const styles = StyleSheet.create({
     flex:1,
     justifyContent: 'flex-end',
     backgroundColor: "#fff",
+    paddingBottom: 20
+  },
+  delIcon: {
+    paddingLeft: 5,
+    backgroundColor:"#FFF", 
+    justifyContent: 'flex-end',
+    paddingTop: 12,
   }
 });
