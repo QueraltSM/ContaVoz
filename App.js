@@ -40,7 +40,7 @@ class DictionaryViewScreen extends Component {
     );
   }
 
-  _addWord = () => {
+  _addWord = async () => {
     if (this.state.addKey == "" || this.state.addValue == "") {
       this.showAlert("Error", "Complete todos los campos")
     } else {
@@ -57,6 +57,7 @@ class DictionaryViewScreen extends Component {
           value: this.state.addValue
         })
         this.setState({ words: arrayWords })
+        await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
       }
       this.setState({ addKey: "" })
       this.setState({ addValue: "" })
@@ -80,7 +81,7 @@ class DictionaryViewScreen extends Component {
 
   setMenu() {
     return(
-      <View style={styles.menuViewShort}>
+      <View style={{backgroundColor:"#FFF"}}>
         <View style={styles.accountingViewShow}>
         <Icon
             name='book'
@@ -94,30 +95,33 @@ class DictionaryViewScreen extends Component {
     )
   }
 
-  deleteWord = (item) => {
-    console.log("ITEM:"+ item.key + "-" + item.value)
-
+  deleteWord = async (item) => {
+    var arrayWords = []
+    for (let i = 0; i < this.state.words.length; i++) {
+      if ( this.state.words[i].key != item.key) {
+        arrayWords.push({
+          key: this.state.words[i].key,
+          value: this.state.words[i].value
+        })
+      }
+    }
+    this.setState({ words: arrayWords })
+    await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
   }
 
   setWords() {
     if (this.state.words.length > 0) {
       return (
         <View style={styles.resumeView}>
-          <Text style={styles.title}>Listado de palabras</Text>
+          <Text style={styles.showTitle}>Listado de palabras</Text>
         <FlatList 
           vertical
           showsVerticalScrollIndicator={false}
           data={this.state.words}
           renderItem={({ item }) => (
             <View style={styles.wordsBox}>
-            <Text style={styles.dictionaryValues}>{item.key } <Icon
-              name='arrow-circle-right'
-              type='font-awesome'
-              color='#154360'
-              size={15}
-              onPress={this.takePhoto}
-            /> {item.value} </Text>
-            <View style={styles.delIcon}>            
+            <Text style={styles.dictionaryValues}>'{item.key}' es {item.value}</Text>             
+             <View style={styles.delIcon}>            
               <TouchableOpacity onPress={() => this.deleteWord(item)}>
                 <Icon
                   name='times'
@@ -141,7 +145,7 @@ class DictionaryViewScreen extends Component {
       <View style={{flex: 1}}>
         {this.setMenu()}
         <ScrollView style={{backgroundColor: "#fff"}}>
-        <View style={styles.sections}>
+        <View style={{paddingBottom: 100}}>
           {this.setMenuButtons()}
           {this.setWords()}
         </View>
@@ -157,49 +161,15 @@ class ResumeViewScreen extends Component {
     super(props);
     this.state = {
       id: "",
-      entity: "",
-      nif: "",
-      date: "",
-      invoiceNumber: "",
-      total: "",
-      images: [],
+      entity: this.props.navigation.state.params.entity,
+      nif: this.props.navigation.state.params.nif,
+      date: this.props.navigation.state.params.date,
+      invoiceNumber: this.props.navigation.state.params.invoiceNumber,
+      total: this.props.navigation.state.params.total,
+      images:  this.props.navigation.state.params.images,
       type: this.props.navigation.state.params.type,
       back: this.props.navigation.state.params.back,
     };
-    this.init()
-  }
-
-  async init() {
-    await AsyncStorage.getItem("entity").then((value) => {
-      if (value != null) {
-        this.setState({ entity: value })
-      }
-    })
-    await AsyncStorage.getItem("nif").then((value) => {
-      if (value != null) {
-        this.setState({ nif: value })
-      }
-    })
-    await AsyncStorage.getItem("date").then((value) => {
-      if (value != null) {
-        this.setState({ date: value })
-      }
-    })
-    await AsyncStorage.getItem("invoiceNumber").then((value) => {
-      if (value != null) {
-        this.setState({ invoiceNumber: value })
-      }
-    })
-    await AsyncStorage.getItem("total").then((value) => {
-      if (value != null) {
-        this.setState({ total: value })
-      }
-    })
-    await AsyncStorage.getItem("images").then((value) => {
-      if (value != null) {
-        this.setState({ images: JSON.parse(value) })
-      }
-    })
   }
 
   componentDidMount(){
@@ -241,35 +211,46 @@ class ResumeViewScreen extends Component {
     return null
   }
 
-  saveEntity = async () => {
-    
-  }
-
-
   sendDocument = async () => {
     alert("Esta acción está desactivada por el momento")
   }
 
   setControlVoice(){
-    if (this.state.entity.length>0) {
       return(
         <View style={styles.resumeView}>
-          <Text style={styles.mainButtonText}>Edite el documento generado</Text>
-          <Text style={styles.resumeText}>Entidad</Text>
-          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.entity}</TextInput>
-          <TouchableOpacity onPress={this.saveEntity}><Text style={styles.saveNewValue}>Guardar entidad</Text></TouchableOpacity>
-          <Text style={styles.resumeText}>NIF</Text>
-          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.nif}</TextInput>
-          <Text style={styles.resumeText}>Fecha</Text>
-          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.date}</TextInput>
-          <Text style={styles.resumeText}>Número de factura</Text>
-          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.invoiceNumber}</TextInput>
-          <Text style={styles.resumeText}>Total</Text>
-          <TextInput multiline={true} style={styles.changeTranscript}>{this.state.total}</TextInput>
+          {this.state.entity.length > 0 && 
+          (<View>
+            <Text style={styles.mainButtonText}>Edite el documento generado</Text>
+            <Text style={styles.resumeText}>Entidad</Text>
+            <TextInput multiline={true} style={styles.changeTranscript}>{this.state.entity}</TextInput>
+            </View>
+          )}
+          {this.state.nif.length > 0 &&
+            (<View>
+              <Text style={styles.resumeText}>NIF</Text>
+              <TextInput multiline={true} style={styles.changeTranscript}>{this.state.nif}</TextInput>
+              </View>
+          )}
+          {this.state.date.length > 0 &&
+            (<View>
+              <Text style={styles.resumeText}>Fecha</Text>
+              <TextInput multiline={true} style={styles.changeTranscript}>{this.state.date}</TextInput>
+              </View>
+          )}
+          {this.state.invoiceNumber.length > 0 &&
+            (<View>
+              <Text style={styles.resumeText}>Nº factura</Text>
+              <TextInput multiline={true} style={styles.changeTranscript}>{this.state.invoiceNumber}</TextInput>
+              </View>
+          )}
+          {this.state.total.length > 0 &&
+            (<View>
+              <Text style={styles.resumeText}>Total</Text>
+              <TextInput multiline={true} style={styles.changeTranscript}>{this.state.total}</TextInput>
+              </View>
+          )}
         </View>
       )
-    } 
-    return null
   }
 
   render () {
@@ -512,6 +493,11 @@ class BuyScreen extends Component {
       date: "",
       invoiceNumber: "",
       total: "",
+      interpretedEntity: "",
+      interpretedNif: "",
+      interpretedDate: "",
+      interpretedInvoiceNumber: "",
+      interpretedTotal: "",
       getEntity: false,
       setEntity: false,
       getNIF: false,
@@ -524,8 +510,9 @@ class BuyScreen extends Component {
       setTotal: false,
       started: false,
       startVoice: false,
-      saved: false,
-      images: []
+      saved: true,
+      images: [],
+      words: []
     };
     Voice.onSpeechStart = this.onSpeechStart.bind(this);
     Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
@@ -543,29 +530,9 @@ class BuyScreen extends Component {
   }
 
   async init() {
-    await AsyncStorage.getItem("entity").then((value) => {
+    await AsyncStorage.getItem("saved").then((value) => {
       if (value != null) {
-        this.setState({ entity: value })
-      }
-    })
-    await AsyncStorage.getItem("nif").then((value) => {
-      if (value != null) {
-        this.setState({ nif: value })
-      }
-    })
-    await AsyncStorage.getItem("date").then((value) => {
-      if (value != null) {
-        this.setState({ date: value })
-      }
-    })
-    await AsyncStorage.getItem("invoiceNumber").then((value) => {
-      if (value != null) {
-        this.setState({ invoiceNumber: value })
-      }
-    })
-    await AsyncStorage.getItem("total").then((value) => {
-      if (value != null) {
-        this.setState({ total: value })
+        this.setState({ saved: JSON.parse(value) })
       }
     })
     await AsyncStorage.getItem("images").then((value) => {
@@ -573,14 +540,64 @@ class BuyScreen extends Component {
         this.setState({ images: JSON.parse(value) })
       }
     })
+    await AsyncStorage.getItem("entity").then((value) => {
+      if (value != null) {
+        this.setState({ entity: value })
+      }
+    })
+    await AsyncStorage.getItem("interpretedEntity").then((value) => {
+      if (value != null) {
+        this.setState({ interpretedEntity: value })
+      }
+    })
+    await AsyncStorage.getItem("nif").then((value) => {
+      if (value != null) {
+        this.setState({ nif: value })
+      }
+    })
+    await AsyncStorage.getItem("interpretedNif").then((value) => {
+      if (value != null) {
+        this.setState({ interpretedNif: value })
+      }
+    })
+    await AsyncStorage.getItem("date").then((value) => {
+      if (value != null) {
+        this.setState({ date: value })
+      }
+    })
+    await AsyncStorage.getItem("interpretedDate").then((value) => {
+      if (value != null) {
+        this.setState({ interpretedDate: value })
+      }
+    })
+    await AsyncStorage.getItem("invoiceNumber").then((value) => {
+      if (value != null) {
+        this.setState({ invoiceNumber: value })
+      }
+    })
+    await AsyncStorage.getItem("interpretedInvoiceNumber").then((value) => {
+      if (value != null) {
+        this.setState({ interpretedInvoiceNumber: value })
+      }
+    })
+    await AsyncStorage.getItem("total").then((value) => {
+      if (value != null) {
+        this.setState({ total: value })
+      }
+    })
+    await AsyncStorage.getItem("interpretedTotal").then((value) => {
+      if (value != null) {
+        this.setState({ interpretedTotal: value })
+      }
+    })
     await AsyncStorage.getItem("id").then((value) => {
       if (value != null) {
         this.setState({ id: value })
       }
     })
-    await AsyncStorage.getItem("saved").then((value) => {
+    await AsyncStorage.getItem("words").then((value) => {
       if (value != null) {
-        this.setState({ saved: JSON.parse(value) })
+        this.setState({ words: JSON.parse(value) })
       }
     })
   }
@@ -601,6 +618,68 @@ class BuyScreen extends Component {
       });
     };
 
+
+  setInterpretedEntity() {
+    var str = this.state.entity
+    for (let i = 0; i < this.state.words.length; i++) {
+      if (this.state.entity.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
+        str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
+      }
+    }
+    this.setState({ interpretedEntity: str })
+    this.saveInMemory("interpretedEntity", this.state.interpretedEntity)
+  }
+
+  // nif 123
+  // nombre queralt
+  // prueba jojo
+  // mi empresa difost xxx
+  // 56 jh
+
+  setInterpretedNif() {
+    var str = this.state.nif 
+    for (let i = 0; i < this.state.words.length; i++) {
+      if (this.state.nif.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
+        str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
+      }
+    }
+    this.setState({ interpretedNif: str })
+    this.saveInMemory("interpretedNif", this.state.interpretedNif)
+  }
+
+  setInterpretedDate() {
+    var str = this.state.date
+    for (let i = 0; i < this.state.words.length; i++) {
+      if (this.state.date.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
+        str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
+      }
+    }
+    this.setState({ interpretedDate: str })
+    this.saveInMemory("interpretedDate", this.state.interpretedDate)
+  }
+
+  setInterpretedInvoiceNumber() {
+    var str = this.state.invoiceNumber
+    for (let i = 0; i < this.state.words.length; i++) {
+      if (this.state.invoiceNumber.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
+        str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
+      }
+    }
+    this.setState({ interpretedInvoiceNumber: str })
+    this.saveInMemory("interpretedInvoiceNumber", this.state.interpretedInvoiceNumber)
+  }
+
+  setInterpretedTotal() {
+    var str = this.state.total
+    for (let i = 0; i < this.state.words.length; i++) {
+      if (this.state.total.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
+        str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
+      }
+    }
+    this.setState({ interpretedTotal: str })
+    this.saveInMemory("interpretedTotal", this.state.interpretedTotal)
+  }
+
   onSpeechResults(e) {
     var res = e.value + ""
     var word = res.split(",")
@@ -609,30 +688,35 @@ class BuyScreen extends Component {
         entity: word[0],
       });
       this.setState({getEntity: true})
+      this.setInterpretedEntity()
     } else {
       if (this.state.nif == "") {
         this.setState({
           nif: word[0],
         });
         this.setState({getNIF: true})
+        this.setInterpretedNif()
       } else {
         if (this.state.date == "") {
           this.setState({
             date: word[0],
           });
           this.setState({getDate: true})
+          this.setInterpretedDate()
         } else {
           if (this.state.invoiceNumber == "") {
             this.setState({
               invoiceNumber: word[0],
             });
             this.setState({getInvoiceNumber: true})
+            this.setInterpretedInvoiceNumber()
           } else {
             if (this.state.total == "") {
               this.setState({
                 total: word[0],
               });
               this.setState({getTotal: true})
+              this.setInterpretedTotal()
             }
           }
         }
@@ -699,44 +783,54 @@ class BuyScreen extends Component {
     />
   }
 
-  cancelEntity = () => {
+  cancelEntity = async () => {
     this.setState({setEntity: false})
     this.setState({is_recording: true})
+    this.setState({getEntity: false})
     this.setState({entity: ""})
+    this.setState({interpretedEntity: ""})
     this._startRecognition()
   }
 
-  cancelNIF = () => {
+  cancelNIF = async() => {
     this.setState({setNIF: false})
+    this.setState({getNIF: false})
     this.setState({is_recording: true})
     this.setState({nif: ""})
+    this.setState({interpretedNif: ""})
     this._startRecognition()
   }
 
-  cancelDate = () => {
+  cancelDate = async() => {
     this.setState({setDate: false})
     this.setState({is_recording: true})
+    this.setState({getDate: false})
     this.setState({date: ""})
+    this.setState({interpretedDate: ""})
     this._startRecognition()
   }
 
-  cancelInvoiceNumber = () => {
+  cancelInvoiceNumber = async() => {
     this.setState({setInvoiceNumber: false})
     this.setState({is_recording: true})
     this.setState({invoiceNumber: ""})
+    this.setState({getInvoiceNumber: false})
+    this.setState({interpretedInvoiceNumber: ""})
     this._startRecognition()
   }
 
-  cancelTotal= () => {
+  cancelTotal = async() => {
     this.setState({setTotal: false})
     this.setState({is_recording: true})
     this.setState({total: ""})
     this.setState({saved: false})
+    this.setState({getTotal: false})
+    this.setState({interpretedTotal: ""})
     this.saveInMemory("saved", JSON.stringify(false))
     this._startRecognition()
   }
 
-  setEntity = () => {
+  setEntity = async() => {
     this.setState({setEntity: true})
     this.saveInMemory("isBuy", JSON.stringify(true))
     this.saveInMemory("entity", this.state.entity)
@@ -744,34 +838,33 @@ class BuyScreen extends Component {
     this._continue()
   }
 
-  setNIF = () => {
+  setNIF = async() => {
     this.setState({setNIF: true})
     this.saveInMemory("nif", this.state.nif)
     this.setState({is_recording: true})
     this._continue()
   }
 
-  setDate = () => {
+  setDate = async() => {
     this.setState({setDate: true})
     this.saveInMemory("date", this.state.date)
     this.setState({is_recording: true})
     this._continue()
   }
 
-  setInvoiceNumber = () => {
+  setInvoiceNumber = async() => {
     this.setState({setInvoiceNumber: true})
     this.setState({is_recording: true})
     this.saveInMemory("invoiceNumber", this.state.invoiceNumber)
     this._continue()
   }
 
-  setTotal = () => {
+  setTotal = async() => {
     this.setState({setTotal: true})
     this.saveInMemory("total", this.state.total)
     this.setState({saved: true})
     this.saveInMemory("saved", JSON.stringify(true))
   }
-
 
    takePhoto = async() =>{
     let options = {
@@ -877,13 +970,19 @@ class BuyScreen extends Component {
   }
 
     _finish = async () => {
-      if (this.state.images.length > 0 || this.state.total.length>0) {
+      if (this.state.images.length > 0 || this.state.entity.length>0) {
         this.props.navigation.push('ResumeView', {
           type: "compra",
-          back: "Buy"
+          back: "Buy",
+          entity: this.state.interpretedEntity,
+          nif: this.state.interpretedNif,
+          date: this.state.interpretedDate,
+          invoiceNumber: this.state.interpretedInvoiceNumber,
+          total: this.state.interpretedTotal,
+          images: this.state.images
         })
       } else {
-        this.showAlert("Finalizar el proceso", "Tiene que adjuntar al menos una imagen del documento o utilizar el control por voz")
+        this.showAlert("Finalizar el proceso", "Tiene que adjuntar al menos una imagen del documento o terminar el proceso de control por voz")
       }
     }
 
@@ -1008,7 +1107,7 @@ class BuyScreen extends Component {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para entidad</Text>
         <Text style={styles.resultsText}>Texto escuchado: <Text style={styles.transcript}>{this.state.entity}</Text></Text>
-        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.entity} </Text></Text>
+        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedEntity} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
         <TouchableOpacity onPress={this.cancelEntity}>
@@ -1040,7 +1139,7 @@ class BuyScreen extends Component {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para NIF</Text>
         <Text style={styles.resultsText}>Texto escuchado: <Text style={styles.transcript}>{this.state.nif}</Text></Text>
-        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.nif} </Text></Text>
+        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedNif} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
           <TouchableOpacity onPress={this.cancelNIF}>
@@ -1072,7 +1171,7 @@ class BuyScreen extends Component {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para fecha</Text>
         <Text style={styles.resultsText}>Texto escuchado: <Text style={styles.transcript}>{this.state.date}</Text></Text>
-        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.date} </Text></Text>
+        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedDate} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
         <TouchableOpacity onPress={this.cancelDate}>
@@ -1104,7 +1203,7 @@ class BuyScreen extends Component {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para factura</Text>
         <Text style={styles.text}>Texto escuchado: <Text style={styles.transcript}>{this.state.invoiceNumber}</Text></Text>
-        <Text style={styles.text}>Texto interpretado: <Text style={styles.transcript}>{this.state.invoiceNumber} </Text></Text>
+        <Text style={styles.text}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedInvoiceNumber} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
         <TouchableOpacity onPress={this.cancelInvoiceNumber}>
@@ -1136,7 +1235,7 @@ class BuyScreen extends Component {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para el total</Text>
         <Text style={styles.text}>Texto escuchado: <Text style={styles.transcript}>{this.state.total}</Text></Text>
-        <Text style={styles.text}>Texto interpretado: <Text style={styles.transcript}>{this.state.total} </Text></Text>
+        <Text style={styles.text}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedTotal} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
         <TouchableOpacity onPress={this.cancelTotal}>
@@ -1578,6 +1677,7 @@ const styles = StyleSheet.create({
     borderColor:"#FFF",
     width: "90%",
     borderWidth:1,
+    paddingTop: 10,
   },
   resumeText: {
     fontSize: 20,
@@ -1595,8 +1695,9 @@ const styles = StyleSheet.create({
   dictionaryValues: {
     fontSize: 20,
     textAlign: "justify",
-    paddingTop: 20,
-    color: "#154360",
+    paddingTop: 15,
+    color: "#000",
+    width:"85%",
     fontWeight: 'bold',
   },
   twoColumnsInARow: {
@@ -1629,11 +1730,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   saveNewValue: {
-    fontSize: 17,
+    fontSize: 20,
     textAlign: "left",
     fontWeight: 'bold',
     color: "#2E8B57",
-    fontWeight: 'bold',
   },
   saveText: {
     fontSize: 17,
@@ -1681,6 +1781,12 @@ const styles = StyleSheet.create({
     color: '#1B5E8B',
     fontWeight: 'bold',
     fontSize: 25
+  },
+  showTitle:{
+    textAlign: 'center',
+    color: '#154360',
+    fontWeight: 'bold',
+    fontSize: 20
   },
   section: {
     paddingTop: 50,
