@@ -193,7 +193,7 @@ class ResumeViewScreen extends Component {
       entity: this.props.navigation.state.params.entity,
       nif: this.props.navigation.state.params.nif,
       date: this.props.navigation.state.params.date,
-      invoiceNumber: this.props.navigation.state.params.invoiceNumber,
+      invoice: this.props.navigation.state.params.invoice,
       total: this.props.navigation.state.params.total,
       images:  this.props.navigation.state.params.images,
       type: this.props.navigation.state.params.type,
@@ -266,10 +266,10 @@ class ResumeViewScreen extends Component {
               <TextInput multiline={true} style={styles.changeTranscript}>{this.state.date}</TextInput>
               </View>
           )}
-          {this.state.invoiceNumber.length > 0 &&
+          {this.state.invoice.length > 0 &&
             (<View>
               <Text style={styles.resumeText}>Nº factura</Text>
-              <TextInput multiline={true} style={styles.changeTranscript}>{this.state.invoiceNumber}</TextInput>
+              <TextInput multiline={true} style={styles.changeTranscript}>{this.state.invoice}</TextInput>
               </View>
           )}
           {this.state.total.length > 0 &&
@@ -293,7 +293,7 @@ class ResumeViewScreen extends Component {
         </View>
         </ScrollView>
         <View style={styles.sendBar}>
-          <TouchableOpacity onPress={this.sendDocument}><Text style={styles.saveText}>Enviar documento</Text></TouchableOpacity>
+          <TouchableOpacity onPress={this.sendDocument}><Text style={styles.saveText}>Enviar</Text></TouchableOpacity>
         </View>
       </View>
     );
@@ -520,12 +520,12 @@ class BuyScreen extends Component {
       entity: "",
       nif: "",
       date: "",
-      invoiceNumber: "",
+      invoice: "",
       total: "",
       interpretedEntity: "",
       interpretedNif: "",
       interpretedDate: "",
-      interpretedInvoiceNumber: "",
+      interpretedInvoice: "",
       interpretedTotal: "",
       getEntity: false,
       setEntity: false,
@@ -533,8 +533,8 @@ class BuyScreen extends Component {
       setNIF: false,
       getDate: false,
       setDate: false,
-      getInvoiceNumber: false,
-      setInvoiceNumber: false,
+      getInvoice: false,
+      setInvoice: false,
       getTotal: false,
       setTotal: false,
       started: false,
@@ -601,14 +601,14 @@ class BuyScreen extends Component {
         this.setState({ interpretedDate: value })
       }
     })
-    await AsyncStorage.getItem("invoiceNumber").then((value) => {
+    await AsyncStorage.getItem("invoice").then((value) => {
       if (value != null) {
-        this.setState({ invoiceNumber: value })
+        this.setState({ invoice: value })
       }
     })
-    await AsyncStorage.getItem("interpretedInvoiceNumber").then((value) => {
+    await AsyncStorage.getItem("interpretedInvoice").then((value) => {
       if (value != null) {
-        this.setState({ interpretedInvoiceNumber: value })
+        this.setState({ interpretedInvoice: value })
       }
     })
     await AsyncStorage.getItem("total").then((value) => {
@@ -689,15 +689,15 @@ class BuyScreen extends Component {
     this.saveInMemory("interpretedDate", this.state.interpretedDate)
   }
 
-  setInterpretedInvoiceNumber() {
-    var str = this.state.invoiceNumber
+  setInterpretedInvoice() {
+    var str = this.state.invoice
     for (let i = 0; i < this.state.words.length; i++) {
-      if (this.state.invoiceNumber.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
+      if (this.state.invoice.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
         str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
       }
     }
-    this.setState({ interpretedInvoiceNumber: str })
-    this.saveInMemory("interpretedInvoiceNumber", this.state.interpretedInvoiceNumber)
+    this.setState({ interpretedInvoice: str })
+    this.saveInMemory("interpretedInvoice", this.state.interpretedInvoice)
   }
 
   setInterpretedTotal() {
@@ -735,12 +735,12 @@ class BuyScreen extends Component {
           this.setState({getDate: true})
           this.setInterpretedDate()
         } else {
-          if (this.state.invoiceNumber == "") {
+          if (this.state.invoice == "") {
             this.setState({
-              invoiceNumber: word[0],
+              invoice: word[0],
             });
-            this.setState({getInvoiceNumber: true})
-            this.setInterpretedInvoiceNumber()
+            this.setState({getInvoice: true})
+            this.setInterpretedInvoice()
           } else {
             if (this.state.total == "") {
               this.setState({
@@ -814,54 +814,212 @@ class BuyScreen extends Component {
     />
   }
 
-  cancelEntity = async () => {
-    this.setState({setEntity: false})
-    this.setState({is_recording: true})
-    this.setState({getEntity: false})
-    this.setState({entity: ""})
-    this.setState({interpretedEntity: ""})
-    this._startRecognition()
+  async storeTotalInDictionary() {
+    var arrayWords =  this.state.words
+    if (!this.state.words.some(item => item.key === this.state.total)) {
+      arrayWords.push({
+        key: this.state.total,
+        value: this.state.interpretedTotal
+      })
+    } else {
+      var i = arrayWords.findIndex(obj => obj.key === this.state.total);
+      arrayWords[i].value = this.state.interpretedTotal
+    }
+    this.setState({ words: arrayWords })
+    await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
+    this.storeInvoice()
   }
 
-  cancelNIF = async() => {
-    this.setState({setNIF: false})
-    this.setState({getNIF: false})
-    this.setState({is_recording: true})
-    this.setState({nif: ""})
-    this.setState({interpretedNif: ""})
-    this._startRecognition()
+  async storeInvoiceInDictionary() {
+    var arrayWords =  this.state.words
+    if (!this.state.words.some(item => item.key === this.state.invoice)) {
+      arrayWords.push({
+        key: this.state.invoice,
+        value: this.state.interpretedInvoice
+      })
+    } else {
+      var i = arrayWords.findIndex(obj => obj.key === this.state.invoice);
+      arrayWords[i].value = this.state.interpretedInvoice
+    }
+    this.setState({ words: arrayWords })
+    await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
+    this.storeInvoice()
   }
 
-  cancelDate = async() => {
-    this.setState({setDate: false})
-    this.setState({is_recording: true})
-    this.setState({getDate: false})
-    this.setState({date: ""})
-    this.setState({interpretedDate: ""})
-    this._startRecognition()
+  async storeDateInDictionary() {
+    var arrayWords =  this.state.words
+    if (!this.state.words.some(item => item.key === this.state.date)) {
+      arrayWords.push({
+        key: this.state.date,
+        value: this.state.interpretedDate
+      })
+    } else {
+      var i = arrayWords.findIndex(obj => obj.key === this.state.date);
+      arrayWords[i].value = this.state.interpretedDate
+    }
+    this.setState({ words: arrayWords })
+    await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
+    this.storeDate()
   }
 
-  cancelInvoiceNumber = async() => {
-    this.setState({setInvoiceNumber: false})
-    this.setState({is_recording: true})
-    this.setState({invoiceNumber: ""})
-    this.setState({getInvoiceNumber: false})
-    this.setState({interpretedInvoiceNumber: ""})
-    this._startRecognition()
+  async storeNifInDictionary() {
+    var arrayWords =  this.state.words
+    if (!this.state.words.some(item => item.key === this.state.nif)) {
+      arrayWords.push({
+        key: this.state.nif,
+        value: this.state.interpretedNif
+      })
+    } else {
+      var i = arrayWords.findIndex(obj => obj.key === this.state.nif);
+      arrayWords[i].value = this.state.interpretedNif
+    }
+    this.setState({ words: arrayWords })
+    await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
+    this.storeNif()
   }
 
-  cancelTotal = async() => {
-    this.setState({setTotal: false})
-    this.setState({is_recording: true})
-    this.setState({total: ""})
-    this.setState({saved: false})
-    this.setState({getTotal: false})
-    this.setState({interpretedTotal: ""})
-    this.saveInMemory("saved", JSON.stringify(false))
-    this._startRecognition()
+  async storeEntityInDictionary() {
+    var arrayWords =  this.state.words
+    if (!this.state.words.some(item => item.key === this.state.entity)) {
+      arrayWords.push({
+        key: this.state.entity,
+        value: this.state.interpretedEntity
+      })
+    } else {
+      var i = arrayWords.findIndex(obj => obj.key === this.state.entity);
+      arrayWords[i].value = this.state.interpretedEntity
+    }
+    this.setState({ words: arrayWords })
+    await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
+    this.storeEntity()
   }
 
-  setEntity = async() => {
+  async askTotalNewSave() {
+    const AsyncAlert = () => new Promise((resolve) => {
+      Alert.alert(
+        "Guardar palabra",
+        "¿Desea almacenar esta palabra para 'Total' en el diccionario?",
+        [
+          {
+            text: 'Sí',
+            onPress: () => {
+              resolve(this.storeTotalInDictionary());
+            },
+          },
+          {
+            text: 'No',
+            onPress: () => {
+              resolve(this.storeTotal());
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+      });
+      await AsyncAlert();
+  }
+
+  async askInvoiceNewSave () {
+    const AsyncAlert = () => new Promise((resolve) => {
+      Alert.alert(
+        "Guardar palabra",
+        "¿Desea almacenar esta palabra para 'Factura' en el diccionario?",
+        [
+          {
+            text: 'Sí',
+            onPress: () => {
+              resolve(this.storeInvoiceInDictionary());
+            },
+          },
+          {
+            text: 'No',
+            onPress: () => {
+              resolve(this.storeInvoice());
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+      });
+      await AsyncAlert();
+  }
+
+  async askDateNewSave () {
+    const AsyncAlert = () => new Promise((resolve) => {
+      Alert.alert(
+        "Guardar palabra",
+        "¿Desea almacenar esta palabra para 'Fecha' en el diccionario?",
+        [
+          {
+            text: 'Sí',
+            onPress: () => {
+              resolve(this.storeDateInDictionary());
+            },
+          },
+          {
+            text: 'No',
+            onPress: () => {
+              resolve(this.storeEntity());
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+      });
+      await AsyncAlert();
+  }
+
+  async askNifNewSave() {
+    const AsyncAlert = () => new Promise((resolve) => {
+      Alert.alert(
+        "Guardar palabra",
+        "¿Desea almacenar esta palabra para 'NIF' en el diccionario?",
+        [
+          {
+            text: 'Sí',
+            onPress: () => {
+              resolve(this.storeNifInDictionary());
+            },
+          },
+          {
+            text: 'No',
+            onPress: () => {
+              resolve(this.storeEntity());
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+      });
+      await AsyncAlert();
+  }
+
+  async askEntityNewSave () {
+    const AsyncAlert = () => new Promise((resolve) => {
+      Alert.alert(
+        "Guardar palabra",
+        "¿Desea almacenar esta palabra para 'Entidad' en el diccionario?",
+        [
+          {
+            text: 'Sí',
+            onPress: () => {
+              resolve(this.storeEntityInDictionary());
+            },
+          },
+          {
+            text: 'No',
+            onPress: () => {
+              resolve(this.storeEntity());
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+      });
+      await AsyncAlert();
+  }
+
+  async storeEntity() {
     this.setState({setEntity: true})
     this.saveInMemory("isBuy", JSON.stringify(true))
     this.saveInMemory("entity", this.state.entity)
@@ -869,32 +1027,72 @@ class BuyScreen extends Component {
     this._continue()
   }
 
-  setNIF = async() => {
+  async storeNif() {
     this.setState({setNIF: true})
     this.saveInMemory("nif", this.state.nif)
     this.setState({is_recording: true})
     this._continue()
   }
 
-  setDate = async() => {
+  async storeDate() {
     this.setState({setDate: true})
     this.saveInMemory("date", this.state.date)
     this.setState({is_recording: true})
     this._continue()
   }
 
-  setInvoiceNumber = async() => {
-    this.setState({setInvoiceNumber: true})
+  async storeInvoice() {
+    this.setState({setInvoice: true})
     this.setState({is_recording: true})
-    this.saveInMemory("invoiceNumber", this.state.invoiceNumber)
+    this.saveInMemory("invoice", this.state.invoice)
     this._continue()
   }
 
-  setTotal = async() => {
+  async storeTotal() {
     this.setState({setTotal: true})
     this.saveInMemory("total", this.state.total)
     this.setState({saved: true})
     this.saveInMemory("saved", JSON.stringify(true))
+  }
+
+  setEntity = async() => {
+    if (this.state.interpretedEntity != this.state.entity) {
+      this.askEntityNewSave()
+    } else {
+      this.storeEntity()
+    }
+  }
+
+  setNIF = async() => {
+    if (this.state.interpretedNif != this.state.nif) {
+      this.askNifNewSave()
+    } else {
+      this.storeNif()
+    }
+  }
+
+  setDate = async() => {
+    if (this.state.interpretedDate != this.state.date) {
+      this.askDateNewSave()
+    } else {
+      this.storeDate()
+    }
+  }
+
+  setInvoice = async() => {
+    if (this.state.interpretedInvoice != this.state.invoice) {
+      this.askInvoiceNewSave()
+    } else {
+      this.storeInvoice()
+    }
+  }
+
+  setTotal = async() => {
+    if (this.state.interpretedTotal != this.state.total) {
+      this.askTotalNewSave()
+    } else {
+      this.storeTotal()
+    }
   }
 
    takePhoto = async() =>{
@@ -973,7 +1171,7 @@ class BuyScreen extends Component {
     this.setState({entity: "" })
     this.setState({nif: "" })
     this.setState({date: ""})
-    this.setState({invoiceNumber: ""})
+    this.setState({invoice: ""})
     this.setState({total: ""})
     this.setState({getEntity: false})
     this.setState({setEntity: false})
@@ -981,8 +1179,8 @@ class BuyScreen extends Component {
     this.setState({setNIF: false})
     this.setState({getDate: false})
     this.setState({setDate: false})
-    this.setState({getInvoiceNumber: false})
-    this.setState({setInvoiceNumber: false})
+    this.setState({getInvoice: false})
+    this.setState({setInvoice: false})
     this.setState({getTotal: false})
     this.setState({setTotal: false})
     this.setState({finalView: false})
@@ -992,12 +1190,11 @@ class BuyScreen extends Component {
     await AsyncStorage.setItem("entity", "")
     await AsyncStorage.setItem("nif", "")
     await AsyncStorage.setItem("date", "")
-    await AsyncStorage.setItem("invoiceNumber", "")
+    await AsyncStorage.setItem("invoice", "")
     await AsyncStorage.setItem("total", "")
     await AsyncStorage.setItem("images", JSON.stringify([]))
     await AsyncStorage.setItem("isBuy", JSON.stringify(false))
     await AsyncStorage.setItem("saved", JSON.stringify(false))
-    this.props.navigation.push('Main')
   }
 
     _finish = async () => {
@@ -1008,7 +1205,7 @@ class BuyScreen extends Component {
           entity: this.state.interpretedEntity,
           nif: this.state.interpretedNif,
           date: this.state.interpretedDate,
-          invoiceNumber: this.state.interpretedInvoiceNumber,
+          invoice: this.state.interpretedInvoice,
           total: this.state.interpretedTotal,
           images: this.state.images
         })
@@ -1135,26 +1332,20 @@ class BuyScreen extends Component {
       </View>)
     }
     if (JSON.parse(this.state.getEntity) && !JSON.parse(this.state.setEntity)) {
-      return (<View style={styles.voiceControlView}>
-        <Text style={styles.title}>Resultados para entidad</Text>
-        <Text style={styles.resultsText}>Texto escuchado: <Text style={styles.transcript}>{this.state.entity}</Text></Text>
-        <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedEntity} </Text></Text>
-        <Text style={styles.transcript}></Text>
-        <View style={styles.navBarButtons}>
-        <TouchableOpacity onPress={this.cancelEntity}>
-        <Text style={styles.exitButton}>Repetir</Text>
-          </TouchableOpacity>
-          <Icon
-          name='window-close'
-          type='font-awesome'
-          color='#FFF'
-          size={32}
-          />
-          <Text style={styles.transcript}></Text>
-          <TouchableOpacity onPress={this.setEntity}>
-            <Text style={styles.saveButton}>Guardar</Text>
-          </TouchableOpacity>
-        </View>
+      return (
+      <View style={styles.voiceControlView}>
+          <Text style={styles.title}>Entidad</Text>
+          <View style={styles.textForm}>
+            <Text style={styles.resumeText}>Texto escuchado</Text>
+            <Text multiline={true} style={styles.transcript}>{this.state.entity}</Text>
+            <Text style={styles.resumeText}>Texto interpretado</Text>
+            <TextInput onChangeText={(interpretedEntity) => this.setState({interpretedEntity})} multiline={true} style={styles.changeTranscript}>{this.state.interpretedEntity}</TextInput>
+            <TouchableOpacity onPress={this.setEntity}>
+                <Text style={styles.saveButton}>Guardar</Text>
+            </TouchableOpacity>
+            <Text style={styles.transcript}></Text>
+            <Text style={styles.transcript}></Text>
+          </View>
         </View>)
     } 
     return null
@@ -1173,9 +1364,6 @@ class BuyScreen extends Component {
         <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedNif} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
-          <TouchableOpacity onPress={this.cancelNIF}>
-            <Text style={styles.exitButton}>Repetir</Text>
-          </TouchableOpacity>
           <Icon
           name='window-close'
           type='font-awesome'
@@ -1205,9 +1393,6 @@ class BuyScreen extends Component {
         <Text style={styles.resultsText}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedDate} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
-        <TouchableOpacity onPress={this.cancelDate}>
-            <Text style={styles.exitButton}>Repetir</Text>
-          </TouchableOpacity>
           <Icon
           name='window-close'
           type='font-awesome'
@@ -1224,22 +1409,19 @@ class BuyScreen extends Component {
     return null
   }
 
-  setInvoiceNumberVoiceControl() {
-    if (JSON.parse(this.state.is_recording) && this.state.invoiceNumber.length==0 && this.state.date.length>0 && !JSON.parse(this.state.getInvoiceNumber)) {
+  setInvoiceVoiceControl() {
+    if (JSON.parse(this.state.is_recording) && this.state.invoice.length==0 && this.state.date.length>0 && !JSON.parse(this.state.getInvoice)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Escuchando nº factura...</Text>
       </View>)
     }
-    if (JSON.parse(this.state.getInvoiceNumber) && !JSON.parse(this.state.setInvoiceNumber)) {
+    if (JSON.parse(this.state.getInvoice) && !JSON.parse(this.state.setInvoice)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Resultados para factura</Text>
-        <Text style={styles.text}>Texto escuchado: <Text style={styles.transcript}>{this.state.invoiceNumber}</Text></Text>
-        <Text style={styles.text}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedInvoiceNumber} </Text></Text>
+        <Text style={styles.text}>Texto escuchado: <Text style={styles.transcript}>{this.state.invoice}</Text></Text>
+        <Text style={styles.text}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedInvoice} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
-        <TouchableOpacity onPress={this.cancelInvoiceNumber}>
-            <Text style={styles.exitButton}>Repetir</Text>
-          </TouchableOpacity>
           <Icon
           name='window-close'
           type='font-awesome'
@@ -1247,7 +1429,7 @@ class BuyScreen extends Component {
           size={32}
           />
           <Text style={styles.transcript}></Text>
-          <TouchableOpacity onPress={this.setInvoiceNumber}>
+          <TouchableOpacity onPress={this.setInvoice}>
             <Text style={styles.saveButton}>Guardar</Text>
           </TouchableOpacity>
         </View>
@@ -1257,7 +1439,7 @@ class BuyScreen extends Component {
   }
 
   setTotalVoiceControl() {
-    if (JSON.parse(this.state.is_recording) && this.state.total.length==0 && this.state.invoiceNumber.length>0 && !JSON.parse(this.state.getTotal)) {
+    if (JSON.parse(this.state.is_recording) && this.state.total.length==0 && this.state.invoice.length>0 && !JSON.parse(this.state.getTotal)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.title}>Escuchando total...</Text>
       </View>)
@@ -1269,9 +1451,6 @@ class BuyScreen extends Component {
         <Text style={styles.text}>Texto interpretado: <Text style={styles.transcript}>{this.state.interpretedTotal} </Text></Text>
         <Text style={styles.transcript}></Text>
         <View style={styles.navBarButtons}>
-        <TouchableOpacity onPress={this.cancelTotal}>
-            <Text style={styles.exitButton}>Repetir</Text>
-        </TouchableOpacity>
           <Icon
           name='window-close'
           type='font-awesome'
@@ -1325,7 +1504,7 @@ class BuyScreen extends Component {
           {this.setEntityVoiceControl()}
           {this.setNIFVoiceControl()}
           {this.setDateVoiceControl()}
-          {this.setInvoiceNumberVoiceControl()}
+          {this.setInvoiceVoiceControl()}
           {this.setTotalVoiceControl()}
         </View>
         </ScrollView>
@@ -1609,10 +1788,9 @@ export default createAppContainer(AppNavigator);
 
 const styles = StyleSheet.create({
   transcript: {
-    textAlign: 'center',
     color: '#000',
-    fontWeight: 'bold',
-    fontSize: 20
+    fontSize: 20,
+    width: "90%"
   },
   changeTranscript: {
     color: '#000',
