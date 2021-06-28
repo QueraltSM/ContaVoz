@@ -13,7 +13,8 @@ class DictionaryViewScreen extends Component {
     this.state = {
       words: [],
       addKey: "",
-      addValue: ""
+      addValue: "",
+      showForm: false
     };
     this.init()
   }
@@ -64,18 +65,46 @@ class DictionaryViewScreen extends Component {
     }
   }
 
+  formAction = () => {
+    this.setState({showForm: !this.state.showForm})
+  }
+
   setMenuButtons() {
+    if (this.state.showForm) {
       return(
-        <View style={styles.resumeView}>
+        <View style={styles.dictionaryView}>
+          <View style={{ width: "90%", flexDirection:'row', justifyContent: 'flex-end'}}>
+            <TouchableOpacity onPress={() => this.formAction()}>
+                <Icon
+                  name='times'
+                  type='font-awesome'
+                  color='#B03A2E'
+                  size={28}
+                />
+              </TouchableOpacity>
+          </View>
           <Text style={styles.resumeText}>Palabra</Text>
           <TextInput value={this.state.addKey} multiline={true} style={styles.changeTranscript} placeholder="Macro" onChangeText={addKey => this.setState({addKey})}></TextInput>
           <Text style={styles.resumeText}>Valor que debe tomar</Text>
           <TextInput value={this.state.addValue} multiline={true} style={styles.changeTranscript} placeholder="Makro" onChangeText={addValue => this.setState({addValue})}></TextInput>
           <Text style={styles.transcript}></Text>
           <TouchableOpacity onPress={this._addWord}>
-            <Text style={styles.saveNewValue}>Añadir palabra</Text>
+            <Text style={styles.saveNewValue}>Guardar</Text>
           </TouchableOpacity>
         </View>
+      )
+    }
+    return (
+      <View style={{ width: "90%", flexDirection:'row', justifyContent: 'flex-end'}}>
+      <TouchableOpacity onPress={() => this.formAction()}>
+          <Icon
+            name='plus'
+            type='font-awesome'
+            color='#2E8B57'
+            size={28}
+          />
+        </TouchableOpacity>
+    </View>
       )
   }
 
@@ -136,7 +165,7 @@ class DictionaryViewScreen extends Component {
       />
       </View>
       )
-    }
+    } 
     return null
   }
 
@@ -533,6 +562,8 @@ class BuyScreen extends Component {
     await AsyncStorage.getItem("saved").then((value) => {
       if (value != null) {
         this.setState({ saved: JSON.parse(value) })
+      } else {
+        this.setState({ saved: JSON.parse(false) })
       }
     })
     await AsyncStorage.getItem("images").then((value) => {
@@ -1257,6 +1288,16 @@ class BuyScreen extends Component {
     return null
   }
 
+  startProgramm() {
+    if (this.state.images.length == 0 && this.state.entity.length == 0) {
+      return(
+        <View style={styles.voiceControlView}>
+          <Text style={styles.title}>Empiece adjuntando una imagen o el control de voz pulsando el micrófono</Text>
+        </View>
+      )
+    }
+    return null
+  }
 
   setSaveDocument() {
     if (JSON.parse(this.state.saved)) {
@@ -1278,6 +1319,7 @@ class BuyScreen extends Component {
         <ScrollView style={{backgroundColor: "#fff"}}>
         <View style={styles.sections}>
           {this.setMenuButtons()}
+          {this.startProgramm()}
           {this.setImages()}
           {this.setSaveDocument()}
           {this.setEntityVoiceControl()}
@@ -1388,13 +1430,13 @@ class MainScreen extends Component {
       <View style={styles.mainView}> 
         <View style={styles.accountingView}>
         <Icon
-            name='balance-scale'
+            name='calculator'
             type='font-awesome'
             color='#000'
             size={45}
           />
           </View>
-        <Text style={styles.mainHeader}>Contabilidad inteligente</Text>
+        <Text style={styles.mainHeader}>Contabilidad</Text>
         <Text style={styles.text}>Seleccione tipo de documento</Text>
         <View style={styles.twoColumnsInARow}>
         {this.state.isBuy && 
@@ -1472,7 +1514,7 @@ class MainScreen extends Component {
                 size={40}
               />
               </View>
-            <Text style={styles.mainButton}>Seguir pago</Text>
+            <Text style={styles.mainButton}>Seguir gastos</Text>
           </TouchableOpacity>
           </View>)}
         {!this.state.isPay && 
@@ -1486,7 +1528,7 @@ class MainScreen extends Component {
                   size={40}
                 />
                 </View>
-              <Text style={styles.mainButton}>Pago</Text>
+              <Text style={styles.mainButton}>Gastos</Text>
             </TouchableOpacity>
             </View>)}
             <Icon
@@ -1672,6 +1714,10 @@ const styles = StyleSheet.create({
     paddingLeft: 40,
     backgroundColor: "#FFF"
   },
+  dictionaryView: {
+    paddingLeft: 40,
+    backgroundColor: "#FFF"
+  },
   wordsBox: {
     flexDirection:'row',
     borderColor:"#FFF",
@@ -1732,6 +1778,12 @@ const styles = StyleSheet.create({
   saveNewValue: {
     fontSize: 20,
     textAlign: "left",
+    fontWeight: 'bold',
+    color: "#2E8B57",
+  },
+  saveNewValueRight: {
+    fontSize: 20,
+    textAlign: "center",
     fontWeight: 'bold',
     color: "#2E8B57",
   },
