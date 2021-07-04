@@ -1,110 +1,33 @@
 import React, {Component} from 'react';
-import {StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Modal, Dimensions} from 'react-native';
+import {StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Modal, Dimensions, PermissionsAndroid} from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { createStackNavigator } from 'react-navigation-stack';
 import { Icon, withTheme } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import * as ImagePicker from 'react-native-image-picker';
+import ImageZoom from 'react-native-image-pan-zoom';
 
 class ResumeViewScreen extends Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      id: "",
-      entity: "",
-      nif: "",
-      date: "",
-      invoice: "",
-      total: "",
-      images: [],
+      id: this.props.navigation.state.params.id,
+      entity: this.props.navigation.state.params.entity,
+      interpretedEntity: this.props.navigation.state.params.interpretedEntity,
+      nif: this.props.navigation.state.params.nif,
+      interpretedNif: this.props.navigation.state.params.interpretedNif,
+      date: this.props.navigation.state.params.date,
+      interpretedDate: this.props.navigation.state.params.interpretedDate,
+      invoice: this.props.navigation.state.params.invoice,
+      interpretedInvoice: this.props.navigation.state.params.interpretedInvoice,
+      total: this.props.navigation.state.params.total,
+      interpretedTotal: this.props.navigation.state.params.interpretedTotal,
+      images: this.props.navigation.state.params.images,
       back: this.props.navigation.state.params.back,
-    };
-    this.init()
-  }
-
-  async init() {
-    await AsyncStorage.getItem("images").then((value) => {
-      if (value != null) {
-        this.setState({ images: JSON.parse(value) })
-      }
-    })
-    await AsyncStorage.getItem("setEntity").then((value) => {
-      if (value != null) {
-        this.setState({ setEntity: JSON.parse(value) })
-      }
-    })
-    await AsyncStorage.getItem("setNIF").then((value) => {
-      if (value != null) {
-        this.setState({ setNIF: JSON.parse(value) })
-      }
-    })
-    await AsyncStorage.getItem("setDate").then((value) => {
-      if (value != null) {
-        this.setState({ setDate: JSON.parse(value) })
-      }
-    })
-    await AsyncStorage.getItem("setInvoice").then((value) => {
-      if (value != null) {
-        this.setState({ setInvoice: JSON.parse(value) })
-      }
-    })
-    await AsyncStorage.getItem("setTotal").then((value) => {
-      if (value != null) {
-        this.setState({ setTotal: JSON.parse(value) })
-      }
-    })
-    await AsyncStorage.getItem("entity").then((value) => {
-      if (value != null) {
-        this.setState({ entity: value })
-      }
-    })
-    await AsyncStorage.getItem("interpretedEntity").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedEntity: value })
-      }
-    })
-    await AsyncStorage.getItem("nif").then((value) => {
-      if (value != null) {
-        this.setState({ nif: value })
-      }
-    })
-    await AsyncStorage.getItem("interpretedNif").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedNif: value })
-      }
-    })
-    await AsyncStorage.getItem("date").then((value) => {
-      if (value != null) {
-        this.setState({ date: value })
-      }
-    })
-    await AsyncStorage.getItem("interpretedDate").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedDate: value })
-      }
-    })
-    await AsyncStorage.getItem("invoice").then((value) => {
-      if (value != null) {
-        this.setState({ invoice: value })
-      }
-    })
-    await AsyncStorage.getItem("interpretedInvoice").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedInvoice: value })
-      }
-    })
-    await AsyncStorage.getItem("total").then((value) => {
-      if (value != null) {
-        this.setState({ total: value })
-      }
-    })
-    await AsyncStorage.getItem("interpretedTotal").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedTotal: value })
-      }
-    })
+      flatlistPos: 0,
+    }
   }
 
   componentDidMount(){
@@ -116,25 +39,133 @@ class ResumeViewScreen extends Component {
     return true
   }
 
+  async resetState() {
+    this.setState({entity: "" })
+    this.setState({nif: "" })
+    this.setState({date: ""})
+    this.setState({invoice: ""})
+    this.setState({total: ""})
+    this.setState({interpretedEntity: "" })
+    this.setState({interpretedNif: "" })
+    this.setState({interpretedDate: ""})
+    this.setState({interpretedInvoice: ""})
+    this.setState({interpretedTotal: ""})
+    this.setState({id: ""})
+    this.setState({recognized: ""})
+    this.setState({started: ""})
+    this.setState({results: ""})
+    this.setState({is_recording: false})
+    this.setState({getEntity: false})
+    this.setState({getNIF: false})
+    this.setState({getDate: false})
+    this.setState({getInvoice: false})
+    this.setState({getTotal: false})
+    this.setState({setEntity: false})
+    this.setState({setNIF: false})
+    this.setState({setDate: false})
+    this.setState({setInvoice: false})
+    this.setState({setTotal: false})
+    this.setState({finalView: false})
+    this.setState({started: false})
+    this.setState({startVoice: false})
+    this.setState({images: []})
+  }
+
+  async delete() {
+    this.resetState()
+    var prep = ""
+    if (this.state.back == "Buy") {
+      prep = "b."
+    }
+    await AsyncStorage.setItem(prep+"entity", "")
+    await AsyncStorage.setItem(prep+"nif", "")
+    await AsyncStorage.setItem(prep+"date", "")
+    await AsyncStorage.setItem(prep+"invoice", "")
+    await AsyncStorage.setItem(prep+"total", "")
+    await AsyncStorage.setItem(prep+"interpretedEntity", "")
+    await AsyncStorage.setItem(prep+"interpretedNif", "")
+    await AsyncStorage.setItem(prep+"interpretedDate", "")
+    await AsyncStorage.setItem(prep+"interpretedInvoice", "")
+    await AsyncStorage.setItem(prep+"interpretedTotal", "")
+    await AsyncStorage.setItem(prep+"images", JSON.stringify([]))
+    await AsyncStorage.setItem("isBuy", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"saved", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setEntity", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setNIF", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setDate", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setInvoice", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setTotal", JSON.stringify(false))
+    this.goBack()
+  }
+
+  seeImage (image) {
+    this.props.navigation.push('ImageViewer', {
+      id: this.state.id,
+      entity: this.state.entity,
+      interpretedEntity: this.state.interpretedEntity,
+      nif: this.state.nif,
+      interpretedNif: this.state.interpretedNif,
+      date: this.state.date,
+      interpretedDate: this.state.interpretedDate,
+      invoice: this.state.invoice,
+      interpretedInvoice: this.state.interpretedInvoice,
+      total: this.state.total,
+      interpretedTotal: this.state.interpretedTotal,
+      images: this.state.images,
+      image: image,
+      back: this.state.back,
+      id: this.state.id,
+    })
+  }
+
+  setFlatlistPos(i) {
+    this.setState({ flatlistPos: i })
+  }
+
+  setFlatlistButtons(pos) {
+    var result = []
+    for (let i = 0; i < this.state.images.length; i++) {
+      if (pos == i) {
+        result.push(<View style={styles.roundButtonsView}><TouchableOpacity
+          style={styles.roundButton}>
+        </TouchableOpacity></View>)
+      } else {
+        result.push(<View style={styles.roundButtonsView}><TouchableOpacity
+          style={styles.focusRoundButton} onPress={() => this.setFlatlistPos(i)}>
+        </TouchableOpacity></View>)
+      }
+    }
+    return (<View style={styles.flatlistView}>{result}</View>)
+  }
+
   setImages() {
     if (this.state.images.length > 0) {
       return (
         <View style={styles.imagesSection}>
           <FlatList 
             horizontal
-            showsHorizontalScrollIndicator={false}
+            showsHorizontalScrollIndicator={true}
             data={this.state.images}
             renderItem={({ item }) => (
-              <Image
-                source={{
-                  uri:item.uri.replace(/['"]+/g, ''),
-                }}
-                resizeMode="contain"
-                key={item}
-                style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/1.5, aspectRatio: 1 }}
-              />
+              <ImageZoom
+                cropWidth={Dimensions.get('window').width}
+                cropHeight={Dimensions.get('window').height/1.5}
+                imageWidth={Dimensions.get('window').width}
+                imageHeight={Dimensions.get('window').height/1.5}>
+               <TouchableOpacity onPress={() => this.seeImage(item)}>
+                <Image
+                  source={{
+                    uri:this.state.images[this.state.flatlistPos].uri.replace(/['"]+/g, ''),
+                  }}
+                  resizeMode="cover"
+                  key={item}
+                  style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/1.5, aspectRatio: 1 }}
+                />
+              </TouchableOpacity>
+              </ImageZoom>
           )}
         />
+        {this.state.images.length > 1 && this.setFlatlistButtons(this.state.flatlistPos)}
         </View>
       )
     }
@@ -222,15 +253,72 @@ class ResumeViewScreen extends Component {
       )
   }
 
+  _delete = async () => {
+    const AsyncAlert = () => new Promise((resolve) => {
+      Alert.alert(
+        "Borrar documento",
+        "¿Está seguro que desea borrar permanentemente este documento?",
+        [
+          {
+            text: 'Sí',
+            onPress: () => {
+              resolve(this.delete());
+            },
+          },
+          {
+            text: 'No',
+            onPress: () => {
+              resolve(resolve("No"));
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+      });
+      await AsyncAlert();
+  }
+
+  setBottomMenu() {
+    return (
+      <View style={styles.footBar}>
+        <View style={styles.iconsView}><Icon
+        name='trash'
+        type='font-awesome'
+        color='#1A5276'
+        size={40}
+        onPress={this._delete}
+      />
+      </View>
+      <View style={styles.iconsView}>
+        <Icon
+          name='calculator'
+          type='font-awesome'
+          color='#1A5276'
+          size={35}
+          onPress={this.goBack}
+      />
+      </View>
+      <View style={styles.iconsView}>
+      <Icon
+        name='file'
+        type='font-awesome'
+        color='#1A5276'
+        size={35}
+      /></View>
+      </View>)
+  }
+
   render () {
     return (
-      <View style={{flex: 1, paddingBottom: 50, backgroundColor:"#FFF"}}>
+      <View style={{flex: 1, backgroundColor:"#FFF"}}>
+        <View style={styles.navBarBackHeader}><Text style={styles.navBarHeader}>Documento generado</Text></View>
         <ScrollView style={{backgroundColor: "#fff"}}>
         <View style={styles.sections}>
           {this.setImages()}
           {this.setControlVoice()}
         </View>
-        </ScrollView>
+        </ScrollView>          
+        {this.setBottomMenu()}
       </View>
     );
   }
@@ -309,14 +397,16 @@ class DictionaryViewScreen extends Component {
                   name='times'
                   type='font-awesome'
                   color='#B03A2E'
-                  size={28}
+                  size={30}
                 />
               </TouchableOpacity>
           </View>
-          <Text style={styles.resumeText}>Palabra</Text>
+          <Text style={styles.resumeText}>Palabra: </Text>
           <TextInput value={this.state.addKey} multiline={true} style={styles.changeTranscript} placeholder="Macro" onChangeText={addKey => this.setState({addKey})}></TextInput>
-          <Text style={styles.resumeText}>Valor que debe tomar</Text>
+        
+          <Text style={styles.resumeText}>Valor que debe tomar: </Text>
           <TextInput value={this.state.addValue} multiline={true} style={styles.changeTranscript} placeholder="Makro" onChangeText={addValue => this.setState({addValue})}></TextInput>
+          
           <Text style={styles.transcript}></Text>
           <TouchableOpacity onPress={this._addWord}>
             <Text style={styles.saveNewValue}>Guardar registro</Text>
@@ -417,9 +507,6 @@ class DictionaryViewScreen extends Component {
           {this.setWords()}
         </View>
         </ScrollView>
-        <View style={styles.sendBar}>
-          <TouchableOpacity onPress={this.saveDocument}><Text style={styles.saveText}>Guardar</Text></TouchableOpacity>
-        </View>
       </View>
     );
   }
@@ -431,33 +518,48 @@ class ImageViewerScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      images: [],
+      id: this.props.navigation.state.params.id,
+      entity: this.props.navigation.state.params.entity,
+      interpretedEntity: this.props.navigation.state.params.interpretedEntity,
+      nif: this.props.navigation.state.params.nif,
+      interpretedNif: this.props.navigation.state.params.interpretedNif,
+      date: this.props.navigation.state.params.date,
+      interpretedDate: this.props.navigation.state.params.interpretedDate,
+      invoice: this.props.navigation.state.params.invoice,
+      interpretedInvoice: this.props.navigation.state.params.interpretedInvoice,
+      total: this.props.navigation.state.params.total,
+      interpretedTotal: this.props.navigation.state.params.interpretedTotal,
+      images: this.props.navigation.state.params.images,
       image: this.props.navigation.state.params.image,
       back: this.props.navigation.state.params.back,
-      id: ""
+      id: this.props.navigation.state.params.id,
     }
-    this.init()
   }
 
   componentDidMount(){
     BackHandler.addEventListener('hardwareBackPress', this.goBack);
   }
 
-  async init() {
-    await AsyncStorage.getItem("images").then((value) => {
-      if (value != null) {
-        this.setState({ images: JSON.parse(value) })
-      }
-    })
-    await AsyncStorage.getItem("id").then((value) => {
-      if (value != null) {
-        this.setState({ id: value })
-      }
-    })
-  }
-
   goBack = () => {
-    this.props.navigation.push(this.state.back)
+    if (this.state.images.length > 0 || this.state.interpretedEntity != "") {
+      this.props.navigation.push("ResumeView", {
+        id: this.state.id,
+        entity: this.state.entity,
+        interpretedEntity: this.state.interpretedEntity,
+        nif: this.state.nif,
+        interpretedNif: this.state.interpretedNif,
+        date: this.state.date,
+        interpretedDate: this.state.interpretedDate,
+        invoice: this.state.invoice,
+        interpretedInvoice: this.state.interpretedInvoice,
+        total: this.state.total,
+        interpretedTotal: this.state.interpretedTotal,
+        images: this.state.images,
+        back: this.state.back
+      })
+    } else {
+      this.props.navigation.push(this.state.back)
+    }
     return true
   }
 
@@ -483,29 +585,56 @@ class ImageViewerScreen extends Component {
       }
     }
     this.setState({images: arrayImages})
-    await AsyncStorage.setItem("images", JSON.stringify([]))
-    await AsyncStorage.setItem("images", JSON.stringify(arrayImages))
+    await AsyncStorage.setItem("b.images", JSON.stringify([]))
+    await AsyncStorage.setItem("b.images", JSON.stringify(arrayImages))
   }
 
   takePhoto = async() =>{
-    let options = {
-      title: 'Hacer una foto',
-      customButtons: [
-        { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
-      ],
-      storageOptions: {
-        skipBackup: true,
-        path: 'images',
-      },
-    };
-    launchCamera(options, (response) => {
-      if (response.didCancel || response.error || response.customButton) {
-        console.log('Something happened');
-      } else {
-        var uri = JSON.stringify(response.assets[0]["uri"])
-        this.updateImage(uri)
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: "ContaVoz",
+          message:"Se necesita acceder a su cámara",
+          buttonNegative: "Cancelar",
+          buttonPositive: "Aceptar"
+        }
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        let options = {
+          title: 'Hacer una foto',
+          customButtons: [
+            { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
+          ],
+          storageOptions: {
+            skipBackup: true,
+            path: 'images',
+            privateDirectory: true,
+          },
+        };
+        if (this.state.images.length <= 9) {
+          ImagePicker.launchCamera(options, (response) => {
+            if (response.didCancel || response.error || response.customButton) {
+              console.log(JSON.stringify(response));
+            } else {
+              var arrayImages = this.state.images
+              var uri = JSON.stringify(response.assets[0]["uri"])
+              arrayImages.push({
+                id: this.state.id+"_"+(this.state.images.length+1),
+                uri: uri
+              })
+              this.setState({images: arrayImages})
+              this.saveInMemory("isBuy", JSON.stringify(true))
+              this.saveInMemory("b.images", JSON.stringify(arrayImages))
+            }
+          })
+        } else {
+          this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
+        }
       }
-    })
+    } catch (err) {
+    console.log(err);
+    }
   }
 
   goGallery = async () => {
@@ -519,14 +648,18 @@ class ImageViewerScreen extends Component {
         path: 'images',
       },
     };
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel || response.error || response.customButton) {
-        console.log('Something happened');
-      } else {
-        var uri = JSON.stringify(response.assets[0]["uri"])
-        this.updateImage(uri)
-      }
-    })
+    if (this.state.images.length <= 9) {
+      ImagePicker.launchImageLibrary(options, (response) => {
+        if (response.didCancel || response.error || response.customButton) {
+          console.log('Something happened');
+        } else {
+          var uri = JSON.stringify(response.assets[0]["uri"])
+          this.updateImage(uri)
+        }
+      })
+    } else {
+      this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
+    }
   }
 
   async delete() {
@@ -539,8 +672,9 @@ class ImageViewerScreen extends Component {
         })
       }
     }
-    await AsyncStorage.setItem("images", JSON.stringify([]))
-    await AsyncStorage.setItem("images", JSON.stringify(arrayImages))
+    await AsyncStorage.setItem("b.images", JSON.stringify([]))
+    await AsyncStorage.setItem("b.images", JSON.stringify(arrayImages))
+    this.setState({images: arrayImages})
     this.goBack()
   }
 
@@ -573,6 +707,11 @@ class ImageViewerScreen extends Component {
     return (
       <View style={styles.imageView}>
         <View style={styles.selectedImageView}>
+        <ImageZoom
+                  cropWidth={Dimensions.get('window').width}
+                  cropHeight={Dimensions.get('window').height}
+                  imageWidth={Dimensions.get('window').width}
+                  imageHeight={Dimensions.get('window').height}>
           <Image
             source={{
               uri: this.state.image.uri.replace(/['"]+/g, '')
@@ -581,6 +720,7 @@ class ImageViewerScreen extends Component {
             key={this.state.image}
             style={{ width: "100%", height: "100%" }}
           />
+          </ImageZoom>
       </View>
         <View style={styles.darkFootBar}>
           <Icon
@@ -667,7 +807,8 @@ class BuyScreen extends Component {
       startVoice: false,
       saved: false,
       images: [],
-      words: []
+      words: [],
+      flatlistPos: 0,
     };
     Voice.onSpeechStart = this.onSpeechStart.bind(this);
     Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
@@ -685,92 +826,92 @@ class BuyScreen extends Component {
   }
 
   async init() {
-    await AsyncStorage.getItem("saved").then((value) => {
+    await AsyncStorage.getItem("b.saved").then((value) => {
       if (value != null) {
         this.setState({ saved: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("images").then((value) => {
+    await AsyncStorage.getItem("b.images").then((value) => {
       if (value != null) {
         this.setState({ images: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("setEntity").then((value) => {
+    await AsyncStorage.getItem("b.setEntity").then((value) => {
       if (value != null) {
         this.setState({ setEntity: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("setNIF").then((value) => {
+    await AsyncStorage.getItem("b.setNIF").then((value) => {
       if (value != null) {
         this.setState({ setNIF: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("setDate").then((value) => {
+    await AsyncStorage.getItem("b.setDate").then((value) => {
       if (value != null) {
         this.setState({ setDate: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("setInvoice").then((value) => {
+    await AsyncStorage.getItem("b.setInvoice").then((value) => {
       if (value != null) {
         this.setState({ setInvoice: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("setTotal").then((value) => {
+    await AsyncStorage.getItem("b.setTotal").then((value) => {
       if (value != null) {
         this.setState({ setTotal: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("entity").then((value) => {
+    await AsyncStorage.getItem("b.entity").then((value) => {
       if (value != null) {
         this.setState({ entity: value })
       }
     })
-    await AsyncStorage.getItem("interpretedEntity").then((value) => {
+    await AsyncStorage.getItem("b.interpretedEntity").then((value) => {
       if (value != null) {
         this.setState({ interpretedEntity: value })
       }
     })
-    await AsyncStorage.getItem("nif").then((value) => {
+    await AsyncStorage.getItem("b.nif").then((value) => {
       if (value != null) {
         this.setState({ nif: value })
       }
     })
-    await AsyncStorage.getItem("interpretedNif").then((value) => {
+    await AsyncStorage.getItem("b.interpretedNif").then((value) => {
       if (value != null) {
         this.setState({ interpretedNif: value })
       }
     })
-    await AsyncStorage.getItem("date").then((value) => {
+    await AsyncStorage.getItem("b.date").then((value) => {
       if (value != null) {
         this.setState({ date: value })
       }
     })
-    await AsyncStorage.getItem("interpretedDate").then((value) => {
+    await AsyncStorage.getItem("b.interpretedDate").then((value) => {
       if (value != null) {
         this.setState({ interpretedDate: value })
       }
     })
-    await AsyncStorage.getItem("invoice").then((value) => {
+    await AsyncStorage.getItem("b.invoice").then((value) => {
       if (value != null) {
         this.setState({ invoice: value })
       }
     })
-    await AsyncStorage.getItem("interpretedInvoice").then((value) => {
+    await AsyncStorage.getItem("b.interpretedInvoice").then((value) => {
       if (value != null) {
         this.setState({ interpretedInvoice: value })
       }
     })
-    await AsyncStorage.getItem("total").then((value) => {
+    await AsyncStorage.getItem("b.total").then((value) => {
       if (value != null) {
         this.setState({ total: value })
       }
     })
-    await AsyncStorage.getItem("interpretedTotal").then((value) => {
+    await AsyncStorage.getItem("b.interpretedTotal").then((value) => {
       if (value != null) {
         this.setState({ interpretedTotal: value })
       }
     })
-    await AsyncStorage.getItem("id").then((value) => {
+    await AsyncStorage.getItem("b.id").then((value) => {
       if (value != null) {
         this.setState({ id: value })
       }
@@ -807,7 +948,7 @@ class BuyScreen extends Component {
       }
     }
     this.setState({ interpretedEntity: str })
-    this.saveInMemory("interpretedEntity", this.state.interpretedEntity)
+    this.saveInMemory("b.interpretedEntity", this.state.interpretedEntity)
   }
 
   setInterpretedNif() {
@@ -818,7 +959,7 @@ class BuyScreen extends Component {
       }
     }
     this.setState({ interpretedNif: str })
-    this.saveInMemory("interpretedNif", this.state.interpretedNif)
+    this.saveInMemory("b.interpretedNif", this.state.interpretedNif)
   }
 
   setInterpretedDate() {
@@ -829,7 +970,7 @@ class BuyScreen extends Component {
       }
     }
     this.setState({ interpretedDate: str })
-    this.saveInMemory("interpretedDate", this.state.interpretedDate)
+    this.saveInMemory("b.interpretedDate", this.state.interpretedDate)
   }
 
   setInterpretedInvoice() {
@@ -840,7 +981,7 @@ class BuyScreen extends Component {
       }
     }
     this.setState({ interpretedInvoice: str })
-    this.saveInMemory("interpretedInvoice", this.state.interpretedInvoice)
+    this.saveInMemory("b.interpretedInvoice", this.state.interpretedInvoice)
   }
 
   setInterpretedTotal() {
@@ -851,7 +992,7 @@ class BuyScreen extends Component {
       }
     }
     this.setState({ interpretedTotal: str })
-    this.saveInMemory("interpretedTotal", this.state.interpretedTotal)
+    this.saveInMemory("b.interpretedTotal", this.state.interpretedTotal)
   }
 
   onSpeechResults(e) {
@@ -931,7 +1072,7 @@ class BuyScreen extends Component {
       return <Icon
             name='microphone-slash'
             type='font-awesome'
-            color='#00749A'
+            color='#1A5276'
             size={35}
             onPress={this._stopRecognition.bind(this)}
           />
@@ -939,7 +1080,7 @@ class BuyScreen extends Component {
     return <Icon
       name='microphone'
       type='font-awesome'
-      color='#00749A'
+      color='#1A5276'
       size={35}
       onPress={this._startRecognition.bind(this)}
     />
@@ -1152,43 +1293,43 @@ class BuyScreen extends Component {
 
   async storeEntity() {
     this.setState({setEntity: true})
-    this.saveInMemory("setEntity", JSON.stringify(true))
+    this.saveInMemory("b.setEntity", JSON.stringify(true))
     this.saveInMemory("isBuy", JSON.stringify(true))
-    this.saveInMemory("entity", this.state.entity)
+    this.saveInMemory("b.entity", this.state.entity)
     this.setState({is_recording: true})
     this._continue()
   }
 
   async storeNif() {
     this.setState({setNIF: true})
-    this.saveInMemory("setNIF", JSON.stringify(true))
-    this.saveInMemory("nif", this.state.nif)
+    this.saveInMemory("b.setNIF", JSON.stringify(true))
+    this.saveInMemory("b.nif", this.state.nif)
     this.setState({is_recording: true})
     this._continue()
   }
 
   async storeDate() {
     this.setState({setDate: true})
-    this.saveInMemory("setDate", JSON.stringify(true))
-    this.saveInMemory("date", this.state.date)
+    this.saveInMemory("b.setDate", JSON.stringify(true))
+    this.saveInMemory("b.date", this.state.date)
     this.setState({is_recording: true})
     this._continue()
   }
 
   async storeInvoice() {
     this.setState({setInvoice: true})
-    this.saveInMemory("setInvoice", JSON.stringify(true))
+    this.saveInMemory("b.setInvoice", JSON.stringify(true))
     this.setState({is_recording: true})
-    this.saveInMemory("invoice", this.state.invoice)
+    this.saveInMemory("b.invoice", this.state.invoice)
     this._continue()
   }
 
   async storeTotal() {
     this.setState({setTotal: true})
-    this.saveInMemory("setTotal", JSON.stringify(true))
-    this.saveInMemory("total", this.state.total)
+    this.saveInMemory("b.setTotal", JSON.stringify(true))
+    this.saveInMemory("b.total", this.state.total)
     this.setState({saved: true})
-    this.saveInMemory("saved", JSON.stringify(true))
+    this.saveInMemory("b.saved", JSON.stringify(true))
   }
 
   cancelEntity = async () => {
@@ -1234,12 +1375,12 @@ class BuyScreen extends Component {
     this.setState({saved: false})
     this.setState({getTotal: false})
     this.setState({interpretedTotal: ""})
-    this.saveInMemory("saved", JSON.stringify(false))
+    this.saveInMemory("b.saved", JSON.stringify(false))
     this._startRecognition()
   }
 
   setEntity = async() => {
-    await AsyncStorage.getItem("interpretedEntity").then((value) => {
+    await AsyncStorage.getItem("b.interpretedEntity").then((value) => {
       if (value != null) {
         if (value != this.state.interpretedEntity) {
           this.askEntityNewSave()
@@ -1255,7 +1396,7 @@ class BuyScreen extends Component {
   }
 
   setNIF = async() => {
-    await AsyncStorage.getItem("interpretedNif").then((value) => {
+    await AsyncStorage.getItem("b.interpretedNif").then((value) => {
       if (value != null) {
         if (value != this.state.interpretedNif) {
           this.askNifNewSave()
@@ -1271,7 +1412,7 @@ class BuyScreen extends Component {
   }
 
   setDate = async() => {
-    await AsyncStorage.getItem("interpretedDate").then((value) => {
+    await AsyncStorage.getItem("b.interpretedDate").then((value) => {
       if (value != null) {
         if (value != this.state.interpretedDate) {
           this.askDateNewSave()
@@ -1287,7 +1428,7 @@ class BuyScreen extends Component {
   }
 
   setInvoice = async() => {
-    await AsyncStorage.getItem("interpretedInvoice").then((value) => {
+    await AsyncStorage.getItem("b.interpretedInvoice").then((value) => {
       if (value != null) {
         if (value != this.state.interpretedInvoice) {
           this.askInvoiceNewSave()
@@ -1303,7 +1444,7 @@ class BuyScreen extends Component {
   }
 
   setTotal = async() => {
-    await AsyncStorage.getItem("interpretedTotal").then((value) => {
+    await AsyncStorage.getItem("b.interpretedTotal").then((value) => {
       if (value != null) {
         if (value != this.state.interpretedTotal) {
           this.askTotalNewSave()
@@ -1319,31 +1460,51 @@ class BuyScreen extends Component {
   }
 
    takePhoto = async() =>{
-    let options = {
-      title: 'Hacer una foto',
-      customButtons: [
-        { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
-      ],
-      storageOptions: {
-        skipBackup: true,
-        path: 'images',
-      },
-    };
-    launchCamera(options, (response) => {
-      if (response.didCancel || response.error || response.customButton) {
-        console.log('Something happened');
-      } else {
-        var arrayImages = this.state.images
-        var uri = JSON.stringify(response.assets[0]["uri"])
-        arrayImages.push({
-          id: this.state.id+"_"+(this.state.images.length+1),
-          uri: uri
-        })
-        this.setState({images: arrayImages})
-        this.saveInMemory("isBuy", JSON.stringify(true))
-        this.saveInMemory("images", JSON.stringify(arrayImages))
-      }
-    })
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: "ContaVoz",
+            message:"Se necesita acceder a su cámara",
+            buttonNegative: "Cancelar",
+            buttonPositive: "Aceptar"
+          }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          let options = {
+            title: 'Hacer una foto',
+            customButtons: [
+              { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
+            ],
+            storageOptions: {
+              skipBackup: true,
+              path: 'images',
+              privateDirectory: true,
+            },
+          };
+          if (this.state.images.length <= 9) {
+            ImagePicker.launchCamera(options, (response) => {
+              if (response.didCancel || response.error || response.customButton) {
+                console.log(JSON.stringify(response));
+              } else {
+                var arrayImages = this.state.images
+                var uri = JSON.stringify(response.assets[0]["uri"])
+                arrayImages.push({
+                  id: this.state.id+"_"+(this.state.images.length+1),
+                  uri: uri
+                })
+                this.setState({images: arrayImages})
+                this.saveInMemory("isBuy", JSON.stringify(true))
+                this.saveInMemory("b.images", JSON.stringify(arrayImages))
+              }
+            })
+          } else {
+            this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
+          }
+        }
+      } catch (err) {
+      console.log(err);
+    }
   }
 
   async saveInMemory(key, value) {
@@ -1361,28 +1522,25 @@ class BuyScreen extends Component {
         path: 'images',
       },
     };
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel || response.error || response.customButton) {
-        console.log('Something happened');
-      } else {
-        var arrayImages = this.state.images
-        var uri = JSON.stringify(response.assets[0]["uri"])
-        arrayImages.push({
-          id: this.state.id+"_"+(this.state.images.length+1),
-          uri: uri
-        })
-        this.setState({images: arrayImages})
-        this.saveInMemory("isBuy", JSON.stringify(true))
-        this.saveInMemory("images", JSON.stringify(arrayImages))
-      }
-    })
-  }
-
-  seeImage(image) {
-    this.props.navigation.push('ImageViewer', {
-      image: image,
-      back: "Buy"
-    })
+    if (this.state.images.length <= 9) {
+      ImagePicker.launchImageLibrary(options, (response) => {
+        if (response.didCancel || response.error || response.customButton) {
+          console.log('Something happened');
+        } else {
+          var arrayImages = this.state.images
+          var uri = JSON.stringify(response.assets[0]["uri"])
+          arrayImages.push({
+            id: this.state.id+"_"+(this.state.images.length+1),
+            uri: uri
+          })
+          this.setState({images: arrayImages})
+          this.saveInMemory("isBuy", JSON.stringify(true))
+          this.saveInMemory("b.images", JSON.stringify(arrayImages))
+        }
+      })
+    } else {
+      this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
+    }
   }
 
   async resetState() {
@@ -1419,24 +1577,24 @@ class BuyScreen extends Component {
 
   async delete() {
     this.resetState()
-    await AsyncStorage.setItem("entity", "")
-    await AsyncStorage.setItem("nif", "")
-    await AsyncStorage.setItem("date", "")
-    await AsyncStorage.setItem("invoice", "")
-    await AsyncStorage.setItem("total", "")
-    await AsyncStorage.setItem("interpretedEntity", "")
-    await AsyncStorage.setItem("interpretedNif", "")
-    await AsyncStorage.setItem("interpretedDate", "")
-    await AsyncStorage.setItem("interpretedInvoice", "")
-    await AsyncStorage.setItem("interpretedTotal", "")
-    await AsyncStorage.setItem("images", JSON.stringify([]))
-    await AsyncStorage.setItem("isBuy", JSON.stringify(false))
-    await AsyncStorage.setItem("saved", JSON.stringify(false))
-    await AsyncStorage.setItem("setEntity", JSON.stringify(false))
-    await AsyncStorage.setItem("setNIF", JSON.stringify(false))
-    await AsyncStorage.setItem("setDate", JSON.stringify(false))
-    await AsyncStorage.setItem("setInvoice", JSON.stringify(false))
-    await AsyncStorage.setItem("setTotal", JSON.stringify(false))
+    await AsyncStorage.setItem("b.entity", "")
+    await AsyncStorage.setItem("b.nif", "")
+    await AsyncStorage.setItem("b.date", "")
+    await AsyncStorage.setItem("b.invoice", "")
+    await AsyncStorage.setItem("b.total", "")
+    await AsyncStorage.setItem("b.interpretedEntity", "")
+    await AsyncStorage.setItem("b.interpretedNif", "")
+    await AsyncStorage.setItem("b.interpretedDate", "")
+    await AsyncStorage.setItem("b.interpretedInvoice", "")
+    await AsyncStorage.setItem("b.interpretedTotal", "")
+    await AsyncStorage.setItem("b.images", JSON.stringify([]))
+    await AsyncStorage.setItem("b.isBuy", JSON.stringify(false))
+    await AsyncStorage.setItem("b.saved", JSON.stringify(false))
+    await AsyncStorage.setItem("b.setEntity", JSON.stringify(false))
+    await AsyncStorage.setItem("b.setNIF", JSON.stringify(false))
+    await AsyncStorage.setItem("b.setDate", JSON.stringify(false))
+    await AsyncStorage.setItem("b.setInvoice", JSON.stringify(false))
+    await AsyncStorage.setItem("b.setTotal", JSON.stringify(false))
   }
 
     _finish = async () => {
@@ -1513,6 +1671,26 @@ class BuyScreen extends Component {
     return null
   }
 
+  setFlatlistPos(i) {
+    this.setState({ flatlistPos: i })
+  }
+
+  setFlatlistButtons(pos) {
+    var result = []
+    for (let i = 0; i < this.state.images.length; i++) {
+      if (pos == i) {
+        result.push(<View style={styles.roundButtonsView}><TouchableOpacity
+          style={styles.roundButton}>
+        </TouchableOpacity></View>)
+      } else {
+        result.push(<View style={styles.roundButtonsView}><TouchableOpacity
+          style={styles.focusRoundButton} onPress={() => this.setFlatlistPos(i)}>
+        </TouchableOpacity></View>)
+      }
+    }
+    return (<View style={styles.flatlistView}>{result}</View>)
+  }
+
   setImages() {
     if (this.state.images.length > 0) {
       return (
@@ -1523,19 +1701,24 @@ class BuyScreen extends Component {
             showsHorizontalScrollIndicator={false}
             data={this.state.images}
             renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => this.seeImage(item)}>
+              <ImageZoom
+                  cropWidth={Dimensions.get('window').width}
+                  cropHeight={Dimensions.get('window').height/1.5}
+                  imageWidth={Dimensions.get('window').width}
+                  imageHeight={Dimensions.get('window').height/1.5}>
                     <Image
                       source={{
-                        uri:item.uri.replace(/['"]+/g, ''),
+                        uri:this.state.images[this.state.flatlistPos].uri.replace(/['"]+/g, ''),
                       }}
-                      resizeMode="contain"
+                      resizeMode="cover"
                       key={item}
                       style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/1.5, aspectRatio: 1 }}
                     />
-                  </TouchableOpacity>
+                  </ImageZoom>
                 )}
             />
         </View>
+        {this.state.images.length > 1 && this.setFlatlistButtons(this.state.flatlistPos)}
         </View>
       )
     }
@@ -1548,7 +1731,7 @@ class BuyScreen extends Component {
           source={require('./assets/camera_plus.png')}
           resizeMode="contain"
           key="0"
-          style={{ width: 150, height: 150 }}
+          style={{ width: 100, height: 100 }}
       />
       </TouchableOpacity>
       </View>
@@ -1568,6 +1751,9 @@ class BuyScreen extends Component {
             transparent={true}>
               <View style={styles.centeredView}>
               <View style={styles.modalView}>
+              <ScrollView
+              showsVerticalScrollIndicator={false}
+              showsHorizontalScrollIndicator={false}>
               <Text style={styles.listening}>Entidad</Text>
               <View style={styles.textForm}>
                 <Text style={styles.resumeText}>Texto escuchado</Text>
@@ -1605,6 +1791,7 @@ class BuyScreen extends Component {
                     </TouchableOpacity>
                   </View>
               </View>
+              </ScrollView>
             </View>
           </View>
         </Modal>)
@@ -1613,7 +1800,7 @@ class BuyScreen extends Component {
   }
 
   setNIFVoiceControl() {
-    if (JSON.parse(this.state.is_recording) && this.state.nif.length==0 && this.state.entity.length>0 && !JSON.parse(this.state.getNIF) && JSON.parse(this.state.is_recording)) {
+    if (JSON.parse(this.state.is_recording) && this.state.nif.length==0 && JSON.parse(this.state.setEntity) && !JSON.parse(this.state.getNIF)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.listening}>Diga su NIF</Text>
       </View>)
@@ -1847,7 +2034,7 @@ class BuyScreen extends Component {
           <Text style={styles.showTitle}>Para empezar debe adjuntar una imagen o pulsar el micrófono</Text>
         </View>
       )
-    } else if (JSON.parse(this.state.setEntity) && !JSON.parse(this.state.setTotal)) {
+    } else if (!JSON.parse(this.state.is_recording) && JSON.parse(this.state.setEntity) && !JSON.parse(this.state.setTotal)) {
       return(
         <View style={styles.resumeView}>
           <Text style={styles.showTitle}>Existe un documento contable por voz sin terminar</Text>
@@ -1869,73 +2056,72 @@ class BuyScreen extends Component {
 
   seeDocument = () => {
     this.props.navigation.push('ResumeView', {
-      back: "Buy"
+      id: this.state.id,
+      entity: this.state.entity,
+      interpretedEntity: this.state.interpretedEntity,
+      nif: this.state.nif,
+      interpretedNif: this.state.interpretedNif,
+      date: this.state.date,
+      interpretedDate: this.state.interpretedDate,
+      invoice: this.state.invoice,
+      interpretedInvoice: this.state.interpretedInvoice,
+      total: this.state.total,
+      interpretedTotal: this.state.interpretedTotal,
+      images: this.state.images,
+      back: "Buy",
     })
   }
 
   setBottomMenu() {
     return (
       <View style={styles.footBar}>
-      <View style={styles.cameraIcon}>
+      {(this.state.images.length > 0 || this.state.interpretedEntity.length>0) 
+      &&(<View style={styles.iconsView}><Icon
+        name='trash'
+        type='font-awesome'
+        color='#1A5276'
+        size={40}
+        onPress={this._delete}
+      />
+      </View>)}
+      <View style={styles.iconsView}>
       <Icon
         name='camera'
         type='font-awesome'
-        color='#00749A'
+        color='#1A5276'
         size={35}
         onPress={this.takePhoto}
       />
       </View>
-      <View style={styles.microIcon}>
+      <View style={styles.iconsView}>
         {this.setMicrophoneIcon()}
       </View>
-      <View style={styles.galleryIcon}>
+      <View style={styles.iconsView}>
       <Icon
         name='image'
         type='font-awesome'
-        color='#00749A'
+        color='#1A5276'
         size={35}
         onPress={this.goGallery}
       />
       </View>
-      {JSON.parse(this.state.setEntity) && 
-      (<View style={styles.galleryIcon}>
+      {(JSON.parse(this.state.setEntity) || this.state.images.length > 0) && 
+      (<View style={styles.iconsView}>
       <Icon
         name='file'
         type='font-awesome'
-        color='#00749A'
+        color='#1A5276'
         size={35}
         onPress={this.seeDocument}
-      /></View>)}
+      /></View>
+      )}
       </View>)
-  }
-
-  setTopMenu() {
-    return (
-    <View style={styles.footBar}>
-    {(this.state.images.length > 0 || this.state.interpretedEntity.length>0) && 
-      (<View style={{paddingRight:20}}><View style={styles.cameraIcon}><Icon
-        name='times'
-        type='font-awesome'
-        color='#C0392B'
-        size={40}
-        onPress={this._delete}
-      />
-      </View></View>)}
-    {(this.state.images.length > 0 || this.state.interpretedEntity.length>0) && 
-    (<View style={{paddingLeft:20}}><View style={styles.galleryIcon}>
-    <Icon
-      name='check'
-      type='font-awesome'
-      color='#27AE60'
-      size={40}
-      onPress={this.sendDocument}
-    /></View></View>)}
-    </View>)
   }
 
   render () {
     return (
       <View style={{flex: 1, backgroundColor: "#fff"}}>
+        <View style={styles.navBarBackHeader}><Text style={styles.navBarHeader}>Contabilidad para compra</Text></View>
         <ScrollView style={{backgroundColor: "#fff"}}>
           <View style={styles.sections}>
             {this.setImages()}
@@ -1947,7 +2133,6 @@ class BuyScreen extends Component {
             {this.setTotalVoiceControl()}
           </View>
         </ScrollView>
-          {this.setTopMenu()}
           {this.setBottomMenu()}
       </View>
     );
@@ -1986,7 +2171,7 @@ class MainScreen extends Component {
   goBuyScreen = async () => {
     var today = new Date()
     var id = "C_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
-    await AsyncStorage.setItem('id', id)
+    await AsyncStorage.setItem('b.id', id)
     this.props.navigation.push('Buy')
   }
 
@@ -2202,7 +2387,7 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 20,
     fontStyle: 'italic',
-    maxWidth: "90%"
+    width: "90%"
   },
   navBar: {
     alignItems: 'center',
@@ -2304,7 +2489,8 @@ const styles = StyleSheet.create({
   },
   dictionaryView: {
     paddingLeft: 40,
-    backgroundColor: "#FFF"
+    backgroundColor: "#FFF",
+    width:"100%",
   },
   wordsBox: {
     flexDirection:'row',
@@ -2365,10 +2551,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   saveNewValue: {
-    fontSize: 20,
+    fontSize: 17,
     textAlign: "left",
-    fontWeight: 'bold',
     color: "#2E8B57",
+    fontWeight: 'bold',
   },
   saveText: {
     fontSize: 17,
@@ -2396,7 +2582,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   mainIcon: {
-    backgroundColor: "#00749A",
+    backgroundColor: "#1A5276",
     alignSelf: "center",
     paddingTop: 10,
     paddingLeft: 20,
@@ -2457,23 +2643,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "90%",
   },
-  cameraIcon: {
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    paddingTop: 15,
-    paddingLeft: 15,
-    paddingRight: 15,
-    paddingBottom: 15,
-  },
-  microIcon: {
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    paddingTop: 15,
-    paddingLeft: 15,
-    paddingRight: 15,
-    paddingBottom: 15,
-  },
-  galleryIcon: {
+  iconsView: {
     backgroundColor: "#FFF",
     borderRadius: 10,
     paddingTop: 15,
@@ -2517,6 +2687,53 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5
+    elevation: 5,
+    width:"80%",
+    maxHeight:"60%"
+
   },
+  navBarHeader: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 20
+  },
+  navBarBackHeader: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor:"#1A5276", 
+    flexDirection:'row', 
+    textAlignVertical: 'center',
+    height: 50
+  },
+  focusRoundButton: {
+    width: 5,
+    height: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 7,
+    borderRadius: 50,
+    borderWidth:2,
+    borderColor: '#1A5276',
+  },
+  roundButton: {
+    width: 5,
+    height: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 7,
+    borderRadius: 50,
+    backgroundColor: '#1A5276',
+    borderWidth:2,
+    borderColor: '#1A5276',
+  },
+  flatlistView: {
+    paddingTop:20, 
+    backgroundColor:"#FFF", 
+    flexDirection: "row", 
+    justifyContent: 'center',
+  },
+  roundButtonsView:{
+    paddingLeft:5,
+    paddingRight:5
+  }
 });
