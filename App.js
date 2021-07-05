@@ -126,48 +126,56 @@ class ResumeViewScreen extends Component {
     var result = []
     for (let i = 0; i < this.state.images.length; i++) {
       if (pos == i) {
-        result.push(<View style={styles.roundButtonsView}><TouchableOpacity
+        this.setImageZoom(this.state.images[pos])
+        result.push(<View style={styles.roundButtonsView}><Text
           style={styles.roundButton}>
-        </TouchableOpacity></View>)
+        </Text></View>)
       } else {
-        result.push(<View style={styles.roundButtonsView}><TouchableOpacity
-          style={styles.focusRoundButton} onPress={() => this.setFlatlistPos(i)}>
-        </TouchableOpacity></View>)
+        this.setImageZoom(this.state.images[i])
+        result.push(<View style={styles.roundButtonsView}><Text
+          style={styles.focusRoundButton}>
+        </Text></View>)
       }
     }
     return (<View style={styles.flatlistView}>{result}</View>)
+  }
+
+  setImageZoom(item) {
+    return (
+      <ImageZoom
+        cropWidth={Dimensions.get('window').width}
+        cropHeight={Dimensions.get('window').height/1.5}
+        imageWidth={Dimensions.get('window').width}
+        imageHeight={Dimensions.get('window').height/1.5}>
+          <Image
+            source={{
+              uri: item.uri.replace(/['"]+/g, ''),
+            }}
+            resizeMode="cover"
+            key={item.id}
+            style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/1.5, aspectRatio: 1 }}
+          />
+      </ImageZoom>)
   }
 
   setImages() {
     if (this.state.images.length > 0) {
       return (
         <View style={styles.imagesSection}>
+          <View style={styles.selectedImageView}>
           <FlatList 
             horizontal
-            showsHorizontalScrollIndicator={true}
+            showsHorizontalScrollIndicator={false}
             data={this.state.images}
-            renderItem={({ item }) => (
-              <ImageZoom
-                cropWidth={Dimensions.get('window').width}
-                cropHeight={Dimensions.get('window').height/1.5}
-                imageWidth={Dimensions.get('window').width}
-                imageHeight={Dimensions.get('window').height/1.5}>
-               <TouchableOpacity onPress={() => this.seeImage(item)}>
-                <Image
-                  source={{
-                    uri:this.state.images[this.state.flatlistPos].uri.replace(/['"]+/g, ''),
-                  }}
-                  resizeMode="cover"
-                  key={item}
-                  style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/1.5, aspectRatio: 1 }}
-                />
-              </TouchableOpacity>
-              </ImageZoom>
-          )}
+            renderItem={({ item, index }) => (
+              (<View>
+               {this.setImageZoom(item)}
+              {this.setFlatlistButtons(index)}
+              </View>) 
+            )}
         />
-        {this.state.images.length > 1 && this.setFlatlistButtons(this.state.flatlistPos)}
         </View>
-      )
+      </View>)
     }
     return null
   }
@@ -278,47 +286,40 @@ class ResumeViewScreen extends Component {
       await AsyncAlert();
   }
 
-  setBottomMenu() {
-    return (
-      <View style={styles.footBar}>
-        <View style={styles.iconsView}><Icon
-        name='trash'
-        type='font-awesome'
-        color='#1A5276'
-        size={40}
-        onPress={this._delete}
-      />
-      </View>
-      <View style={styles.iconsView}>
-        <Icon
-          name='calculator'
-          type='font-awesome'
-          color='#1A5276'
-          size={35}
-          onPress={this.goBack}
-      />
-      </View>
-      <View style={styles.iconsView}>
-      <Icon
-        name='file'
-        type='font-awesome'
-        color='#1A5276'
-        size={35}
-      /></View>
-      </View>)
+  _save = async () => {
+    alert("Esta acción está desactivada de momento")
   }
 
   render () {
     return (
       <View style={{flex: 1, backgroundColor:"#FFF"}}>
-        <View style={styles.navBarBackHeader}><Text style={styles.navBarHeader}>Documento generado</Text></View>
-        <ScrollView style={{backgroundColor: "#fff"}}>
+        <View style={styles.navBarBackHeader}>
+        <View style={{ width: 70,textAlign:'center' }}>
+            <Icon
+              name='trash'
+              type='font-awesome'
+              color='#FFF'
+              size={30}
+              onPress={this._delete}
+            />
+          </View>
+          <Text style={styles.navBarHeader}>Documento generado</Text>
+          <View style={{ width: 70,textAlign:'center' }}>
+            <Icon
+              name='save'
+              type='font-awesome'
+              color='#FFF'
+              size={30}
+              onPress={this._save}
+            />
+          </View>
+        </View>
+        <ScrollView style={{backgroundColor: "#FFF"}}>
         <View style={styles.sections}>
           {this.setImages()}
           {this.setControlVoice()}
         </View>
-        </ScrollView>          
-        {this.setBottomMenu()}
+        </ScrollView>   
       </View>
     );
   }
@@ -1679,16 +1680,36 @@ class BuyScreen extends Component {
     var result = []
     for (let i = 0; i < this.state.images.length; i++) {
       if (pos == i) {
-        result.push(<View style={styles.roundButtonsView}><TouchableOpacity
+        this.setImageZoom(this.state.images[pos])
+        result.push(<View style={styles.roundButtonsView}><Text
           style={styles.roundButton}>
-        </TouchableOpacity></View>)
+        </Text></View>)
       } else {
-        result.push(<View style={styles.roundButtonsView}><TouchableOpacity
-          style={styles.focusRoundButton} onPress={() => this.setFlatlistPos(i)}>
-        </TouchableOpacity></View>)
+        this.setImageZoom(this.state.images[i])
+        result.push(<View style={styles.roundButtonsView}><Text
+          style={styles.focusRoundButton}>
+        </Text></View>)
       }
     }
     return (<View style={styles.flatlistView}>{result}</View>)
+  }
+
+  setImageZoom(item) {
+    return (
+      <ImageZoom
+        cropWidth={Dimensions.get('window').width}
+        cropHeight={Dimensions.get('window').height/1.5}
+        imageWidth={Dimensions.get('window').width}
+        imageHeight={Dimensions.get('window').height/1.5}>
+          <Image
+            source={{
+              uri: item.uri.replace(/['"]+/g, ''),
+            }}
+            resizeMode="cover"
+            key={item.id}
+            style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/1.5, aspectRatio: 1 }}
+          />
+      </ImageZoom>)
   }
 
   setImages() {
@@ -1700,25 +1721,14 @@ class BuyScreen extends Component {
             horizontal
             showsHorizontalScrollIndicator={false}
             data={this.state.images}
-            renderItem={({ item }) => (
-              <ImageZoom
-                  cropWidth={Dimensions.get('window').width}
-                  cropHeight={Dimensions.get('window').height/1.5}
-                  imageWidth={Dimensions.get('window').width}
-                  imageHeight={Dimensions.get('window').height/1.5}>
-                    <Image
-                      source={{
-                        uri:this.state.images[this.state.flatlistPos].uri.replace(/['"]+/g, ''),
-                      }}
-                      resizeMode="cover"
-                      key={item}
-                      style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/1.5, aspectRatio: 1 }}
-                    />
-                  </ImageZoom>
-                )}
-            />
+            renderItem={({ item, index }) => (
+              (<View>
+               {this.setImageZoom(item)}
+              {this.setFlatlistButtons(index)}
+              </View>) 
+            )}
+          />
         </View>
-        {this.state.images.length > 1 && this.setFlatlistButtons(this.state.flatlistPos)}
         </View>
       )
     }
@@ -1738,15 +1748,204 @@ class BuyScreen extends Component {
     )
   }
 
-  setEntityVoiceControl() {
-    if (this.state.started.length>0 && this.state.entity.length == 0 && JSON.parse(this.state.is_recording)) {
-      return (<View style={styles.voiceControlView}>
-        <Text style={styles.title}>Diga el nombre de su entidad</Text>
-      </View>)
-    }
-    if (JSON.parse(this.state.getEntity) && !JSON.parse(this.state.setEntity)) {
-      return (
-            <Modal
+  setTotalModal() {
+    return(
+      <Modal
+        animationType = {"slide"}
+        transparent={true}>
+          <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.title}>Total</Text>
+            <View style={styles.textForm}>
+                <Text style={styles.resumeText}>Texto escuchado</Text>
+                <Text multiline={true} style={styles.transcript}>{this.state.total}</Text>
+                <Text style={styles.resumeText}>Texto interpretado </Text>
+                <View style={{flexDirection:'row', width:"90%"}}>
+                  <TextInput multiline={true} style={styles.changeTranscript} onChangeText={(interpretedTotal) => this.setState({interpretedTotal})}>{this.state.interpretedTotal}</TextInput>
+                  <Icon
+                    name='pencil'
+                    type='font-awesome'
+                    color='#000'
+                    size={30}
+                  />
+                  </View>
+                <Text style={styles.transcript}></Text>
+                <View style={{flexDirection:'row', width:"90%"}}>
+                <TouchableOpacity onPress={this.setTotal}>
+                    <Text style={styles.saveButton}>Guardar</Text>
+                </TouchableOpacity>
+                <Icon
+                      name='window-close'
+                      type='font-awesome'
+                      color='#FFF'
+                      size={32}
+                    />
+                    <Icon
+                      name='window-close'
+                      type='font-awesome'
+                      color='#FFF'
+                      size={32}
+                    />
+                <TouchableOpacity onPress={this.cancelTotal}>
+                    <Text style={styles.exitButton}>Cancelar</Text>
+                </TouchableOpacity>
+                </View>
+            </View>
+          </View>
+          </View>
+      </Modal>
+    )
+  }
+
+  setInvoiceModal(){
+    return(
+      <Modal
+        animationType = {"slide"}
+        transparent={true}>
+          <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.title}>Nº Factura</Text>
+            <View style={styles.textForm}>
+                <Text style={styles.resumeText}>Texto escuchado</Text>
+                <Text multiline={true} style={styles.transcript}>{this.state.invoice}</Text>
+                <Text style={styles.resumeText}>Texto interpretado </Text>
+                <View style={{flexDirection:'row', width:"90%"}}>
+                  <TextInput multiline={true} style={styles.changeTranscript} onChangeText={(interpretedInvoice) => this.setState({interpretedInvoice})}>{this.state.interpretedInvoice}</TextInput>
+                  <Icon
+                    name='pencil'
+                    type='font-awesome'
+                    color='#000'
+                    size={30}
+                  />
+                  </View>
+                <Text style={styles.transcript}></Text>
+                <View style={{flexDirection:'row', width:"90%"}}>
+                <TouchableOpacity onPress={this.setInvoice}>
+                    <Text style={styles.saveButton}>Guardar</Text>
+                </TouchableOpacity>
+                <Icon
+                      name='window-close'
+                      type='font-awesome'
+                      color='#FFF'
+                      size={32}
+                    />
+                    <Icon
+                      name='window-close'
+                      type='font-awesome'
+                      color='#FFF'
+                      size={32}
+                    />
+                <TouchableOpacity onPress={this.cancelInvoice}>
+                    <Text style={styles.exitButton}>Cancelar</Text>
+                </TouchableOpacity>
+                </View>
+            </View>
+          </View>
+          </View>
+      </Modal>
+    )
+  }
+
+  setDateModal() {
+    return(
+      <Modal
+        animationType = {"slide"}
+        transparent={true}>
+          <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.title}>Fecha</Text>
+            <View style={styles.textForm}>
+                <Text style={styles.resumeText}>Texto escuchado</Text>
+                <Text multiline={true} style={styles.transcript}>{this.state.date}</Text>
+                <Text style={styles.resumeText}>Texto interpretado </Text>
+                <View style={{flexDirection:'row', width:"90%"}}>
+                  <TextInput multiline={true} style={styles.changeTranscript} onChangeText={(interpretedDate) => this.setState({interpretedDate})}>{this.state.interpretedDate}</TextInput>
+                  <Icon
+                    name='pencil'
+                    type='font-awesome'
+                    color='#000'
+                    size={30}
+                  />
+                  </View>
+                  <Text style={styles.transcript}></Text>
+                <View style={{flexDirection:'row', width:"90%"}}>
+                <TouchableOpacity onPress={this.setDate}>
+                    <Text style={styles.saveButton}>Guardar</Text>
+                </TouchableOpacity>
+                <Icon
+                  name='window-close'
+                  type='font-awesome'
+                  color='#FFF'
+                  size={32}
+                />
+                <Icon
+                  name='window-close'
+                  type='font-awesome'
+                  color='#FFF'
+                  size={32}
+                />
+                <TouchableOpacity onPress={this.cancelDate}>
+                    <Text style={styles.exitButton}>Cancelar</Text>
+                </TouchableOpacity>
+                </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    )
+  }
+
+  setNIFModal() {
+    return(<Modal
+      animationType = {"slide"}
+      transparent={true}>
+        <View style={styles.centeredView}>
+        <View style={styles.modalView}>
+          <Text style={styles.title}>NIF</Text>
+          <View style={styles.textForm}>
+              <Text style={styles.resumeText}>Texto escuchado</Text>
+              <Text multiline={true} style={styles.transcript}>{this.state.nif}</Text>
+              <Text style={styles.resumeText}>Texto interpretado </Text>
+              <View style={{flexDirection:'row', width:"90%"}}>
+                <TextInput multiline={true} style={styles.changeTranscript} onChangeText={(interpretedNif) => this.setState({interpretedNif})}>{this.state.interpretedNif}</TextInput>
+                <Icon
+                  name='pencil'
+                  type='font-awesome'
+                  color='#000'
+                  size={30}
+                />
+                </View>
+                <Text style={styles.transcript}></Text>
+                <View style={styles.modalNavBarButtons}>
+              <TouchableOpacity onPress={this.setNIF}>
+                  <Text style={styles.saveButton}>Guardar</Text>
+              </TouchableOpacity>
+                <Icon
+                    name='window-close'
+                    type='font-awesome'
+                    color='#FFF'
+                    size={32}
+                  />
+                  <Icon
+                    name='window-close'
+                    type='font-awesome'
+                    color='#FFF'
+                    size={32}
+                  />
+              <TouchableOpacity onPress={this.cancelNIF}>
+                  <Text style={styles.exitButton}>Cancelar</Text>
+              </TouchableOpacity>
+              </View>
+          </View>
+        </View>
+        </View>
+    </Modal>)
+  }
+
+
+  setEntityModal() {
+    return(
+      <Modal
             animationType = {"slide"}
             transparent={true}>
               <View style={styles.centeredView}>
@@ -1758,8 +1957,7 @@ class BuyScreen extends Component {
               <View style={styles.textForm}>
                 <Text style={styles.resumeText}>Texto escuchado</Text>
                 <Text multiline={true} style={styles.transcript}>{this.state.entity}</Text>
-                <Text style={styles.transcript}></Text>
-                <Text style={styles.resumeText}>Texto interpretado </Text>
+                <Text style={styles.resumeText}>Texto interpretado</Text>
                 <View style={{flexDirection:'row', width:"90%"}}>
                   <TextInput multiline={true} style={styles.changeTranscript} onChangeText={(interpretedEntity) => this.setState({interpretedEntity})}>{this.state.interpretedEntity}</TextInput>
                   <Icon
@@ -1795,6 +1993,16 @@ class BuyScreen extends Component {
             </View>
           </View>
         </Modal>)
+  }
+
+  setEntityVoiceControl() {
+    if (this.state.started.length>0 && this.state.entity.length == 0 && JSON.parse(this.state.is_recording)) {
+      return (<View style={styles.voiceControlView}>
+        <Text style={styles.listening}>Diga el nombre de su entidad</Text>
+      </View>)
+    }
+    if (JSON.parse(this.state.getEntity) && !JSON.parse(this.state.setEntity)) {
+      return (this.setEntityModal())
     } 
     return null
   }
@@ -1806,229 +2014,49 @@ class BuyScreen extends Component {
       </View>)
     }
     if (JSON.parse(this.state.getNIF) && !JSON.parse(this.state.setNIF)) {
-      return (
-        <Modal
-        animationType = {"slide"}
-        transparent={true}>
-          <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.title}>NIF</Text>
-            <View style={styles.textForm}>
-                <Text style={styles.resumeText}>Texto escuchado</Text>
-                <Text multiline={true} style={styles.transcript}>{this.state.nif}</Text>
-                <Text style={styles.transcript}></Text>
-                <Text style={styles.resumeText}>Texto interpretado </Text>
-                <Text style={styles.transcript}></Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                  <TextInput multiline={true} style={styles.changeTranscript} onChangeText={(interpretedNif) => this.setState({interpretedNif})}>{this.state.interpretedNif}</TextInput>
-                  <Icon
-                    name='pencil'
-                    type='font-awesome'
-                    color='#000'
-                    size={30}
-                  />
-                  </View>
-                  <View style={styles.modalNavBarButtons}>
-                <TouchableOpacity onPress={this.setNIF}>
-                    <Text style={styles.saveButton}>Guardar</Text>
-                </TouchableOpacity>
-                  <Icon
-                      name='window-close'
-                      type='font-awesome'
-                      color='#FFF'
-                      size={32}
-                    />
-                    <Icon
-                      name='window-close'
-                      type='font-awesome'
-                      color='#FFF'
-                      size={32}
-                    />
-                <TouchableOpacity onPress={this.cancelNIF}>
-                    <Text style={styles.exitButton}>Cancelar</Text>
-                </TouchableOpacity>
-                </View>
-            </View>
-          </View>
-          </View>
-      </Modal>)
+      return (this.setNIFModal())
     } 
     return null
   }
 
   setDateVoiceControl() {
-    if (JSON.parse(this.state.is_recording) && this.state.date.length==0 && this.state.nif.length>0 && !JSON.parse(this.state.getDate) && JSON.parse(this.state.is_recording)) {
+    if (JSON.parse(this.state.is_recording) && this.state.date.length==0 && JSON.parse(this.state.setNIF) && !JSON.parse(this.state.getDate)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.listening}>Diga su fecha</Text>
       </View>)
     }
     if (JSON.parse(this.state.getDate) && !JSON.parse(this.state.setDate)) {
-      return (
-        <Modal
-        animationType = {"slide"}
-        transparent={true}>
-          <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.title}>Fecha</Text>
-            <View style={styles.textForm}>
-                <Text style={styles.resumeText}>Texto escuchado</Text>
-                <Text multiline={true} style={styles.transcript}>{this.state.date}</Text>
-                <Text style={styles.transcript}></Text>
-                <Text style={styles.resumeText}>Texto interpretado </Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                  <TextInput multiline={true} style={styles.changeTranscript} onChangeText={(interpretedDate) => this.setState({interpretedDate})}>{this.state.interpretedDate}</TextInput>
-                  <Icon
-                    name='pencil'
-                    type='font-awesome'
-                    color='#000'
-                    size={30}
-                  />
-                  </View>
-                  <Text style={styles.transcript}></Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                <TouchableOpacity onPress={this.setDate}>
-                    <Text style={styles.saveButton}>Guardar</Text>
-                </TouchableOpacity>
-                <Icon
-                  name='window-close'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={32}
-                />
-                <Icon
-                  name='window-close'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={32}
-                />
-                <TouchableOpacity onPress={this.cancelDate}>
-                    <Text style={styles.exitButton}>Cancelar</Text>
-                </TouchableOpacity>
-                </View>
-            </View>
-          </View>
-        </View>
-      </Modal>)
+      return (this.setDateModal())
     } 
     return null
   }
 
   setInvoiceVoiceControl() {
-    if (JSON.parse(this.state.is_recording) && this.state.invoice.length==0 && this.state.date.length>0 && !JSON.parse(this.state.getInvoice) && JSON.parse(this.state.is_recording)) {
+    if (JSON.parse(this.state.is_recording) && this.state.invoice.length==0 && JSON.parse(this.state.setDate) && !JSON.parse(this.state.getInvoice)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.listening}>Diga su nº factura</Text>
       </View>)
     }
     if (JSON.parse(this.state.getInvoice) && !JSON.parse(this.state.setInvoice)) {
-      return (
-        <Modal
-        animationType = {"slide"}
-        transparent={true}>
-          <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.title}>Nº Factura</Text>
-            <View style={styles.textForm}>
-                <Text style={styles.resumeText}>Texto escuchado</Text>
-                <Text multiline={true} style={styles.transcript}>{this.state.invoice}</Text>
-                <Text style={styles.transcript}></Text>
-                <Text style={styles.resumeText}>Texto interpretado </Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                  <TextInput multiline={true} style={styles.changeTranscript} onChangeText={(interpretedInvoice) => this.setState({interpretedInvoice})}>{this.state.interpretedInvoice}</TextInput>
-                  <Icon
-                    name='pencil'
-                    type='font-awesome'
-                    color='#000'
-                    size={30}
-                  />
-                  </View>
-                <Text style={styles.transcript}></Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                <TouchableOpacity onPress={this.setInvoice}>
-                    <Text style={styles.saveButton}>Guardar</Text>
-                </TouchableOpacity>
-                <Icon
-                      name='window-close'
-                      type='font-awesome'
-                      color='#FFF'
-                      size={32}
-                    />
-                    <Icon
-                      name='window-close'
-                      type='font-awesome'
-                      color='#FFF'
-                      size={32}
-                    />
-                <TouchableOpacity onPress={this.cancelInvoice}>
-                    <Text style={styles.exitButton}>Cancelar</Text>
-                </TouchableOpacity>
-                </View>
-            </View>
-          </View>
-          </View>
-      </Modal>)
+      return (this.setInvoiceModal())
     } 
     return null
   }
 
   setTotalVoiceControl() {
-    if (JSON.parse(this.state.is_recording) && this.state.total.length==0 && this.state.invoice.length>0 && !JSON.parse(this.state.getTotal) && JSON.parse(this.state.is_recording)) {
+    if (JSON.parse(this.state.is_recording) && this.state.total.length==0 && JSON.parse(this.state.setInvoice) && !JSON.parse(this.state.getTotal)) {
       return (<View style={styles.voiceControlView}>
         <Text style={styles.listening}>Diga su total</Text>
       </View>)
     }
     if (this.state.total.length>0 && !JSON.parse(this.state.saved)) {
-      return (
-        <Modal
-        animationType = {"slide"}
-        transparent={true}>
-          <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.title}>Total</Text>
-            <View style={styles.textForm}>
-                <Text style={styles.resumeText}>Texto escuchado</Text>
-                <Text multiline={true} style={styles.transcript}>{this.state.total}</Text>
-                <Text style={styles.transcript}></Text>
-                <Text style={styles.resumeText}>Texto interpretado </Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                  <TextInput multiline={true} style={styles.changeTranscript} onChangeText={(interpretedTotal) => this.setState({interpretedTotal})}>{this.state.interpretedTotal}</TextInput>
-                  <Icon
-                    name='pencil'
-                    type='font-awesome'
-                    color='#000'
-                    size={30}
-                  />
-                  </View>
-                <Text style={styles.transcript}></Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                <TouchableOpacity onPress={this.setTotal}>
-                    <Text style={styles.saveButton}>Guardar</Text>
-                </TouchableOpacity>
-                <Icon
-                      name='window-close'
-                      type='font-awesome'
-                      color='#FFF'
-                      size={32}
-                    />
-                    <Icon
-                      name='window-close'
-                      type='font-awesome'
-                      color='#FFF'
-                      size={32}
-                    />
-                <TouchableOpacity onPress={this.cancelTotal}>
-                    <Text style={styles.exitButton}>Cancelar</Text>
-                </TouchableOpacity>
-                </View>
-            </View>
-          </View>
-          </View>
-      </Modal>)
+      return (this.setTotalModal())
     } 
     return null
   }
 
   startProgramm() {
-    if (this.state.images.length == 0 && !JSON.parse(this.state.setEntity)) {
+    if (!JSON.parse(this.state.is_recording) && this.state.images.length == 0 && !JSON.parse(this.state.setEntity)) {
       return(
         <View style={styles.resumeView}>
           <Text style={styles.showTitle}>Para empezar debe adjuntar una imagen o pulsar el micrófono</Text>
@@ -2075,15 +2103,6 @@ class BuyScreen extends Component {
   setBottomMenu() {
     return (
       <View style={styles.footBar}>
-      {(this.state.images.length > 0 || this.state.interpretedEntity.length>0) 
-      &&(<View style={styles.iconsView}><Icon
-        name='trash'
-        type='font-awesome'
-        color='#1A5276'
-        size={40}
-        onPress={this._delete}
-      />
-      </View>)}
       <View style={styles.iconsView}>
       <Icon
         name='camera'
@@ -2105,23 +2124,33 @@ class BuyScreen extends Component {
         onPress={this.goGallery}
       />
       </View>
-      {(JSON.parse(this.state.setEntity) || this.state.images.length > 0) && 
-      (<View style={styles.iconsView}>
-      <Icon
-        name='file'
-        type='font-awesome'
-        color='#1A5276'
-        size={35}
-        onPress={this.seeDocument}
-      /></View>
-      )}
       </View>)
   }
 
   render () {
     return (
       <View style={{flex: 1, backgroundColor: "#fff"}}>
-        <View style={styles.navBarBackHeader}><Text style={styles.navBarHeader}>Contabilidad para compra</Text></View>
+       <View style={styles.navBarBackHeader}>
+        <View style={{ width: 70,textAlign:'center' }}>
+            <Icon
+              name='trash'
+              type='font-awesome'
+              color='#FFF'
+              size={30}
+              onPress={this._delete}
+            />
+          </View>
+          <Text style={styles.navBarHeader}>Documento compra</Text>
+          <View style={{ width: 70,textAlign:'center' }}>
+            <Icon
+              name='file'
+              type='font-awesome'
+              color='#FFF'
+              size={25}
+              onPress={this.seeDocument}
+            />
+          </View>
+        </View>
         <ScrollView style={{backgroundColor: "#fff"}}>
           <View style={styles.sections}>
             {this.setImages()}
@@ -2483,7 +2512,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   resumeView: {
-    paddingTop: 40,
+    paddingTop: 30,
     paddingLeft: 40,
     backgroundColor: "#FFF"
   },
@@ -2606,7 +2635,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#154360',
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: 18,
     width: "90%",
     paddingBottom: 20,
   },
@@ -2638,7 +2667,7 @@ const styles = StyleSheet.create({
   voiceControlView: {
     flex: 1,
     backgroundColor: "#FFF",
-    paddingTop: 50,
+    paddingTop: 40,
     alignContent: "center",
     alignSelf: "center",
     width: "90%",
@@ -2693,9 +2722,11 @@ const styles = StyleSheet.create({
 
   },
   navBarHeader: {
+    flex: 1,
     color: '#FFFFFF',
     fontWeight: 'bold',
-    fontSize: 20
+    fontSize: 20,
+    textAlign: 'center'
   },
   navBarBackHeader: {
     alignItems: 'center',
