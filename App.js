@@ -303,7 +303,8 @@ class ResumeViewScreen extends Component {
     if (!entered) {
       arrayWords.push({
         key: key,
-        value: value
+        value: value,
+        time: new Date().getTime()
       })
       this.setState({ words: arrayWords })
       await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
@@ -402,7 +403,7 @@ class DictionaryViewScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      words: [""],
+      words: [],
       addKey: "",
       addValue: "",
       showForm: false
@@ -413,7 +414,7 @@ class DictionaryViewScreen extends Component {
   async init() {
     await AsyncStorage.getItem("words").then((value) => {
       if (value != null) {
-        this.setState({ words: JSON.parse(value) })
+        this.setState({ words: JSON.parse(value).reverse() })
       }
     })
   }
@@ -432,26 +433,28 @@ class DictionaryViewScreen extends Component {
     );
   }
 
+  async pushArrayWords() {
+    var arrayWords =  this.state.words
+    if (!this.state.words.some(item => item.key.toLowerCase() === this.state.addKey.toLowerCase())) {
+      arrayWords.push({
+        key: this.state.addKey,
+        value: this.state.addValue,
+        time: new Date().getTime()
+      })
+    } else {
+      var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.addKey.toLowerCase());
+      arrayWords[i].value = this.state.addValue
+      arrayWords[i].time = new Date().getTime()
+    }
+    this.setState({ words: arrayWords })
+    await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
+  }
+
   _addWord = async () => {
     if (this.state.addKey == "" || this.state.addValue == "") {
       this.showAlert("Error", "Complete todos los campos")
     } else {
-      var arrayWords =  []
-      for (let i = 0; i < this.state.words.length; i++) {
-        if (this.state.words[i].key.toLowerCase() == this.state.addKey.toLowerCase()) {
-          arrayWords.push({
-            key: this.state.addKey,
-            value: this.state.addValue
-          })
-        } else {
-          arrayWords.push({
-            key: this.state.words[i].key,
-            value: this.state.words[i].value
-          })
-        }
-      }
-      this.setState({ words: arrayWords })
-      await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
+      await this.pushArrayWords()
       this.setState({ addKey: "" })
       this.setState({ addValue: "" })
       this.formAction()
@@ -552,7 +555,8 @@ class DictionaryViewScreen extends Component {
       if ( this.state.words[i].key != item.key) {
         arrayWords.push({
           key: this.state.words[i].key,
-          value: this.state.words[i].value
+          value: this.state.words[i].value,
+          time: this.state.words[i].time
         })
       }
     }
@@ -568,7 +572,7 @@ class DictionaryViewScreen extends Component {
         <FlatList 
           vertical
           showsVerticalScrollIndicator={false}
-          data={this.state.words}
+          data={ this.state.words.sort((a,b) => a.time < b.time) } 
           renderItem={({ item }) => (
             <View style={{paddingBottom: 20}}>
             <View style={styles.wordsBox}>
@@ -843,7 +847,7 @@ class ImageViewerScreen extends Component {
               name='camera'
               type='font-awesome'
               color='#FFF'
-              size={32}
+              size={30}
               onPress={this.takePhoto}
             />
             <Icon
@@ -862,7 +866,7 @@ class ImageViewerScreen extends Component {
               name='image'
               type='font-awesome'
               color='#FFF'
-              size={35}
+              size={30}
               onPress={this.goGallery}
             />
             <Icon
@@ -881,7 +885,7 @@ class ImageViewerScreen extends Component {
               name='trash'
               type='font-awesome'
               color='#FFF'
-              size={35}
+              size={30}
               onPress={this._delete}
             />
           </View>
@@ -1211,7 +1215,8 @@ class BuyScreen extends Component {
     if (!this.state.words.some(item => item.key.toLowerCase() === this.state.total.toLowerCase())) {
       arrayWords.push({
         key: this.state.total,
-        value: this.state.interpretedTotal
+        value: this.state.interpretedTotal,
+        time: new Date().getTime()
       })
     } else {
       var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.total.toLowerCase());
@@ -1227,7 +1232,8 @@ class BuyScreen extends Component {
     if (!this.state.words.some(item => item.key.toLowerCase() === this.state.invoice.toLowerCase())) {
       arrayWords.push({
         key: this.state.invoice,
-        value: this.state.interpretedInvoice
+        value: this.state.interpretedInvoice,
+        time: new Date().getTime()
       })
     } else {
       var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.invoice.toLowerCase());
@@ -1243,7 +1249,8 @@ class BuyScreen extends Component {
     if (!this.state.words.some(item => item.key.toLowerCase() === this.state.date.toLowerCase())) {
       arrayWords.push({
         key: this.state.date,
-        value: this.state.interpretedDate
+        value: this.state.interpretedDate,
+        time: new Date().getTime()
       })
     } else {
       var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.date.toLowerCase());
@@ -1259,7 +1266,8 @@ class BuyScreen extends Component {
     if (!this.state.words.some(item => item.key.toLowerCase() === this.state.nif.toLowerCase())) {
       arrayWords.push({
         key: this.state.nif,
-        value: this.state.interpretedNif
+        value: this.state.interpretedNif,
+        time: new Date().getTime()
       })
     } else {
       var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.nif.toLowerCase());
@@ -1275,7 +1283,8 @@ class BuyScreen extends Component {
     if (!this.state.words.some(item => item.key.toLowerCase() === this.state.entity.toLowerCase())) {
       arrayWords.push({
         key: this.state.entity,
-        value: this.state.interpretedEntity
+        value: this.state.interpretedEntity,
+        time: new Date().getTime()
       })
     } else {
       var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.entity.toLowerCase());
@@ -2339,6 +2348,9 @@ class BuyScreen extends Component {
 class LaunchScreen extends Component {  
   constructor(props) {
     super(props);
+    this.state = {
+      saveData: false
+    }
     this.init()
   }
 
@@ -2787,9 +2799,10 @@ export class DocImage {
 }
 
 export class Dictionary {
-  constructor(key, value) {
+  constructor(key, value, time) {
     this.key = key;
     this.value = value;
+    this.time = time;
   }
 }
 
@@ -2970,7 +2983,7 @@ const styles = StyleSheet.create({
   },
   wordsBox: {
     borderWidth: 0.5,
-    borderColor:"#1A5276",
+    borderColor:"#E7E4E4",
     width: "90%",
     paddingTop: 10,
     paddingBottom: 10,
@@ -3154,6 +3167,7 @@ const styles = StyleSheet.create({
   },
   delIcon: {
     paddingLeft: 10,
+    paddingRight: 5,
     flexDirection: "row",
     backgroundColor:"#FFF", 
     justifyContent: 'flex-end',
