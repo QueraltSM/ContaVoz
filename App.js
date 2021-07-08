@@ -15,15 +15,20 @@ class ResumeViewScreen extends Component {
     this.state = {
       id: this.props.navigation.state.params.id,
       entity: this.props.navigation.state.params.entity,
-      interpretedEntity: this.props.navigation.state.params.entity,
+      entityKey: this.props.navigation.state.params.entity,
+      interpretedEntity: this.props.navigation.state.params.interpretedEntity,
       nif: this.props.navigation.state.params.nif,
-      interpretedNif: this.props.navigation.state.params.nif,
+      nifKey: this.props.navigation.state.params.nif,
+      interpretedNif: this.props.navigation.state.params.interpretedNif,
       date: this.props.navigation.state.params.date,
-      interpretedDate: this.props.navigation.state.params.date,
+      dateKey: this.props.navigation.state.params.date,
+      interpretedDate: this.props.navigation.state.params.interpretedDate,
       invoice: this.props.navigation.state.params.invoice,
-      interpretedInvoice: this.props.navigation.state.params.invoice,
+      invoiceKey: this.props.navigation.state.params.invoice,
+      interpretedInvoice: this.props.navigation.state.params.interpretedInvoice,
       total: this.props.navigation.state.params.total,
-      interpretedTotal: this.props.navigation.state.params.total,
+      totalKey: this.props.navigation.state.params.total,
+      interpretedTotal: this.props.navigation.state.params.interpretedTotal,
       images: this.props.navigation.state.params.images,
       back: this.props.navigation.state.params.back,
       type: this.props.navigation.state.params.type,
@@ -193,11 +198,11 @@ class ResumeViewScreen extends Component {
   setControlVoice(){
       return(
         <View style={styles.resumeView}>
-          {this.state.entity.length > 0 && 
+          {this.state.interpretedEntity.length > 0 && 
           (<View>
             <Text style={styles.resumeText}>Entidad</Text>
             <View style={{flexDirection:'row', width:"90%"}}>
-            <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedEntity => this.setState({interpretedEntity})}>{this.state.interpretedEntity}</TextInput>
+            <TextInput multiline={true} style={styles.changeTranscript} onChangeText={entity => this.setState({entity})}>{this.state.interpretedEntity}</TextInput>
             <Icon
               name='pencil'
               type='font-awesome'
@@ -293,29 +298,27 @@ class ResumeViewScreen extends Component {
   }
 
   async saveWord(key, value) {
-    var entered = false
     var arrayWords =  this.state.words
-    for (let i = 0; i < this.state.words.length; i++) {
-      if (this.state.words[i].key.toLowerCase() == key.toLowerCase()) {
-        entered = true
-      }
-    }
-    if (!entered) {
+    if (!this.state.words.some(item => item.key.toLowerCase() === key.toLowerCase())) {
       arrayWords.push({
         key: key,
         value: value,
         time: new Date().getTime()
       })
-      this.setState({ words: arrayWords })
-      await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
+    } else {
+      var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === key.toLowerCase());
+      arrayWords[i].value = value
+      arrayWords[i].time = new Date().getTime()
     }
+    this.setState({ words: arrayWords })
+    await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
   }
 
   async askDictionary(key, value) {
     const AsyncAlert = () => new Promise((resolve) => {
       Alert.alert(
         "Atención",
-        "¿Desea almacenar en el diccionario " + value + " para " + key + "?",
+        "¿Desea almacenar en el diccionario el valor '" + value + "' para la clave '" + key + "'?",
         [
           {
             text: 'Sí',
@@ -337,30 +340,34 @@ class ResumeViewScreen extends Component {
   }
 
   _save = async () => {
+    var prep = ""
+    if (this.state.type == "Buy") {
+      prep = "b."
+    }
     if (this.state.entity == this.state.interpretedEntity && this.state.nif == this.state.interpretedNif
       && this.state.date == this.state.interpretedDate && this.state.invoice == this.state.interpretedInvoice && 
       this.state.total == this.state.interpretedTotal) {
         alert("Esta accion todavía no está activada")
     }
     if (this.state.entity != this.state.interpretedEntity) {
-      this.setState({ entity: this.state.interpretedEntity})
-      await AsyncStorage.setItem("interpretedEntity", this.state.interpretedEntity)
+      await this.askDictionary(this.state.entityKey, this.state.entity)
+      await AsyncStorage.setItem(prep+"interpretedEntity", this.state.entity)
     }
     if (this.state.nif != this.state.interpretedNif) {
-      await this.askDictionary(this.state.nif,this.state.interpretedNif)
-      this.setState({ nif: this.state.interpretedNif})
+      await this.askDictionary(this.state.nifKey, this.state.nif)
+      await AsyncStorage.setItem(prep+"interpretedNif", this.state.nif)
     }
     if (this.state.date != this.state.interpretedDate) {
-      await this.askDictionary(this.state.date,this.state.interpretedDate)
-      this.setState({ date: this.state.interpretedDate})
+      await this.askDictionary(this.state.dateKey, this.state.date)
+      await AsyncStorage.setItem(prep+"interpretedDate", this.state.date)
     }
     if (this.state.invoice != this.state.interpretedInvoice) {
-      await this.askDictionary(this.state.invoice,this.state.interpretedInvoice)
-      this.setState({ invoice: this.state.interpretedInvoice})
+      await this.askDictionary(this.state.invoiceKey, this.state.invoice)
+      await AsyncStorage.setItem(prep+"interpretedInvoice", this.state.invoice)
     }
     if (this.state.total != this.state.interpretedTotal) {
-      await this.askDictionary(this.state.total,this.state.interpretedTotal)
-      this.setState({ total: this.state.interpretedTotal})
+      await this.askDictionary(this.state.totalKey, this.state.total)
+      await AsyncStorage.setItem(prep+"interpretedTotal", this.state.total)
     }
   }
 
@@ -1086,14 +1093,44 @@ class BuyScreen extends Component {
     this.saveInMemory("b.interpretedNif", this.state.interpretedNif)
   }
 
+  async showDateError() {
+    await this.showAlert("Error", "Fecha incorrecta, pruebe de nuevo")
+    this.cancelDate()
+  }
+
+
+
   setInterpretedDate() {
-    var str = this.state.date
-    for (let i = 0; i < this.state.words.length; i++) {
-      if (this.state.date.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
-        str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
-      }
+    var daysL = ["Uno", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Ocho", "Nueve", "Diez"]
+    var daysN = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+    var months = ["Enero", "Febrero", "Marzo"]
+    var indexL = daysL.findIndex((i) => this.state.date.toLowerCase().includes(i.toLowerCase()))
+    var indexN = daysN.findIndex((i) => this.state.date.toLowerCase().includes(i.toLowerCase()))
+    var indexM = months.findIndex((i) => this.state.date.toLowerCase().includes(i.toLowerCase()))
+    if (this.state.date.toLowerCase() == "hoy") { // Today's case: ok
+      this.setState({ interpretedDate: ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear() })
+    } else if (indexL > -1 && indexM > -1) {
+      indexM++
+      var d = ("0" + daysN[indexL]).slice(-2)
+      var m = ("0" + indexM).slice(-2)
+      this.setState({ interpretedDate: d + "/" + m })
+    } else if (indexN > -1 && indexM > -1) {
+      indexM++
+      var d = ("0" + daysN[indexN]).slice(-2)
+      var m = ("0" + indexM).slice(-2)
+      this.setState({ interpretedDate: d + "/" + m })
+    } else if (indexL > -1) {
+      var d = ("0" + daysN[indexL]).slice(-2)
+      this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) })
+    } else if (indexN > -1) {
+      var d = ("0" + daysN[indexN]).slice(-2)
+      this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) })
+    } else {
+      this.showDateError()
     }
-    this.setState({ interpretedDate: str })
+    
+    // caso que falla cuando 10, 20, 30
+
     this.saveInMemory("b.interpretedDate", this.state.interpretedDate)
   }
 
@@ -2237,11 +2274,16 @@ class BuyScreen extends Component {
   seeDocument = () => {
     this.props.navigation.push('ResumeView', {
       id: this.state.id,
-      entity: this.state.interpretedEntity,
-      nif: this.state.interpretedNif,
-      date: this.state.interpretedDate,
-      invoice: this.state.interpretedInvoice,
+      entity: this.state.entity,
+      interpretedEntity: this.state.interpretedEntity,
+      nif: this.state.nif,
+      interpretedNif: this.state.interpretedNif,
+      date: this.state.date,
+      interpretedDate: this.state.interpretedDate,
+      invoice: this.state.invoice,
+      interpretedInvoice: this.state.interpretedInvoice,
       total: this.state.interpretedTotal,
+      interpretedTotal: this.state.total,
       images: this.state.images,
       back: "ResumeView",
       type: "Buy"
