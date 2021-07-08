@@ -3,7 +3,7 @@ import {StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatL
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { createStackNavigator } from 'react-navigation-stack';
-import { Icon, withTheme } from 'react-native-elements'
+import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import * as ImagePicker from 'react-native-image-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
@@ -15,15 +15,15 @@ class ResumeViewScreen extends Component {
     this.state = {
       id: this.props.navigation.state.params.id,
       entity: this.props.navigation.state.params.entity,
-      interpretedEntity: this.props.navigation.state.params.interpretedEntity,
+      interpretedEntity: this.props.navigation.state.params.entity,
       nif: this.props.navigation.state.params.nif,
-      interpretedNif: this.props.navigation.state.params.interpretedNif,
+      interpretedNif: this.props.navigation.state.params.nif,
       date: this.props.navigation.state.params.date,
-      interpretedDate: this.props.navigation.state.params.interpretedDate,
+      interpretedDate: this.props.navigation.state.params.date,
       invoice: this.props.navigation.state.params.invoice,
-      interpretedInvoice: this.props.navigation.state.params.interpretedInvoice,
+      interpretedInvoice: this.props.navigation.state.params.invoice,
       total: this.props.navigation.state.params.total,
-      interpretedTotal: this.props.navigation.state.params.interpretedTotal,
+      interpretedTotal: this.props.navigation.state.params.total,
       images: this.props.navigation.state.params.images,
       back: this.props.navigation.state.params.back,
       type: this.props.navigation.state.params.type,
@@ -34,14 +34,13 @@ class ResumeViewScreen extends Component {
   }
 
   async init() {
-      await AsyncStorage.getItem("words").then((value) => {
-        if (value != null) {
-          this.setState({ words: JSON.parse(value) })
-        }
-      })
+    await AsyncStorage.getItem("words").then((value) => {
+      if (value != null) {
+        this.setState({ words: JSON.parse(value) })
+      }
+    })
   }
   
-
   componentDidMount(){
     BackHandler.addEventListener('hardwareBackPress', this.goBack);
   }
@@ -52,35 +51,28 @@ class ResumeViewScreen extends Component {
   }
 
   async resetState() {
-    this.setState({entity: "" })
-    this.setState({nif: "" })
-    this.setState({date: ""})
-    this.setState({invoice: ""})
-    this.setState({total: ""})
-    this.setState({interpretedEntity: "" })
-    this.setState({interpretedNif: "" })
-    this.setState({interpretedDate: ""})
-    this.setState({interpretedInvoice: ""})
-    this.setState({interpretedTotal: ""})
-    this.setState({id: ""})
-    this.setState({recognized: ""})
-    this.setState({started: ""})
-    this.setState({results: ""})
-    this.setState({is_recording: false})
-    this.setState({getEntity: false})
-    this.setState({getNIF: false})
-    this.setState({getDate: false})
-    this.setState({getInvoice: false})
-    this.setState({getTotal: false})
-    this.setState({setEntity: false})
-    this.setState({setNIF: false})
-    this.setState({setDate: false})
-    this.setState({setInvoice: false})
-    this.setState({setTotal: false})
-    this.setState({finalView: false})
-    this.setState({started: false})
-    this.setState({startVoice: false})
-    this.setState({images: []})
+    var prep = ""
+    if (this.state.type == "Buy") {
+      prep = "b."
+    }
+    await AsyncStorage.setItem(prep+"entity", "")
+    await AsyncStorage.setItem(prep+"nif", "")
+    await AsyncStorage.setItem(prep+"date", "")
+    await AsyncStorage.setItem(prep+"invoice", "")
+    await AsyncStorage.setItem(prep+"total", "")
+    await AsyncStorage.setItem(prep+"interpretedEntity", "")
+    await AsyncStorage.setItem(prep+"interpretedNif", "")
+    await AsyncStorage.setItem(prep+"interpretedDate", "")
+    await AsyncStorage.setItem(prep+"interpretedInvoice", "")
+    await AsyncStorage.setItem(prep+"interpretedTotal", "")
+    await AsyncStorage.setItem(prep+"images", JSON.stringify([]))
+    await AsyncStorage.setItem(prep+"saved", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setEntity", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setNIF", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setDate", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setInvoice", JSON.stringify(false))
+    await AsyncStorage.setItem(prep+"setTotal", JSON.stringify(false))
+    this.goBack()
   }
 
   async delete() {
@@ -300,12 +292,11 @@ class ResumeViewScreen extends Component {
       await AsyncAlert();
   }
 
-
   async saveWord(key, value) {
     var entered = false
     var arrayWords =  this.state.words
     for (let i = 0; i < this.state.words.length; i++) {
-      if ( this.state.words[i].key == key) {
+      if (this.state.words[i].key.toLowerCase() == key.toLowerCase()) {
         entered = true
       }
     }
@@ -345,20 +336,30 @@ class ResumeViewScreen extends Component {
   }
 
   _save = async () => {
+    if (this.state.entity == this.state.interpretedEntity && this.state.nif == this.state.interpretedNif
+      && this.state.date == this.state.interpretedDate && this.state.invoice == this.state.interpretedInvoice && 
+      this.state.total == this.state.interpretedTotal) {
+        alert("Esta accion todavía no está activada")
+    }
     if (this.state.entity != this.state.interpretedEntity) {
-      this.askDictionary(this.state.entity,this.state.interpretedEntity)
+      this.setState({ entity: this.state.interpretedEntity})
+      await AsyncStorage.setItem("interpretedEntity", this.state.interpretedEntity)
     }
     if (this.state.nif != this.state.interpretedNif) {
-      this.askDictionary(this.state.nif,this.state.interpretedNif)
+      await this.askDictionary(this.state.nif,this.state.interpretedNif)
+      this.setState({ nif: this.state.interpretedNif})
     }
     if (this.state.date != this.state.interpretedDate) {
-      this.askDictionary(this.state.date,this.state.interpretedDate)
+      await this.askDictionary(this.state.date,this.state.interpretedDate)
+      this.setState({ date: this.state.interpretedDate})
     }
     if (this.state.invoice != this.state.interpretedInvoice) {
-      this.askDictionary(this.state.invoice,this.state.interpretedInvoice)
+      await this.askDictionary(this.state.invoice,this.state.interpretedInvoice)
+      this.setState({ invoice: this.state.interpretedInvoice})
     }
     if (this.state.total != this.state.interpretedTotal) {
-      this.askDictionary(this.state.total,this.state.interpretedTotal)
+      await this.askDictionary(this.state.total,this.state.interpretedTotal)
+      this.setState({ total: this.state.interpretedTotal})
     }
   }
 
@@ -435,21 +436,22 @@ class DictionaryViewScreen extends Component {
     if (this.state.addKey == "" || this.state.addValue == "") {
       this.showAlert("Error", "Complete todos los campos")
     } else {
-      var entered = false
-      var arrayWords =  this.state.words
+      var arrayWords =  []
       for (let i = 0; i < this.state.words.length; i++) {
-        if ( this.state.words[i].key == this.state.addKey) {
-          entered = true
+        if (this.state.words[i].key.toLowerCase() == this.state.addKey.toLowerCase()) {
+          arrayWords.push({
+            key: this.state.addKey,
+            value: this.state.addValue
+          })
+        } else {
+          arrayWords.push({
+            key: this.state.words[i].key,
+            value: this.state.words[i].value
+          })
         }
       }
-      if (!entered) {
-        arrayWords.push({
-          key: this.state.addKey,
-          value: this.state.addValue
-        })
-        this.setState({ words: arrayWords })
-        await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
-      }
+      this.setState({ words: arrayWords })
+      await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
       this.setState({ addKey: "" })
       this.setState({ addValue: "" })
       this.formAction()
@@ -623,8 +625,6 @@ class DictionaryViewScreen extends Component {
 
 class ImageViewerScreen extends Component {
 
-  flatlistPos = 0
-
   constructor(props) {
     super(props);
     this.state = {
@@ -651,7 +651,7 @@ class ImageViewerScreen extends Component {
   }
 
   goBack = () => {
-    if (this.state.back == "Buy") { // or Venta, Gastos
+    if (this.state.back == "Buy" || this.state.back == "Sales" || this.state.back == "Pay") {
       this.props.navigation.push(this.state.back)
     } else if (this.state.images == 0 && this.state.interpretedEntity.length == 0) {
         this.props.navigation.push(this.state.type)
@@ -730,17 +730,8 @@ class ImageViewerScreen extends Component {
             if (response.didCancel || response.error || response.customButton) {
               console.log(JSON.stringify(response));
             } else {
-              var arrayImages = this.state.images
               var uri = JSON.stringify(response.assets[0]["uri"])
-              var newID = this.state.id+"_"+(this.state.images.length+1)
-              console.log("newid2"+newID)
-              arrayImages.push({
-                id: newID,
-                uri: uri
-              })
-              this.setState({images: arrayImages})
-              this.saveInMemory("isBuy", JSON.stringify(true))
-              this.saveInMemory("b.images", JSON.stringify(arrayImages))
+              this.updateImage(uri)
             }
           })
         } else {
@@ -780,9 +771,9 @@ class ImageViewerScreen extends Component {
   async delete() {
     var arrayImages = []
     for (let i = 0; i < this.state.images.length; i++) {
-      if (this.state.images[i].id != this.state.images[this.flatlistPos].id) {
+      if (this.state.images[i].id != this.state.image.id) {
         arrayImages.push({
-          id:  this.state.images[this.flatlistPos].id + "_" + i,
+          id:  this.state.image.id + "_" + i,
           uri: this.state.images[i].uri
         })
       }
@@ -822,58 +813,30 @@ class ImageViewerScreen extends Component {
     await AsyncAlert();
   }
 
-  setImageZoom(item) {
-    for (let i = 0; i < this.state.images.length; i++) {
-      if (this.state.images[i].id == item.id) {
-        console.log("yes:"+this.state.images[i].id)
-        return(
-          <ImageZoom
-          cropWidth={Dimensions.get('window').width}
-          cropHeight={Dimensions.get('window').height}
-          imageWidth={Dimensions.get('window').width}
-          imageHeight={Dimensions.get('window').height}>
-          <Image
-            source={{
-              uri: this.state.images[i].uri.replace(/['"]+/g, '')
-            }}
-            resizeMode="center"
-            key={this.state.image}
-            style={{ width: "100%", height: "100%" }}
-          />
-          </ImageZoom>
-        )
-      }
-    }
-    return null
-  }
-
-  setFlatlistButtons(pos) {
-    for (let i = 0; i < this.state.images.length; i++) {
-      if (pos == i) {
-        this.setImageZoom(this.state.images[pos])
-        this.flatlistPos = pos
-      } else {
-        this.setImageZoom(this.state.images[i])
-        this.flatlistPos = i
-      }
-    }
-    return null
+  setImageZoom() {
+    return (
+      <ImageZoom
+      cropWidth={Dimensions.get('window').width}
+      cropHeight={Dimensions.get('window').height}
+      imageWidth={Dimensions.get('window').width}
+      imageHeight={Dimensions.get('window').height}>
+      <Image
+        source={{
+          uri: this.state.image.uri.replace(/['"]+/g, '')
+        }}
+        resizeMode="center"
+        key={this.state.image}
+        style={{ width: "100%", height: "100%" }}
+      />
+      </ImageZoom>
+    )
   }
 
   render () {
     return (
       <View style={styles.imageView}>
         <View style={styles.selectedImageView}>
-        <FlatList 
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={this.state.images}
-            renderItem={({ item, index }) => (
-              (<View>
-                {this.setImageZoom(item)}
-               {this.state.images.length > 1 && this.setFlatlistButtons(index)}
-               </View>) 
-          )}/>
+        {this.setImageZoom()}
       </View>
         <View style={styles.darkFootBar}>
           <Icon
@@ -928,6 +891,7 @@ class ImageViewerScreen extends Component {
 }
 
 class BuyScreen extends Component {
+
   constructor(props) {
     super(props);
     this.state = {
@@ -1228,29 +1192,29 @@ class BuyScreen extends Component {
       return <Icon
             name='microphone-slash'
             type='font-awesome'
-            color='#1A5276'
-            size={35}
+            color='#FFF'
+            size={30}
             onPress={this._stopRecognition.bind(this)}
           />
     }
     return <Icon
       name='microphone'
       type='font-awesome'
-      color='#1A5276'
-      size={35}
+      color='#FFF'
+      size={30}
       onPress={this._startRecognition.bind(this)}
     />
   }
 
   async storeTotalInDictionary() {
     var arrayWords =  this.state.words
-    if (!this.state.words.some(item => item.key === this.state.total)) {
+    if (!this.state.words.some(item => item.key.toLowerCase() === this.state.total.toLowerCase())) {
       arrayWords.push({
         key: this.state.total,
         value: this.state.interpretedTotal
       })
     } else {
-      var i = arrayWords.findIndex(obj => obj.key === this.state.total);
+      var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.total.toLowerCase());
       arrayWords[i].value = this.state.interpretedTotal
     }
     this.setState({ words: arrayWords })
@@ -1260,13 +1224,13 @@ class BuyScreen extends Component {
 
   async storeInvoiceInDictionary() {
     var arrayWords =  this.state.words
-    if (!this.state.words.some(item => item.key === this.state.invoice)) {
+    if (!this.state.words.some(item => item.key.toLowerCase() === this.state.invoice.toLowerCase())) {
       arrayWords.push({
         key: this.state.invoice,
         value: this.state.interpretedInvoice
       })
     } else {
-      var i = arrayWords.findIndex(obj => obj.key === this.state.invoice);
+      var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.invoice.toLowerCase());
       arrayWords[i].value = this.state.interpretedInvoice
     }
     this.setState({ words: arrayWords })
@@ -1276,13 +1240,13 @@ class BuyScreen extends Component {
 
   async storeDateInDictionary() {
     var arrayWords =  this.state.words
-    if (!this.state.words.some(item => item.key === this.state.date)) {
+    if (!this.state.words.some(item => item.key.toLowerCase() === this.state.date.toLowerCase())) {
       arrayWords.push({
         key: this.state.date,
         value: this.state.interpretedDate
       })
     } else {
-      var i = arrayWords.findIndex(obj => obj.key === this.state.date);
+      var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.date.toLowerCase());
       arrayWords[i].value = this.state.interpretedDate
     }
     this.setState({ words: arrayWords })
@@ -1292,13 +1256,13 @@ class BuyScreen extends Component {
 
   async storeNifInDictionary() {
     var arrayWords =  this.state.words
-    if (!this.state.words.some(item => item.key === this.state.nif)) {
+    if (!this.state.words.some(item => item.key.toLowerCase() === this.state.nif.toLowerCase())) {
       arrayWords.push({
         key: this.state.nif,
         value: this.state.interpretedNif
       })
     } else {
-      var i = arrayWords.findIndex(obj => obj.key === this.state.nif);
+      var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.nif.toLowerCase());
       arrayWords[i].value = this.state.interpretedNif
     }
     this.setState({ words: arrayWords })
@@ -1308,13 +1272,13 @@ class BuyScreen extends Component {
 
   async storeEntityInDictionary() {
     var arrayWords =  this.state.words
-    if (!this.state.words.some(item => item.key === this.state.entity)) {
+    if (!this.state.words.some(item => item.key.toLowerCase() === this.state.entity.toLowerCase())) {
       arrayWords.push({
         key: this.state.entity,
         value: this.state.interpretedEntity
       })
     } else {
-      var i = arrayWords.findIndex(obj => obj.key === this.state.entity);
+      var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.entity.toLowerCase());
       arrayWords[i].value = this.state.interpretedEntity
     }
     this.setState({ words: arrayWords })
@@ -1387,7 +1351,7 @@ class BuyScreen extends Component {
           {
             text: 'No',
             onPress: () => {
-              resolve(this.storeEntity());
+              resolve(this.storeDate());
             },
           },
         ],
@@ -1412,7 +1376,7 @@ class BuyScreen extends Component {
           {
             text: 'No',
             onPress: () => {
-              resolve(this.storeEntity());
+              resolve(this.storeNif());
             },
           },
         ],
@@ -1452,6 +1416,7 @@ class BuyScreen extends Component {
     this.saveInMemory("b.setEntity", JSON.stringify(true))
     this.saveInMemory("isBuy", JSON.stringify(true))
     this.saveInMemory("b.entity", this.state.entity)
+    this.saveInMemory("b.interpretedEntity", this.state.interpretedEntity)
     this.setState({is_recording: true})
     this._continue()
   }
@@ -1460,6 +1425,7 @@ class BuyScreen extends Component {
     this.setState({setNIF: true})
     this.saveInMemory("b.setNIF", JSON.stringify(true))
     this.saveInMemory("b.nif", this.state.nif)
+    this.saveInMemory("b.interpretedNif", this.state.interpretedNif)
     this.setState({is_recording: true})
     this._continue()
   }
@@ -1468,6 +1434,7 @@ class BuyScreen extends Component {
     this.setState({setDate: true})
     this.saveInMemory("b.setDate", JSON.stringify(true))
     this.saveInMemory("b.date", this.state.date)
+    this.saveInMemory("b.interpretedDate", this.state.interpretedDate)
     this.setState({is_recording: true})
     this._continue()
   }
@@ -1477,6 +1444,7 @@ class BuyScreen extends Component {
     this.saveInMemory("b.setInvoice", JSON.stringify(true))
     this.setState({is_recording: true})
     this.saveInMemory("b.invoice", this.state.invoice)
+    this.saveInMemory("b.interpretedInvoice", this.state.interpretedInvoice)
     this._continue()
   }
 
@@ -1484,6 +1452,7 @@ class BuyScreen extends Component {
     this.setState({setTotal: true})
     this.saveInMemory("b.setTotal", JSON.stringify(true))
     this.saveInMemory("b.total", this.state.total)
+    this.saveInMemory("b.interpretedTotal", this.state.interpretedTotal)
     this.setState({saved: true})
     this.saveInMemory("b.saved", JSON.stringify(true))
   }
@@ -1734,9 +1703,8 @@ class BuyScreen extends Component {
   }
 
   async delete() {
-    await AsyncStorage.setItem("isBuy", JSON.stringify(false))
-    this.props.navigation.push("Main")
     this.resetState()
+    await AsyncStorage.setItem("isBuy", JSON.stringify(false))
     await AsyncStorage.setItem("b.entity", "")
     await AsyncStorage.setItem("b.nif", "")
     await AsyncStorage.setItem("b.date", "")
@@ -1754,6 +1722,7 @@ class BuyScreen extends Component {
     await AsyncStorage.setItem("b.setDate", JSON.stringify(false))
     await AsyncStorage.setItem("b.setInvoice", JSON.stringify(false))
     await AsyncStorage.setItem("b.setTotal", JSON.stringify(false))
+    this.props.navigation.push("Buy")
   }
 
     _finish = async () => {
@@ -1838,15 +1807,9 @@ class BuyScreen extends Component {
     var result = []
     for (let i = 0; i < this.state.images.length; i++) {
       if (pos == i) {
-        this.setImageZoom(this.state.images[pos])
-        result.push(<View style={styles.roundButtonsView}><Text
-          style={styles.roundButton}>
-        </Text></View>)
+        result.push(<View style={styles.roundButtonsView}><Text style={styles.roundButton}></Text></View>)
       } else {
-        this.setImageZoom(this.state.images[i])
-        result.push(<View style={styles.roundButtonsView}><Text
-          style={styles.focusRoundButton}>
-        </Text></View>)
+        result.push(<View style={styles.roundButtonsView}><Text style={styles.focusRoundButton}></Text></View>)
       }
     }
     return (<View style={styles.flatlistView}>{result}</View>)
@@ -2265,16 +2228,11 @@ class BuyScreen extends Component {
   seeDocument = () => {
     this.props.navigation.push('ResumeView', {
       id: this.state.id,
-      entity: this.state.entity,
-      interpretedEntity: this.state.interpretedEntity,
-      nif: this.state.nif,
-      interpretedNif: this.state.interpretedNif,
-      date: this.state.date,
-      interpretedDate: this.state.interpretedDate,
-      invoice: this.state.invoice,
-      interpretedInvoice: this.state.interpretedInvoice,
-      total: this.state.total,
-      interpretedTotal: this.state.interpretedTotal,
+      entity: this.state.interpretedEntity,
+      nif: this.state.interpretedNif,
+      date: this.state.interpretedDate,
+      invoice: this.state.interpretedInvoice,
+      total: this.state.interpretedTotal,
       images: this.state.images,
       back: "ResumeView",
       type: "Buy"
@@ -2288,8 +2246,8 @@ class BuyScreen extends Component {
       <Icon
         name='camera'
         type='font-awesome'
-        color='#1A5276'
-        size={35}
+        color='#FFF'
+        size={30}
         onPress={this.takePhoto}
       />
       </View>
@@ -2300,8 +2258,8 @@ class BuyScreen extends Component {
       <Icon
         name='image'
         type='font-awesome'
-        color='#1A5276'
-        size={35}
+        color='#FFF'
+        size={30}
         onPress={this.goGallery}
       />
       </View>
@@ -2310,30 +2268,7 @@ class BuyScreen extends Component {
 
   render () {
     return (
-      <View style={{flex: 1, backgroundColor: "#fff"}}>
-       <View style={styles.navBarBackHeader}>
-       {(this.state.images.length > 0 || JSON.parse(this.state.setEntity)) &&
-        (<View style={{ width: 70,textAlign:'center' }}>
-            <Icon
-              name='trash'
-              type='font-awesome'
-              color='#FFF'
-              size={30}
-              onPress={this._delete}
-            />
-          </View>)}
-          <Text style={styles.navBarHeader}>Documento compra</Text>
-          {(this.state.images.length > 0 || JSON.parse(this.state.setEntity)) &&
-          (<View style={{ width: 70,textAlign:'center' }}>
-            <Icon
-              name='file'
-              type='font-awesome'
-              color='#FFF'
-              size={25}
-              onPress={this.seeDocument}
-            />
-          </View>)}
-        </View>
+      <View style={{flex: 1, backgroundColor: "#fff" }}>
         <ScrollView style={{backgroundColor: "#fff", paddingBottom: 100 }}>
           <View style={styles.sections}>
             {this.setImages()}
@@ -2345,7 +2280,57 @@ class BuyScreen extends Component {
             {this.setTotalVoiceControl()}
           </View>
         </ScrollView>
-          {this.setBottomMenu()}
+        <View style={styles.navBarBackHeader}>
+       <View style={{ width: 60,textAlign:'center' }}>
+            <Icon
+              name='shopping-cart'
+              type='font-awesome'
+              color='#FFF'
+              size={30}
+            />
+          </View>
+       {(this.state.images.length > 0 || JSON.parse(this.state.setEntity)) &&
+        (<View style={{ width: 60,textAlign:'center' }}>
+            <Icon
+              name='trash'
+              type='font-awesome'
+              color='#FFF'
+              size={30}
+              onPress={this._delete}
+            />
+          </View>)}
+          <View style={{ width: 60,textAlign:'center' }}>
+            <Icon
+              name='camera'
+              type='font-awesome'
+              color='#FFF'
+              size={30}
+              onPress={this.takePhoto}
+            />
+            </View>
+            <View style={{ width: 60,textAlign:'center' }}>
+              {this.setMicrophoneIcon()}
+            </View>
+            <View style={styles.iconsView}>
+            <Icon
+              name='image'
+              type='font-awesome'
+              color='#FFF'
+              size={30}
+              onPress={this.goGallery}
+            />
+            </View>
+          {(this.state.images.length > 0 || JSON.parse(this.state.setEntity)) &&
+          (<View style={{ width: 60,textAlign:'center' }}>
+            <Icon
+              name='file'
+              type='font-awesome'
+              color='#FFF'
+              size={25}
+              onPress={this.seeDocument}
+            />
+          </View>)}
+        </View>
       </View>
     );
   }
@@ -2784,7 +2769,7 @@ class MainScreen extends Component {
                 size={35}
               />
               </View>
-            <Text style={styles.mainButton}>Cerrar sesión</Text>
+            <Text style={styles.mainButton}>Desconectar</Text>
           </TouchableOpacity>
           </View>
         </View>
@@ -2985,7 +2970,7 @@ const styles = StyleSheet.create({
   },
   wordsBox: {
     borderWidth: 0.5,
-    borderColor:"lightgray",
+    borderColor:"#1A5276",
     width: "90%",
     paddingTop: 10,
     paddingBottom: 10,
@@ -2995,7 +2980,6 @@ const styles = StyleSheet.create({
   },
   wordsBoxText: {
     paddingTop: 10,
-    paddingBottom: 10,
     paddingRight: 10,
     paddingLeft: 10,
   },
@@ -3155,7 +3139,7 @@ const styles = StyleSheet.create({
     width: "90%",
   },
   iconsView: {
-    backgroundColor: "#FFF",
+    backgroundColor: "#1A5276",
     borderRadius: 10,
     paddingTop: 15,
     paddingLeft: 15,
@@ -3217,14 +3201,14 @@ const styles = StyleSheet.create({
     backgroundColor:"#1A5276", 
     flexDirection:'row', 
     textAlignVertical: 'center',
-    height: 50
+    height: 60
   },
   focusRoundButton: {
     width: 5,
     height: 5,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 7,
+    padding: 6,
     borderRadius: 50,
     borderWidth:2,
     borderColor: '#1A5276',
@@ -3264,7 +3248,7 @@ const styles = StyleSheet.create({
     height: 5,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 7,
+    padding: 6,
     borderRadius: 50,
     backgroundColor: '#1A5276',
     borderWidth:2,
@@ -3277,7 +3261,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   roundButtonsView:{
-    paddingLeft:5,
-    paddingRight:5
+    paddingLeft:7,
+    paddingRight:7,
+    paddingBottom: 5
   }
 });
