@@ -14,19 +14,19 @@ class ResumeViewScreen extends Component {
     super(props);
     this.state = {
       id: this.props.navigation.state.params.id,
-      entity: this.props.navigation.state.params.entity,
+      entity: this.props.navigation.state.params.interpretedEntity,
       entityKey: this.props.navigation.state.params.entity,
       interpretedEntity: this.props.navigation.state.params.interpretedEntity,
-      nif: this.props.navigation.state.params.nif,
+      nif: this.props.navigation.state.params.interpretedNif,
       nifKey: this.props.navigation.state.params.nif,
       interpretedNif: this.props.navigation.state.params.interpretedNif,
-      date: this.props.navigation.state.params.date,
+      date: this.props.navigation.state.params.interpretedDate,
       dateKey: this.props.navigation.state.params.date,
       interpretedDate: this.props.navigation.state.params.interpretedDate,
-      invoice: this.props.navigation.state.params.invoice,
+      invoice: this.props.navigation.state.params.interpretedInvoice,
       invoiceKey: this.props.navigation.state.params.invoice,
       interpretedInvoice: this.props.navigation.state.params.interpretedInvoice,
-      total: this.props.navigation.state.params.total,
+      total: this.props.navigation.state.params.interpretedTotal,
       totalKey: this.props.navigation.state.params.total,
       interpretedTotal: this.props.navigation.state.params.interpretedTotal,
       images: this.props.navigation.state.params.images,
@@ -202,7 +202,7 @@ class ResumeViewScreen extends Component {
           (<View>
             <Text style={styles.resumeText}>Entidad</Text>
             <View style={{flexDirection:'row', width:"90%"}}>
-            <TextInput multiline={true} style={styles.changeTranscript} onChangeText={entity => this.setState({entity})}>{this.state.interpretedEntity}</TextInput>
+            <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedEntity => this.setState({interpretedEntity})}>{this.state.interpretedEntity}</TextInput>
             <Icon
               name='pencil'
               type='font-awesome'
@@ -298,27 +298,15 @@ class ResumeViewScreen extends Component {
   }
 
   async saveWord(key, value) {
-    var arrayWords =  this.state.words
-    if (!this.state.words.some(item => item.key.toLowerCase() === key.toLowerCase())) {
-      arrayWords.push({
-        key: key,
-        value: value,
-        time: new Date().getTime()
-      })
-    } else {
-      var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === key.toLowerCase());
-      arrayWords[i].value = value
-      arrayWords[i].time = new Date().getTime()
-    }
-    this.setState({ words: arrayWords })
-    await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
+    await AsyncStorage.setItem(key, value)
   }
 
-  async askDictionary(key, value) {
+
+  async askSaveWord(msn, key, value) {
     const AsyncAlert = () => new Promise((resolve) => {
       Alert.alert(
         "Atención",
-        "¿Desea almacenar en el diccionario el valor '" + value + "' para la clave '" + key + "'?",
+        "¿Desea guardar '" + value + "' como " + msn + "?",
         [
           {
             text: 'Sí',
@@ -337,7 +325,8 @@ class ResumeViewScreen extends Component {
       );
       });
       await AsyncAlert();
-  }
+    }
+
 
   _save = async () => {
     var prep = ""
@@ -350,30 +339,25 @@ class ResumeViewScreen extends Component {
         alert("Esta accion todavía no está activada")
     }
     if (this.state.entity != this.state.interpretedEntity) {
-      await this.askDictionary(this.state.entityKey, this.state.entity)
-      await AsyncStorage.setItem(prep+"interpretedEntity", this.state.entity)
-    }
-    if (this.state.nif != this.state.interpretedNif) {
-      await this.askDictionary(this.state.nifKey, this.state.nif)
-      await AsyncStorage.setItem(prep+"interpretedNif", this.state.nif)
+      await this.askSaveWord("entidad", prep+"interpretedEntity", this.state.interpretedEntity)
     }
     if (this.state.date != this.state.interpretedDate) {
-      await this.askDictionary(this.state.dateKey, this.state.date)
-      await AsyncStorage.setItem(prep+"interpretedDate", this.state.date)
+      await this.askSaveWord("fecha", prep+"interpretedDate", this.state.interpretedDate)
+    }
+    if (this.state.nif != this.state.interpretedNif) {
+      await this.askSaveWord("NIF", prep+"interpretedNif", this.state.interpretedNif)
     }
     if (this.state.invoice != this.state.interpretedInvoice) {
-      await this.askDictionary(this.state.invoiceKey, this.state.invoice)
-      await AsyncStorage.setItem(prep+"interpretedInvoice", this.state.invoice)
+      await this.askSaveWord("nº de factura", prep+"interpretedInvoice", this.state.interpretedInvoice)
     }
     if (this.state.total != this.state.interpretedTotal) {
-      await this.askDictionary(this.state.totalKey, this.state.total)
-      await AsyncStorage.setItem(prep+"interpretedTotal", this.state.total)
+      await this.askSaveWord("total", prep+"interpretedTotal", this.state.interpretedTotal)
     }
   }
 
   render () {
     return (
-      <View style={{flex: 1, backgroundColor:"#FFF", paddingBottom: 100 }}>
+      <View style={{flex: 1, backgroundColor:"#FFF" }}>
         <View style={styles.navBarBackHeader}>
         <View style={{ width: 70,textAlign:'center' }}>
             <Icon
@@ -395,7 +379,7 @@ class ResumeViewScreen extends Component {
             />
           </View>
         </View>
-        <ScrollView style={{backgroundColor: "#FFF"}}>
+        <ScrollView style={{backgroundColor: "#FFF" }}>
         <View style={styles.sections}>
           {this.setImages()}
           {this.setControlVoice()}
@@ -959,9 +943,29 @@ class BuyScreen extends Component {
         this.setState({ saved: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("b.images").then((value) => {
+    await AsyncStorage.getItem("b.interpretedEntity").then((value) => {
       if (value != null) {
-        this.setState({ images: JSON.parse(value) })
+        this.setState({ interpretedEntity: value })
+      }
+    })
+    await AsyncStorage.getItem("b.interpretedNif").then((value) => {
+      if (value != null) {
+        this.setState({ interpretedNif: value })
+      }
+    })
+    await AsyncStorage.getItem("b.interpretedDate").then((value) => {
+      if (value != null) {
+        this.setState({ interpretedDate: value })
+      }
+    })
+    await AsyncStorage.getItem("b.interpretedInvoice").then((value) => {
+      if (value != null) {
+        this.setState({ interpretedInvoice: value })
+      }
+    })
+    await AsyncStorage.getItem("b.interpretedTotal").then((value) => {
+      if (value != null) {
+        this.setState({ interpretedTotal: value })
       }
     })
     await AsyncStorage.getItem("b.setEntity").then((value) => {
@@ -994,19 +998,9 @@ class BuyScreen extends Component {
         this.setState({ entity: value })
       }
     })
-    await AsyncStorage.getItem("b.interpretedEntity").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedEntity: value })
-      }
-    })
     await AsyncStorage.getItem("b.nif").then((value) => {
       if (value != null) {
         this.setState({ nif: value })
-      }
-    })
-    await AsyncStorage.getItem("b.interpretedNif").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedNif: value })
       }
     })
     await AsyncStorage.getItem("b.date").then((value) => {
@@ -1014,29 +1008,14 @@ class BuyScreen extends Component {
         this.setState({ date: value })
       }
     })
-    await AsyncStorage.getItem("b.interpretedDate").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedDate: value })
-      }
-    })
     await AsyncStorage.getItem("b.invoice").then((value) => {
       if (value != null) {
         this.setState({ invoice: value })
       }
     })
-    await AsyncStorage.getItem("b.interpretedInvoice").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedInvoice: value })
-      }
-    })
     await AsyncStorage.getItem("b.total").then((value) => {
       if (value != null) {
         this.setState({ total: value })
-      }
-    })
-    await AsyncStorage.getItem("b.interpretedTotal").then((value) => {
-      if (value != null) {
-        this.setState({ interpretedTotal: value })
       }
     })
     await AsyncStorage.getItem("b.id").then((value) => {
@@ -1047,6 +1026,11 @@ class BuyScreen extends Component {
     await AsyncStorage.getItem("words").then((value) => {
       if (value != null) {
         this.setState({ words: JSON.parse(value) })
+      }
+    })
+    await AsyncStorage.getItem("b.images").then((value) => {
+      if (value != null) {
+        this.setState({ images: JSON.parse(value) })
       }
     })
     if (this.state.images.length == 0 && !JSON.parse(this.state.setEntity)) {
@@ -1101,36 +1085,52 @@ class BuyScreen extends Component {
 
 
   setInterpretedDate() {
-    var daysL = ["Uno", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Ocho", "Nueve", "Diez"]
-    var daysN = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
-    var months = ["Enero", "Febrero", "Marzo"]
+    var daysL = ["Uno", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Ocho", "Nueve", "Diez",
+    "Once", "Doce", "Trece", "Catorce", "Quince", "Dieciséis", "Diecisiete", "Dieciocho", "Diecinueve",
+    "Veinte", "Veintiuno", "Veintidós", "Veintitrés", "Veinticuatro", "Veinticinco", "Veintiséis", "Veintisiete",
+    "Veintiocho", "Veintinueve", "Treinta", "Treinta y uno"]
+  
+    var daysN = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", 
+    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+    "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"]
+
+    var months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
     var indexL = daysL.findIndex((i) => this.state.date.toLowerCase().includes(i.toLowerCase()))
     var indexN = daysN.findIndex((i) => this.state.date.toLowerCase().includes(i.toLowerCase()))
     var indexM = months.findIndex((i) => this.state.date.toLowerCase().includes(i.toLowerCase()))
+    var aux = this.state.date.split(" ")
+
     if (this.state.date.toLowerCase() == "hoy") { // Today's case: ok
       this.setState({ interpretedDate: ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear() })
-    } else if (indexL > -1 && indexM > -1) {
-      indexM++
-      var d = ("0" + daysN[indexL]).slice(-2)
-      var m = ("0" + indexM).slice(-2)
-      this.setState({ interpretedDate: d + "/" + m })
-    } else if (indexN > -1 && indexM > -1) {
-      indexM++
-      var d = ("0" + daysN[indexN]).slice(-2)
-      var m = ("0" + indexM).slice(-2)
-      this.setState({ interpretedDate: d + "/" + m })
-    } else if (indexL > -1) {
-      var d = ("0" + daysN[indexL]).slice(-2)
-      this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) })
-    } else if (indexN > -1) {
-      var d = ("0" + daysN[indexN]).slice(-2)
-      this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) })
     } else {
-      this.showDateError()
+      var day = ""
+      daysN.forEach((i) => {
+        if (i == aux[0]){
+          day = i
+        }
+      })
+      if (indexL > -1 && indexM > -1) {
+        indexM++
+        var d = ("0" + daysN[indexL]).slice(-2)
+        var m = ("0" + indexM).slice(-2)
+        this.setState({ interpretedDate: d + "/" + m + "/" + new Date().getFullYear() })
+      } else if (indexN > -1 && indexM > -1 && day != "") {
+        indexM++
+        var d = ("0" + day).slice(-2)
+        var m = ("0" + indexM).slice(-2)
+        this.setState({ interpretedDate: d + "/" + m + "/" + new Date().getFullYear() })
+      } else if (indexL > -1) {
+        var d = ("0" + daysN[indexL]).slice(-2)
+        this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
+      } else if (indexN > -1 && day != "") {
+        var d = ("0" + day).slice(-2)
+        this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
+      } else {
+        this.showDateError()
+      }
     }
-    
-    // caso que falla cuando 10, 20, 30
-
     this.saveInMemory("b.interpretedDate", this.state.interpretedDate)
   }
 
@@ -1261,7 +1261,7 @@ class BuyScreen extends Component {
     }
     this.setState({ words: arrayWords })
     await AsyncStorage.setItem("words", JSON.stringify(arrayWords))
-    this.storeInvoice()
+    this.storeTotal()
   }
 
   async storeInvoiceInDictionary() {
@@ -1373,31 +1373,6 @@ class BuyScreen extends Component {
             text: 'No',
             onPress: () => {
               resolve(this.storeInvoice());
-            },
-          },
-        ],
-        { cancelable: false },
-      );
-      });
-      await AsyncAlert();
-  }
-
-  async askDateNewSave () {
-    const AsyncAlert = () => new Promise((resolve) => {
-      Alert.alert(
-        "Guardar palabra",
-        "¿Desea almacenar esta palabra en el diccionario?",
-        [
-          {
-            text: 'Sí',
-            onPress: () => {
-              resolve(this.storeDateInDictionary());
-            },
-          },
-          {
-            text: 'No',
-            onPress: () => {
-              resolve(this.storeDate());
             },
           },
         ],
@@ -1531,11 +1506,11 @@ class BuyScreen extends Component {
   }
 
   cancelInvoice = async() => {
-    this.setState({setInvoiceNumber: false})
+    this.setState({setInvoice: false})
     this.setState({is_recording: true})
-    this.setState({invoiceNumber: ""})
-    this.setState({getInvoiceNumber: false})
-    this.setState({interpretedInvoiceNumber: ""})
+    this.setState({invoice: ""})
+    this.setState({getInvoice: false})
+    this.setState({interpretedInvoice: ""})
     this._startRecognition()
   }
 
@@ -1583,19 +1558,7 @@ class BuyScreen extends Component {
   }
 
   setDate = async() => {
-    await AsyncStorage.getItem("b.interpretedDate").then((value) => {
-      if (value != null) {
-        if (value != this.state.interpretedDate) {
-          this.askDateNewSave()
-        } else {
-          this.storeDate()
-        }
-      } else if (this.state.interpretedDate != this.state.date) {
-        this.askDateNewSave()
-      } else {
-        this.storeDate()
-      }
-    })
+    this.storeDate()
   }
 
   setInvoice = async() => {
@@ -2282,8 +2245,8 @@ class BuyScreen extends Component {
       interpretedDate: this.state.interpretedDate,
       invoice: this.state.invoice,
       interpretedInvoice: this.state.interpretedInvoice,
-      total: this.state.interpretedTotal,
-      interpretedTotal: this.state.total,
+      total: this.state.total,
+      interpretedTotal: this.state.interpretedTotal,
       images: this.state.images,
       back: "ResumeView",
       type: "Buy"
@@ -3016,7 +2979,8 @@ const styles = StyleSheet.create({
   resumeView: {
     paddingTop: 30,
     paddingLeft: 40,
-    backgroundColor: "#FFF"
+    backgroundColor: "#FFF",
+    paddingBottom: 100
   },
   dictionaryView: {
     paddingLeft: 40,
