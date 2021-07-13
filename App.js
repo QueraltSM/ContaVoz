@@ -7,6 +7,108 @@ import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import * as ImagePicker from 'react-native-image-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
+import { Value } from 'react-native-reanimated';
+
+class BuyListScreen extends Component { 
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      userid: "",
+      buyList: []
+    }
+    this.init()
+  }
+
+  componentDidMount(){
+    BackHandler.addEventListener('hardwareBackPress', this.goBack);
+  }
+
+  goBack = () => {
+    this.props.navigation.push("Main")
+    return true
+  }
+
+  async init() {
+    await AsyncStorage.getItem('userid').then((value) => {
+      this.setState({ userid: value })
+    })
+    await AsyncStorage.getItem(this.state.userid+"-buyList").then((value) => {
+      if (value != null) {
+        this.setState({ buyList: JSON.parse(value) })
+      }
+    })
+  }
+
+  addBuy = async () => {
+    var array = this.state.buyList
+    var today = new Date()
+    var document = {
+      id: "C_"+this.state.userid+"-"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2),
+      name: ("0" + (today.getDate())).slice(-2)+"/"+("0" + (today.getMonth() + 1)).slice(-2)+"/"+today.getFullYear()+" a las " + ("0" + (today.getHours())).slice(-2)+ ":"+("0" + (today.getMinutes())).slice(-2),
+      time: new Date().getTime()
+    }
+    array.push(document)
+    await AsyncStorage.setItem(this.state.userid+"-buyList", JSON.stringify(array))
+    this.props.navigation.push('Buy',{id: document.id})
+  }
+
+  openDocument(item) {
+    this.props.navigation.push("Buy", {id: item.id})
+  }
+
+  setBuyList() {
+    if (this.state.buyList.length > 0) {
+      return (
+        <View style={styles.voiceControlView}>
+          <FlatList 
+            vertical
+            showsVerticalScrollIndicator={false}
+            data={ this.state.buyList.sort((a,b) => a.time < b.time) } 
+            renderItem={({ item }) => (
+              (<TouchableOpacity onPress={() => this.openDocument(item)}>
+                  <Text style={styles.registeredDocuments}>{item.name}</Text>
+                </TouchableOpacity>
+              ) 
+            )}
+        />
+      </View>)
+    }
+    return (<View style={styles.resumeView}><Text style={styles.showTitle}>No hay registros</Text></View>)
+  }
+
+  render () {
+    return (
+      <View style={{flex: 1, backgroundColor:"#FFF" }}>
+        <View style={styles.navBarBackHeader}>
+        <View style={{ width: 70,textAlign:'center' }}>
+            <Icon
+              name='trash'
+              type='font-awesome'
+              color='#1A5276'
+              size={30}
+            />
+          </View>
+          <Text style={styles.navBarHeader}>Registros de compras</Text>
+          <View style={{ width: 70,textAlign:'center' }}>
+            <Icon
+              name='plus'
+              type='font-awesome'
+              color='#FFF'
+              size={30}
+              onPress={this.addBuy}
+            />
+          </View>
+        </View>
+        <ScrollView style={{backgroundColor: "#FFF" }}>
+        <View style={styles.sections}>
+          {this.setBuyList()}
+        </View>
+        </ScrollView>   
+      </View>
+    );
+  }
+}
 
 class ResumeViewScreen extends Component {
 
@@ -51,14 +153,14 @@ class ResumeViewScreen extends Component {
   }
 
   goBack = () => {
-    this.props.navigation.push(this.state.type)
+    this.props.navigation.push(this.state.type, {id: this.state.id })
     return true
   }
 
   async resetState() {
     var prep = ""
     if (this.state.type == "Buy") {
-      prep = "b."
+      prep = this.state.id+""
     }
     await AsyncStorage.setItem(prep+"entity", "")
     await AsyncStorage.setItem(prep+"nif", "")
@@ -85,7 +187,7 @@ class ResumeViewScreen extends Component {
     this.resetState()
     var prep = ""
     if (this.state.back == "Buy") {
-      prep = "b."
+      prep = this.state.id+""
     }
     await AsyncStorage.setItem(prep+"entity", "")
     await AsyncStorage.setItem(prep+"nif", "")
@@ -331,7 +433,7 @@ class ResumeViewScreen extends Component {
   _save = async () => {
     var prep = ""
     if (this.state.type == "Buy") {
-      prep = "b."
+      prep = this.state.id+""
     }
     if (this.state.entity == this.state.interpretedEntity && this.state.nif == this.state.interpretedNif
       && this.state.date == this.state.interpretedDate && this.state.invoice == this.state.interpretedInvoice && 
@@ -647,7 +749,7 @@ class ImageViewerScreen extends Component {
 
   goBack = () => {
     if (this.state.back == "Buy" || this.state.back == "Sales" || this.state.back == "Pay") {
-      this.props.navigation.push(this.state.back)
+      this.props.navigation.push(this.state.back, {id: this.state.id })
     } else if (this.state.images == 0 && this.state.interpretedEntity.length == 0) {
         this.props.navigation.push(this.state.type)
     } else {
@@ -693,8 +795,8 @@ class ImageViewerScreen extends Component {
       }
     }
     this.setState({images: arrayImages})
-    await AsyncStorage.setItem("b.images", JSON.stringify([]))
-    await AsyncStorage.setItem("b.images", JSON.stringify(arrayImages))
+    await AsyncStorage.setItem(this.state.id+"images", JSON.stringify([]))
+    await AsyncStorage.setItem(this.state.id+"images", JSON.stringify(arrayImages))
   }
 
   takePhoto = async() =>{
@@ -773,8 +875,8 @@ class ImageViewerScreen extends Component {
         })
       }
     }
-    await AsyncStorage.setItem("b.images", JSON.stringify([]))
-    await AsyncStorage.setItem("b.images", JSON.stringify(arrayImages))
+    await AsyncStorage.setItem(this.state.id+"images", JSON.stringify([]))
+    await AsyncStorage.setItem(this.state.id+"images", JSON.stringify(arrayImages))
     this.setState({images: arrayImages})
     if (this.state.images.length == 0) {
       this.props.navigation.push(this.state.type)
@@ -890,7 +992,7 @@ class BuyScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      id: "",
+      id: this.props.navigation.state.params.id,
       recognized: '',
       started: '',
       results: [],
@@ -920,6 +1022,7 @@ class BuyScreen extends Component {
       saved: false,
       images: [],
       words: [],
+      buyList: [],
       flatlistPos: 0,
     };
     Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -933,94 +1036,89 @@ class BuyScreen extends Component {
   }
 
   goBack = () => {
-    this.props.navigation.push('Main')
+    this.props.navigation.push('BuyList')
     return true
   }
 
   async init() {
-    await AsyncStorage.getItem("b.saved").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"saved").then((value) => {
       if (value != null) {
         this.setState({ saved: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("b.interpretedEntity").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"interpretedEntity").then((value) => {
       if (value != null) {
         this.setState({ interpretedEntity: value })
       }
     })
-    await AsyncStorage.getItem("b.interpretedNif").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"interpretedNif").then((value) => {
       if (value != null) {
         this.setState({ interpretedNif: value })
       }
     })
-    await AsyncStorage.getItem("b.interpretedDate").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"interpretedDate").then((value) => {
       if (value != null) {
         this.setState({ interpretedDate: value })
       }
     })
-    await AsyncStorage.getItem("b.interpretedInvoice").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"interpretedInvoice").then((value) => {
       if (value != null) {
         this.setState({ interpretedInvoice: value })
       }
     })
-    await AsyncStorage.getItem("b.interpretedTotal").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"interpretedTotal").then((value) => {
       if (value != null) {
         this.setState({ interpretedTotal: value })
       }
     })
-    await AsyncStorage.getItem("b.setEntity").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"setEntity").then((value) => {
       if (value != null) {
         this.setState({ setEntity: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("b.setNIF").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"setNIF").then((value) => {
       if (value != null) {
         this.setState({ setNIF: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("b.setDate").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"setDate").then((value) => {
       if (value != null) {
         this.setState({ setDate: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("b.setInvoice").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"setInvoice").then((value) => {
       if (value != null) {
         this.setState({ setInvoice: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("b.setTotal").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"setTotal").then((value) => {
       if (value != null) {
         this.setState({ setTotal: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("b.entity").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"entity").then((value) => {
       if (value != null) {
         this.setState({ entity: value })
       }
     })
-    await AsyncStorage.getItem("b.nif").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"nif").then((value) => {
       if (value != null) {
         this.setState({ nif: value })
       }
     })
-    await AsyncStorage.getItem("b.date").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"date").then((value) => {
       if (value != null) {
         this.setState({ date: value })
       }
     })
-    await AsyncStorage.getItem("b.invoice").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"invoice").then((value) => {
       if (value != null) {
         this.setState({ invoice: value })
       }
     })
-    await AsyncStorage.getItem("b.total").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"total").then((value) => {
       if (value != null) {
         this.setState({ total: value })
-      }
-    })
-    await AsyncStorage.getItem("b.id").then((value) => {
-      if (value != null) {
-        this.setState({ id: value })
       }
     })
     await AsyncStorage.getItem("words").then((value) => {
@@ -1028,14 +1126,16 @@ class BuyScreen extends Component {
         this.setState({ words: JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("b.images").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"images").then((value) => {
       if (value != null) {
         this.setState({ images: JSON.parse(value) })
       }
     })
-    if (this.state.images.length == 0 && !JSON.parse(this.state.setEntity)) {
-      await AsyncStorage.setItem("isBuy", JSON.stringify(false))
-    }
+    await AsyncStorage.getItem(this.state.userid+"-buyList").then((value) => {
+      if (value != null) {
+        this.setState({ buyList: JSON.parse(value) })
+      }
+    })
   }
 
   componentWillUnmount() {
@@ -1063,7 +1163,7 @@ class BuyScreen extends Component {
       }
     }
     this.setState({ interpretedEntity: str })
-    this.saveInMemory("b.interpretedEntity", this.state.interpretedEntity)
+    this.saveInMemory(this.state.id+"interpretedEntity", this.state.interpretedEntity)
   }
 
   setInterpretedNif() {
@@ -1074,17 +1174,17 @@ class BuyScreen extends Component {
       }
     }
     this.setState({ interpretedNif: str })
-    this.saveInMemory("b.interpretedNif", this.state.interpretedNif)
+    this.saveInMemory(this.state.id+"interpretedNif", this.state.interpretedNif)
   }
 
   async showDateError() {
-    await this.showAlert("Error", "Fecha incorrecta, pruebe de nuevo")
+    await this.showAlert("Fecha errónea", this.state.date + " es incorrecto")
     this.cancelDate()
   }
 
 
-
-  setInterpretedDate() {
+  calculateDate() {
+  
     var daysL = ["Uno", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Ocho", "Nueve", "Diez",
     "Once", "Doce", "Trece", "Catorce", "Quince", "Dieciséis", "Diecisiete", "Dieciocho", "Diecinueve",
     "Veinte", "Veintiuno", "Veintidós", "Veintitrés", "Veinticuatro", "Veinticinco", "Veintiséis", "Veintisiete",
@@ -1094,44 +1194,73 @@ class BuyScreen extends Component {
     "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
     "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"]
 
-    var months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    var months = [
+      {name:"Enero",last:31}, 
+      {name:"Febrero",last:28}, 
+      {name:"Marzo",last:31}, 
+      {name:"Abril",last:30}, 
+      {name:"Mayo",last:31}, 
+      {name:"Junio",last:30}, 
+      {name:"Julio",last:31}, 
+      {name:"Agosto",last:31}, 
+      {name:"Septiembre",last:30}, 
+      {name:"Octubre",last:31}, 
+      {name:"Noviembre",last:30}, 
+      {name:"Diciembre",last:31}]
 
     var indexL = daysL.findIndex((i) => this.state.date.toLowerCase().includes(i.toLowerCase()))
     var indexN = daysN.findIndex((i) => this.state.date.toLowerCase().includes(i.toLowerCase()))
-    var indexM = months.findIndex((i) => this.state.date.toLowerCase().includes(i.toLowerCase()))
+    var indexM = months.findIndex((i) => this.state.date.toLowerCase().includes(i.name.toLowerCase()))
     var aux = this.state.date.split(" ")
 
+    var day = ""
+    daysN.forEach((i) => {
+      if (i == aux[0]){
+        day = i
+      }
+    })
+    if (indexL > -1 && indexM > -1) {
+      indexM++
+      var d = ("0" + daysN[indexL]).slice(-2)
+      var m = ("0" + indexM).slice(-2)
+      this.setState({ interpretedDate: d + "/" + m + "/" + new Date().getFullYear() })
+    } else if (indexN > -1 && indexM > -1 && day != "") {
+      indexM++
+      var d = ("0" + day).slice(-2)
+      var m = ("0" + indexM).slice(-2)
+      if (months[indexM-1].last < day) {
+        this.showDateError()
+      } else {
+        this.setState({ interpretedDate: d + "/" + m + "/" + new Date().getFullYear() })
+      }
+    } else if (indexL > -1) {
+      var d = ("0" + daysN[indexL]).slice(-2)
+      if (d < new Date().getDate()) {
+        this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth())).slice(-2)) + "/" + new Date().getFullYear() })
+      } else {
+        this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
+      }
+    } else if (indexN > -1 && day != "") {
+      var d = ("0" + day).slice(-2)
+      if (d < new Date().getDate()) {
+        this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth())).slice(-2)) + "/" + new Date().getFullYear() })
+      } else {
+        this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
+      }
+    } else {
+      this.showDateError()
+    }
+  }
+
+  setInterpretedDate() {
     if (this.state.date.toLowerCase() == "hoy") { // Today's case: ok
       this.setState({ interpretedDate: ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear() })
+    } else if (this.state.date.toLowerCase() == "ayer") {
+      this.setState({ interpretedDate: ("0" + (new Date().getDate()-1)).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear() })
     } else {
-      var day = ""
-      daysN.forEach((i) => {
-        if (i == aux[0]){
-          day = i
-        }
-      })
-      if (indexL > -1 && indexM > -1) {
-        indexM++
-        var d = ("0" + daysN[indexL]).slice(-2)
-        var m = ("0" + indexM).slice(-2)
-        this.setState({ interpretedDate: d + "/" + m + "/" + new Date().getFullYear() })
-      } else if (indexN > -1 && indexM > -1 && day != "") {
-        indexM++
-        var d = ("0" + day).slice(-2)
-        var m = ("0" + indexM).slice(-2)
-        this.setState({ interpretedDate: d + "/" + m + "/" + new Date().getFullYear() })
-      } else if (indexL > -1) {
-        var d = ("0" + daysN[indexL]).slice(-2)
-        this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
-      } else if (indexN > -1 && day != "") {
-        var d = ("0" + day).slice(-2)
-        this.setState({ interpretedDate: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
-      } else {
-        this.showDateError()
-      }
+      this.calculateDate()
     }
-    this.saveInMemory("b.interpretedDate", this.state.interpretedDate)
+    this.saveInMemory(this.state.id+"interpretedDate", this.state.interpretedDate)
   }
 
   setInterpretedInvoice() {
@@ -1142,7 +1271,7 @@ class BuyScreen extends Component {
       }
     }
     this.setState({ interpretedInvoice: str })
-    this.saveInMemory("b.interpretedInvoice", this.state.interpretedInvoice)
+    this.saveInMemory(this.state.id+"interpretedInvoice", this.state.interpretedInvoice)
   }
 
   setInterpretedTotal() {
@@ -1153,7 +1282,7 @@ class BuyScreen extends Component {
       }
     }
     this.setState({ interpretedTotal: str })
-    this.saveInMemory("b.interpretedTotal", this.state.interpretedTotal)
+    this.saveInMemory(this.state.id+"interpretedTotal", this.state.interpretedTotal)
   }
 
   onSpeechResults(e) {
@@ -1434,48 +1563,48 @@ class BuyScreen extends Component {
 
   async storeEntity() {
     this.setState({setEntity: true})
-    this.saveInMemory("b.setEntity", JSON.stringify(true))
+    this.saveInMemory(this.state.id+"setEntity", JSON.stringify(true))
     this.saveInMemory("isBuy", JSON.stringify(true))
-    this.saveInMemory("b.entity", this.state.entity)
-    this.saveInMemory("b.interpretedEntity", this.state.interpretedEntity)
+    this.saveInMemory(this.state.id+"entity", this.state.entity)
+    this.saveInMemory(this.state.id+"interpretedEntity", this.state.interpretedEntity)
     this.setState({is_recording: true})
     this._continue()
   }
 
   async storeNif() {
     this.setState({setNIF: true})
-    this.saveInMemory("b.setNIF", JSON.stringify(true))
-    this.saveInMemory("b.nif", this.state.nif)
-    this.saveInMemory("b.interpretedNif", this.state.interpretedNif)
+    this.saveInMemory(this.state.id+"setNIF", JSON.stringify(true))
+    this.saveInMemory(this.state.id+"nif", this.state.nif)
+    this.saveInMemory(this.state.id+"interpretedNif", this.state.interpretedNif)
     this.setState({is_recording: true})
     this._continue()
   }
 
   async storeDate() {
     this.setState({setDate: true})
-    this.saveInMemory("b.setDate", JSON.stringify(true))
-    this.saveInMemory("b.date", this.state.date)
-    this.saveInMemory("b.interpretedDate", this.state.interpretedDate)
+    this.saveInMemory(this.state.id+"setDate", JSON.stringify(true))
+    this.saveInMemory(this.state.id+"date", this.state.date)
+    this.saveInMemory(this.state.id+"interpretedDate", this.state.interpretedDate)
     this.setState({is_recording: true})
     this._continue()
   }
 
   async storeInvoice() {
     this.setState({setInvoice: true})
-    this.saveInMemory("b.setInvoice", JSON.stringify(true))
+    this.saveInMemory(this.state.id+"setInvoice", JSON.stringify(true))
     this.setState({is_recording: true})
-    this.saveInMemory("b.invoice", this.state.invoice)
-    this.saveInMemory("b.interpretedInvoice", this.state.interpretedInvoice)
+    this.saveInMemory(this.state.id+"invoice", this.state.invoice)
+    this.saveInMemory(this.state.id+"interpretedInvoice", this.state.interpretedInvoice)
     this._continue()
   }
 
   async storeTotal() {
     this.setState({setTotal: true})
-    this.saveInMemory("b.setTotal", JSON.stringify(true))
-    this.saveInMemory("b.total", this.state.total)
-    this.saveInMemory("b.interpretedTotal", this.state.interpretedTotal)
+    this.saveInMemory(this.state.id+"setTotal", JSON.stringify(true))
+    this.saveInMemory(this.state.id+"total", this.state.total)
+    this.saveInMemory(this.state.id+"interpretedTotal", this.state.interpretedTotal)
     this.setState({saved: true})
-    this.saveInMemory("b.saved", JSON.stringify(true))
+    this.saveInMemory(this.state.id+"saved", JSON.stringify(true))
   }
 
   cancelEntity = async () => {
@@ -1521,12 +1650,12 @@ class BuyScreen extends Component {
     this.setState({saved: false})
     this.setState({getTotal: false})
     this.setState({interpretedTotal: ""})
-    this.saveInMemory("b.saved", JSON.stringify(false))
+    this.saveInMemory(this.state.id+"saved", JSON.stringify(false))
     this._startRecognition()
   }
 
   setEntity = async() => {
-    await AsyncStorage.getItem("b.interpretedEntity").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"interpretedEntity").then((value) => {
       if (value != null) {
         if (value != this.state.interpretedEntity) {
           this.askEntityNewSave()
@@ -1542,7 +1671,7 @@ class BuyScreen extends Component {
   }
 
   setNIF = async() => {
-    await AsyncStorage.getItem("b.interpretedNif").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"interpretedNif").then((value) => {
       if (value != null) {
         if (value != this.state.interpretedNif) {
           this.askNifNewSave()
@@ -1562,7 +1691,7 @@ class BuyScreen extends Component {
   }
 
   setInvoice = async() => {
-    await AsyncStorage.getItem("b.interpretedInvoice").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"interpretedInvoice").then((value) => {
       if (value != null) {
         if (value != this.state.interpretedInvoice) {
           this.askInvoiceNewSave()
@@ -1578,7 +1707,7 @@ class BuyScreen extends Component {
   }
 
   setTotal = async() => {
-    await AsyncStorage.getItem("b.interpretedTotal").then((value) => {
+    await AsyncStorage.getItem(this.state.id+"interpretedTotal").then((value) => {
       if (value != null) {
         if (value != this.state.interpretedTotal) {
           this.askTotalNewSave()
@@ -1630,7 +1759,7 @@ class BuyScreen extends Component {
                 })
                 this.setState({images: arrayImages})
                 this.saveInMemory("isBuy", JSON.stringify(true))
-                this.saveInMemory("b.images", JSON.stringify(arrayImages))
+                this.saveInMemory(this.state.id+"images", JSON.stringify(arrayImages))
               }
             })
           } else {
@@ -1671,7 +1800,7 @@ class BuyScreen extends Component {
           })
           this.setState({images: arrayImages})
           this.saveInMemory("isBuy", JSON.stringify(true))
-          this.saveInMemory("b.images", JSON.stringify(arrayImages))
+          this.saveInMemory(this.state.id+"images", JSON.stringify(arrayImages))
         }
       })
     } else {
@@ -1714,23 +1843,23 @@ class BuyScreen extends Component {
   async delete() {
     this.resetState()
     await AsyncStorage.setItem("isBuy", JSON.stringify(false))
-    await AsyncStorage.setItem("b.entity", "")
-    await AsyncStorage.setItem("b.nif", "")
-    await AsyncStorage.setItem("b.date", "")
-    await AsyncStorage.setItem("b.invoice", "")
-    await AsyncStorage.setItem("b.total", "")
-    await AsyncStorage.setItem("b.interpretedEntity", "")
-    await AsyncStorage.setItem("b.interpretedNif", "")
-    await AsyncStorage.setItem("b.interpretedDate", "")
-    await AsyncStorage.setItem("b.interpretedInvoice", "")
-    await AsyncStorage.setItem("b.interpretedTotal", "")
-    await AsyncStorage.setItem("b.images", JSON.stringify([]))
-    await AsyncStorage.setItem("b.saved", JSON.stringify(false))
-    await AsyncStorage.setItem("b.setEntity", JSON.stringify(false))
-    await AsyncStorage.setItem("b.setNIF", JSON.stringify(false))
-    await AsyncStorage.setItem("b.setDate", JSON.stringify(false))
-    await AsyncStorage.setItem("b.setInvoice", JSON.stringify(false))
-    await AsyncStorage.setItem("b.setTotal", JSON.stringify(false))
+    await AsyncStorage.setItem(this.state.id+"entity", "")
+    await AsyncStorage.setItem(this.state.id+"nif", "")
+    await AsyncStorage.setItem(this.state.id+"date", "")
+    await AsyncStorage.setItem(this.state.id+"invoice", "")
+    await AsyncStorage.setItem(this.state.id+"total", "")
+    await AsyncStorage.setItem(this.state.id+"interpretedEntity", "")
+    await AsyncStorage.setItem(this.state.id+"interpretedNif", "")
+    await AsyncStorage.setItem(this.state.id+"interpretedDate", "")
+    await AsyncStorage.setItem(this.state.id+"interpretedInvoice", "")
+    await AsyncStorage.setItem(this.state.id+"interpretedTotal", "")
+    await AsyncStorage.setItem(this.state.id+"images", JSON.stringify([]))
+    await AsyncStorage.setItem(this.state.id+"saved", JSON.stringify(false))
+    await AsyncStorage.setItem(this.state.id+"setEntity", JSON.stringify(false))
+    await AsyncStorage.setItem(this.state.id+"setNIF", JSON.stringify(false))
+    await AsyncStorage.setItem(this.state.id+"setDate", JSON.stringify(false))
+    await AsyncStorage.setItem(this.state.id+"setInvoice", JSON.stringify(false))
+    await AsyncStorage.setItem(this.state.id+"setTotal", JSON.stringify(false))
     this.props.navigation.push("Buy")
   }
 
@@ -2280,6 +2409,43 @@ class BuyScreen extends Component {
       </View>)
   }
 
+  async deleteBuyDoc() {
+    var buyDocs = []
+    this.state.buyList.forEach((i) => {
+      if (i.id != this.state.id) {
+        buyDocs.push(i)
+      }
+    })
+    await AsyncStorage.setItem(this.state.userid+"-buyList", JSON.stringify(buyDocs))
+    this.props.navigation.push("BuyList")
+  }
+
+
+  askDeleteBuyDoc = async () => {
+    const AsyncAlert = () => new Promise((resolve) => {
+      Alert.alert(
+        "Borrar documento",
+        "¿Está seguro que desea borrar permanentemente este documento?",
+        [
+          {
+            text: 'Sí',
+            onPress: () => {
+              resolve(this.deleteBuyDoc());
+            },
+          },
+          {
+            text: 'No',
+            onPress: () => {
+              resolve(resolve("No"));
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+      });
+      await AsyncAlert();
+  }
+
   render () {
     return (
       <View style={{flex: 1, backgroundColor: "#fff" }}>
@@ -2303,16 +2469,15 @@ class BuyScreen extends Component {
               size={30}
             />
           </View>
-       {(this.state.images.length > 0 || JSON.parse(this.state.setEntity)) &&
-        (<View style={{ width: 60,textAlign:'center' }}>
+        <View style={{ width: 60,textAlign:'center' }}>
             <Icon
               name='trash'
               type='font-awesome'
               color='#FFF'
               size={30}
-              onPress={this._delete}
+              onPress={this.askDeleteBuyDoc}
             />
-          </View>)}
+          </View>
           <View style={{ width: 60,textAlign:'center' }}>
             <Icon
               name='camera'
@@ -2364,12 +2529,12 @@ class LaunchScreen extends Component {
       if (value != null) {
          this.setState({ saveData: JSON.parse(value) })
       }
-     })
+    })
+    var page = "Login"
     if (JSON.parse(this.state.saveData)) {
-      this.props.navigation.push("Main")
-    } else {
-      this.props.navigation.push("Login")
+      page = "Main"
     }
+    this.props.navigation.push(page)
   }
 
   render() {return (<View style={ styles.container }></View>)}
@@ -2386,6 +2551,7 @@ class LoginScreen extends Component {
       fullname: "",
       idempresa: "",
       userID: "",
+      userid: "",
       hidePassword: true }
       this.init()
   }
@@ -2464,8 +2630,8 @@ class LoginScreen extends Component {
     await AsyncStorage.setItem('fullname', this.state.fullname);
     await AsyncStorage.setItem('idempresa',  this.state.idempresa + "");
     await AsyncStorage.setItem('token',  this.state.token);
-    await AsyncStorage.setItem('userID',  this.state.userID + "");
-    this.props.navigation.navigate('Main')
+    await AsyncStorage.setItem('userid',  this.state.userid + "");
+    this.props.navigation.push('Main')
   }
 
   login = async () => {
@@ -2482,7 +2648,7 @@ class LoginScreen extends Component {
             this.setState({fullname: JSON.parse(JSON.stringify(responseJson.fullName))})
             this.setState({token: JSON.parse(JSON.stringify(responseJson.token))})
             this.setState({idempresa: JSON.parse(JSON.stringify(responseJson.idempresa))})
-            this.setState({userID: JSON.parse(JSON.stringify(responseJson.userid))})
+            this.setState({userid: JSON.parse(JSON.stringify(responseJson.id))})
             this.saveUser()
           } else {
             this.handleError(error)
@@ -2554,39 +2720,46 @@ class LoginScreen extends Component {
 }
 
 class MainScreen extends Component {
+
   constructor(props) {
     super(props);
     this.state = {
-      isBuy: false,
-      isSale: false,
-      isPay: false
+      fullname: "",
+      userid: "",
+      buyList:[],
+      salesList:[],
+      payList:[]
     }
     this.init()
   }
 
   async init() {
-    await AsyncStorage.getItem("isBuy").then((value) => {
+    await AsyncStorage.getItem("fullname").then((value) => {
+      this.setState({ fullname: value })
+    })
+    await AsyncStorage.getItem("userid").then((value) => {
+      this.setState({ userid: value})
+    })
+    console.log("company id: " + this.state.userid)
+    await AsyncStorage.getItem(this.state.userid+"-buyList").then((value) => {
       if (value != null) {
-        this.setState({ isBuy: JSON.parse(value) })
+        this.setState({buyList:JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("isSale").then((value) => {
+    await AsyncStorage.getItem(this.state.userid+"-salesList").then((value) => {
       if (value != null) {
-        this.setState({ isSale: JSON.parse(value) })
+        this.setState({salesList:JSON.parse(value) })
       }
     })
-    await AsyncStorage.getItem("isPay").then((value) => {
+    await AsyncStorage.getItem(this.state.userid+"-payList").then((value) => {
       if (value != null) {
-        this.setState({ isPay: JSON.parse(value) })
+        this.setState({payList:JSON.parse(value) })
       }
     })
   }
 
   goBuyScreen = async () => {
-    var today = new Date()
-    var id = "C_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
-    await AsyncStorage.setItem('b.id', id)
-    this.props.navigation.push('Buy')
+    this.props.navigation.push('BuyList')
   }
 
   goSaleScreen = async () => {
@@ -2600,7 +2773,7 @@ class MainScreen extends Component {
   goPayScreen = async () => {
     alert("Gastos no se encuentra activo de momento")
     /*var today = new Date()
-    var id = "P_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
+    var id = "G_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
     await AsyncStorage.setItem('id', id)
     this.props.navigation.push('Pay')*/
   }
@@ -2662,10 +2835,9 @@ class MainScreen extends Component {
           />
           </View>
         <Text style={styles.mainHeader}>Contabilidad</Text>
-        <Text style={styles.text}>Seleccione tipo de documento</Text>
+        <Text style={styles.text}>Usuario {this.state.fullname}</Text>
         <View style={styles.twoColumnsInARow}>
-        {this.state.isBuy && 
-          (<View>
+        <View>
           <TouchableOpacity onPress={this.goBuyScreen}>
             <View style={styles.mainIcon}>
               <Icon
@@ -2675,45 +2847,16 @@ class MainScreen extends Component {
                 size={35}
               />
               </View>
-            <Text style={styles.mainButton}>Seguir compra</Text>
+            <Text style={styles.mainButton}>{this.state.buyList.length} compras</Text>
           </TouchableOpacity>
-          </View>)}
-        {!this.state.isBuy && 
-          (<View>
-            <TouchableOpacity onPress={this.goBuyScreen}>
-              <View style={styles.mainIcon}>
-                <Icon
-                  name='shopping-cart'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={35}
-                />
-                </View>
-              <Text style={styles.mainButton}>Compras</Text>
-            </TouchableOpacity>
-            </View>)}
+          </View>
             <Icon
                 name='shopping-cart'
                 type='font-awesome'
                 color='#FFF'
                 size={35}
               />
-        {this.state.isSale && 
-          (<View>
-          <TouchableOpacity onPress={this.goSaleScreen}>
-            <View style={styles.mainIcon}>
-              <Icon
-                name='tag'
-                type='font-awesome'
-                color='#FFF'
-                size={35}
-              />
-              </View>
-            <Text style={styles.mainButton}>Seguir venta</Text>
-          </TouchableOpacity>
-          </View>)}
-        {!this.state.isSale && 
-          (<View>
+        <View>
             <TouchableOpacity onPress={this.goSaleScreen}>
               <View style={styles.mainIcon}>
                 <Icon
@@ -2723,27 +2866,12 @@ class MainScreen extends Component {
                   size={35}
                 />
                 </View>
-              <Text style={styles.mainButton}>Ventas</Text>
+              <Text style={styles.mainButton}>{this.state.salesList.length} ventas</Text>
             </TouchableOpacity>
-            </View>)}
+            </View>
           </View>
           <View style={styles.twoColumnsInARow}>
-        {this.state.isPay && 
-          (<View>
-          <TouchableOpacity onPress={this.goPayScreen}>
-            <View style={styles.mainIcon}>
-              <Icon
-                name='tags'
-                type='font-awesome'
-                color='#FFF'
-                size={35}
-              />
-              </View>
-            <Text style={styles.mainButton}>Seguir gasto</Text>
-          </TouchableOpacity>
-          </View>)}
-        {!this.state.isPay && 
-          (<View>
+          <View>
             <TouchableOpacity onPress={this.goPayScreen}>
               <View style={styles.mainIcon}>
                 <Icon
@@ -2753,9 +2881,9 @@ class MainScreen extends Component {
                   size={35}
                 />
                 </View>
-              <Text style={styles.mainButton}>Gastos</Text>
+              <Text style={styles.mainButton}>{this.state.payList.length} gastos</Text>
             </TouchableOpacity>
-            </View>)}
+            </View>
             <Icon
                 name='shopping-cart'
                 type='font-awesome'
@@ -2774,7 +2902,6 @@ class MainScreen extends Component {
             <Text style={styles.mainButton}>Diccionario</Text>
           </TouchableOpacity>
         </View>
-      
         <View style={styles.twoColumnsInARow}>
         <View>
           <TouchableOpacity onPress={this.logout}>
@@ -2790,7 +2917,6 @@ class MainScreen extends Component {
           </TouchableOpacity>
           </View>
         </View>
-      
       </View>
     );
   }
@@ -2835,6 +2961,13 @@ const AppNavigator = createStackNavigator({
   },
   Buy: {
     screen: BuyScreen,
+    navigationOptions: {
+      header: null,
+      animationEnabled: false
+    }
+  },
+  BuyList: {
+    screen: BuyListScreen,
     navigationOptions: {
       header: null,
       animationEnabled: false
@@ -3008,6 +3141,14 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     color: "#000",
     fontWeight: 'bold',
+  },
+  registeredDocuments: {
+    fontSize: 19,
+    textAlign: "center",
+    paddingTop: 20,
+    color: "#1A5276",
+    fontWeight: 'bold',
+    paddingBottom: 15
   },
   dictionaryKeys: {
     fontSize: 20,
