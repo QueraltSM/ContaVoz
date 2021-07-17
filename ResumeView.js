@@ -384,6 +384,5 @@ class ResumeViewScreen extends Component {
         textAlignVertical: 'center',
         height: 60
       },
-
     })
 

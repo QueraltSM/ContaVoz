@@ -28,7 +28,7 @@ class BuyListScreen extends Component {
       await AsyncStorage.getItem('userid').then((value) => {
         this.setState({ userid: value })
       })
-      await AsyncStorage.getItem(this.state.userid+"-buyList").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".buyList").then((value) => {
         if (value != null) {
           this.setState({ buyList: JSON.parse(value) })
         }
@@ -44,7 +44,7 @@ class BuyListScreen extends Component {
         time: new Date().getTime()
       }
       array.push(document)
-      await AsyncStorage.setItem(this.state.userid+"-buyList", JSON.stringify(array))
+      await AsyncStorage.setItem(this.state.userid+".buyList", JSON.stringify(array))
       this.props.navigation.push('Buy',{id: document.id})
     }
   
@@ -146,5 +146,15 @@ class BuyListScreen extends Component {
         fontWeight: 'bold',
         fontSize: 20,
         textAlign: 'center'
+      },
+      sections: {
+        flex: 1,
+        backgroundColor:"#FFF",
+      },
+      resumeView: {
+        paddingTop: 30,
+        paddingLeft: 40,
+        backgroundColor: "#FFF",
+        paddingBottom: 100
       },
 })

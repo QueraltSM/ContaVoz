@@ -16,8 +16,9 @@ class LoginScreen extends Component {
         idempresa: "",
         userID: "",
         userid: "",
-        hidePassword: true }
-        this.init()
+        hidePassword: true 
+      }
+      this.init()
     }
   
     async init () {
@@ -58,27 +59,22 @@ class LoginScreen extends Component {
         case "1":
           error = "Alias incorrecto"
           break;
-        
         case "2":
           error = "Usuario o contraseña incorrectas"
           break;
-   
         case "3":
           error = "Este usuario se encuentra desactivado"
           break;
-   
         case "4":
           error = "Ha habido algún problema en la comunicación"
           break;
-   
         case "5":
           error = "No hay conexión a internet"
           break;
-  
         default:
           error = "Error desconocido"
-        }
-        this.showAlert(error);
+      }
+      this.showAlert(error);
     }
   
   
@@ -102,12 +98,13 @@ class LoginScreen extends Component {
       if (this.state.alias != undefined && this.state.user != undefined && this.state.pass != undefined) {
         const requestOptions = {
           method: 'POST',
-          body: JSON.stringify({aliasDb: this.state.alias, user: this.state.user, password: this.state.pass, appSource: "Dicloud"})
+          body: JSON.stringify({aliasDb: this.state.alias, user: this.state.user, password: this.state.pass, appSource: "Disoft"})
         };
         fetch('https://app.dicloud.es/login.asp', requestOptions)
           .then((response) => response.json())
           .then((responseJson) => {
             let error = JSON.stringify(responseJson.error_code)
+            console.log("respuesta:"+JSON.stringify(responseJson))
             if (error == 0) {
               this.setState({fullname: JSON.parse(JSON.stringify(responseJson.fullName))})
               this.setState({token: JSON.parse(JSON.stringify(responseJson.token))})
@@ -187,52 +184,52 @@ export default createAppContainer(LoginScreen);
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
+      flex: 1,
+      backgroundColor: '#fff',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     textBox: {
-        fontSize: 18,
-        alignSelf: 'stretch',
-        height: 45,
-        paddingLeft: 8,
-        color:"black",
-        borderWidth: 2,
-        paddingVertical: 0,
-        borderColor: '#98A406',
-        borderRadius: 0,
-        margin: 10,
-        borderRadius: 20,
-        textAlign: "center"
+      fontSize: 18,
+      alignSelf: 'stretch',
+      height: 45,
+      paddingLeft: 8,
+      color:"black",
+      borderWidth: 2,
+      paddingVertical: 0,
+      borderColor: '#98A406',
+      borderRadius: 0,
+      margin: 10,
+      borderRadius: 20,
+      textAlign: "center"
     },
     textBoxBtnHolder:{
-        position: 'relative',
-        alignSelf: 'stretch',
-        justifyContent: 'center'
+      position: 'relative',
+      alignSelf: 'stretch',
+      justifyContent: 'center'
     },
     visibilityBtn: {
-        position: 'absolute',
-        right: 20,
-        height: 40,
-        width: 35,
-        padding: 2
+      position: 'absolute',
+      right: 20,
+      height: 40,
+      width: 35,
+      padding: 2
     },
     appButtonText: {
-        fontSize: 15,
-        color: "#fff",
-        fontWeight: "bold",
-        alignSelf: "center",
-        textTransform: "uppercase"
+      fontSize: 15,
+      color: "#fff",
+      fontWeight: "bold",
+      alignSelf: "center",
+      textTransform: "uppercase"
     },
     appButtonContainer: {
-        elevation: 8,
-        backgroundColor: "#98A406",
-        borderRadius: 20,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        width: 150,
-        margin: 20 
+      elevation: 8,
+      backgroundColor: "#98A406",
+      borderRadius: 20,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      width: 150,
+      margin: 20 
     },
 })
   

@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
@@ -25,17 +25,17 @@ class MainScreen extends Component {
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value})
       })
-      await AsyncStorage.getItem(this.state.userid+"-buyList").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".buyList").then((value) => {
         if (value != null) {
           this.setState({buyList:JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.userid+"-salesList").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".salesList").then((value) => {
         if (value != null) {
           this.setState({salesList:JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.userid+"-payList").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".payList").then((value) => {
         if (value != null) {
           this.setState({payList:JSON.parse(value) })
         }
@@ -47,11 +47,19 @@ class MainScreen extends Component {
     }
   
     goSaleScreen = async () => {
-      alert("Venta no se encuentra activo de momento")
+      alert("Ventas no se encuentra activo de momento")
       /*var today = new Date()
       var id = "V_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
       await AsyncStorage.setItem('id', id)
       this.props.navigation.push('Sale')*/
+    }
+
+    goChargeScreen  = async () => {
+      alert("Cobros no se encuentra activo de momento")
+      /*var today = new Date()
+      var id = "G_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
+      await AsyncStorage.setItem('id', id)
+      this.props.navigation.push('Pay')*/
     }
   
     goPayScreen = async () => {
@@ -77,7 +85,7 @@ class MainScreen extends Component {
     }
   
     logout = async () => {
-      const AsyncAlert = (title, msg) => new Promise((resolve) => {
+      const AsyncAlert = () => new Promise((resolve) => {
         Alert.alert(
           "Procedo a desconectar",
           "¿Debo mantener su identificación actual?",
@@ -115,8 +123,7 @@ class MainScreen extends Component {
             name='calculator'
             type='font-awesome'
             color='#154360'
-            size={35}
-          />
+            size={35}/>
           </View>
           <Text style={styles.mainHeader}>Contabilidad</Text>
           <Text style={styles.text}>Usuario {this.state.fullname}</Text>
@@ -128,18 +135,16 @@ class MainScreen extends Component {
                   name='shopping-cart'
                   type='font-awesome'
                   color='#FFF'
-                  size={35}
-                />
+                  size={35}/>
                 </View>
               <Text style={styles.mainButton}>Compras ({this.state.buyList.length})</Text>
             </TouchableOpacity>
             </View>
               <Icon
-                  name='shopping-cart'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={35}
-                />
+                name='shopping-cart'
+                type='font-awesome'
+                color='#FFF'
+                size={35}/>
               <View>
               <TouchableOpacity onPress={this.goSaleScreen}>
                 <View style={styles.mainIcon}>
@@ -147,8 +152,7 @@ class MainScreen extends Component {
                     name='tag'
                     type='font-awesome'
                     color='#FFF'
-                    size={35}
-                  />
+                    size={35}/>
                   </View>
                 <Text style={styles.mainButton}>Ventas ({this.state.salesList.length})</Text>
               </TouchableOpacity>
@@ -156,56 +160,70 @@ class MainScreen extends Component {
             </View>
             <View style={styles.twoColumnsInARow}>
             <View>
-              <TouchableOpacity onPress={this.goPayScreen}>
+              <TouchableOpacity onPress={this.goChargeScreen}>
                 <View style={styles.mainIcon}>
                   <Icon
                     name='money'
                     type='font-awesome'
                     color='#FFF'
-                    size={35}
-                  />
+                    size={35}/>
                   </View>
-                <Text style={styles.mainButton}>Gastos ({this.state.payList.length})</Text>
+                <Text style={styles.mainButton}>Cobros ({this.state.payList.length})</Text>
               </TouchableOpacity>
               </View>
               <Icon
-                  name='shopping-cart'
+                name='shopping-cart'
+                type='font-awesome'
+                color='#FFF'
+                size={35}/>
+            <TouchableOpacity onPress={this.goPayScreen}>
+              <View style={styles.mainIcon}>
+                <Icon
+                  name='shopping-basket'
                   type='font-awesome'
                   color='#FFF'
-                  size={35}
-                />
+                  size={35}/>
+                </View>
+              <Text style={styles.mainButton}>Gastos ({this.state.payList.length})</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.twoColumnsInARow}>
+          <View>
             <TouchableOpacity onPress={this.goDictionary}>
               <View style={styles.mainIcon}>
                 <Icon
                   name='book'
                   type='font-awesome'
                   color='#FFF'
-                  size={35}
-                />
+                  size={35}/>
                 </View>
               <Text style={styles.mainButton}>Diccionario</Text>
             </TouchableOpacity>
-          </View>
-          <View style={styles.twoColumnsInARow}>
-          <View>
+            </View>
+            <Icon
+                name='shopping-cart'
+                type='font-awesome'
+                color='#FFF'
+                size={35}/>
+            <View>
             <TouchableOpacity onPress={this.logout}>
               <View style={styles.mainIcon}>
                 <Icon
                   name='sign-out'
                   type='font-awesome'
                   color='#FFF'
-                  size={35}
-                />
+                  size={35}/>
                 </View>
-              <Text style={styles.mainButton}>Desconectar</Text>
+              <Text style={styles.mainButton}>Salir</Text>
             </TouchableOpacity>
             </View>
           </View>
-        </View>
-      );
+        </View>);
     }
   }
+
   export default createAppContainer(MainScreen);
+  
   const styles = StyleSheet.create({
     mainView: {
       flex: 1,

@@ -11,15 +11,35 @@ import ImageViewerScreen from "./ImageViewer"
 import BuyScreen from "./Buy.js"
 
 class LaunchScreen extends Component {  
+
   constructor(props) {
     super(props);
     this.state = {
-      saveData: false
+      saveData: false,
+      idempresa: "",
+      userid: ""
     }
     this.init()
   }
 
-  async init(){
+  async init() {
+    const requestOptions = {
+      method: 'POST',
+      body: JSON.stringify({ idempresa:"1", id: "2" })
+    };
+    await AsyncStorage.getItem("idempresa").then((value) => {
+      this.setState({ idempresa: JSON.parse(value) })
+    })
+    await AsyncStorage.getItem("userid").then((value) => {
+        this.setState({ userid: JSON.parse(value) })
+    })
+    fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
+      .then((response) => response.json())
+      .then((responseJson) => {
+        console.log("respuesta del servidor: " + JSON.stringify(responseJson))
+      }).catch((error) => {
+        console.log("error:"+error)
+      });
     await AsyncStorage.getItem("saveData").then((value) => {
       if (value != null) {
          this.setState({ saveData: JSON.parse(value) })
@@ -31,7 +51,9 @@ class LaunchScreen extends Component {
     }
     this.props.navigation.push(page)
   }
+
   render() {return (<View style={ styles.container }></View>)}
+  
 }
 
 export class DocImage {
@@ -100,6 +122,7 @@ const AppNavigator = createStackNavigator({
     }
   },
 });
+
 export default createAppContainer(AppNavigator);
 
 const styles = StyleSheet.create({
