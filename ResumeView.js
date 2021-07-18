@@ -8,45 +8,60 @@ import ImageZoom from 'react-native-image-pan-zoom';
 class ResumeViewScreen extends Component {
   
     constructor(props) {
-      super(props);
+      super(props)
       this.state = {
         id: this.props.navigation.state.params.id,
-        entity: this.props.navigation.state.params.interpretedEntity,
-        entityKey: this.props.navigation.state.params.entity,
-        interpretedEntity: this.props.navigation.state.params.interpretedEntity,
-        nif: this.props.navigation.state.params.interpretedNif,
-        nifKey: this.props.navigation.state.params.nif,
-        interpretedNif: this.props.navigation.state.params.interpretedNif,
-        date: this.props.navigation.state.params.interpretedDate,
-        dateKey: this.props.navigation.state.params.date,
-        interpretedDate: this.props.navigation.state.params.interpretedDate,
-        invoice: this.props.navigation.state.params.interpretedInvoice,
-        invoiceKey: this.props.navigation.state.params.invoice,
-        interpretedInvoice: this.props.navigation.state.params.interpretedInvoice,
-        total: this.props.navigation.state.params.interpretedTotal,
-        totalKey: this.props.navigation.state.params.total,
-        interpretedTotal: this.props.navigation.state.params.interpretedTotal,
-        images: this.props.navigation.state.params.images,
+        interpreptedData1: "",
+        interpreptedData2: "",
         back: this.props.navigation.state.params.back,
         type: this.props.navigation.state.params.type,
         flatlistPos: 0,
+        images: [],
         words: [],
-        docs: [],
-        userid: ""
+        doc: [],
+        userid: "",
+        data: [
+          { nameDB: "Cuenta",
+            required: "S",
+            nameApp: "Entidad",
+            type: "E"
+          },
+          { nameDB: "Fecha",
+            required: "S",
+            nameApp: "Fecha",
+            type: "F"
+          },
+          { nameDB: "Factura",
+            required: "S",
+            nameApp: "Documento",
+            type: ""
+          },
+          { nameDB: "Importe",
+            required: "S",
+            nameApp: "Importe",
+            type: "N"
+          },
+        ]
       }
       this.init()
     }
   
     async init() {
-      if (this.state.back == "Buy") {
-        prep = "BuyList"
+      var prep = ""
+      if (this.state.type == "Buy") {
+        prep = "buyList"
       }
-      await AsyncStorage.getItem(this.state.id+"-"+prep).then((value) => {
+      await AsyncStorage.getItem(this.state.id+".savedData").then((value) => {
         if (value != null) {
-          this.setState({ docs: JSON.parse(value) })
+          this.setState({ doc: JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.id+"-words").then((value) => {
+      await AsyncStorage.getItem(this.state.id+".images").then((value) => {
+        if (value != null) {
+          this.setState({ words: JSON.parse(value) })
+        }
+      })
+      await AsyncStorage.getItem(this.state.id+".words").then((value) => {
         if (value != null) {
           this.setState({ words: JSON.parse(value) })
         }
@@ -66,7 +81,7 @@ class ResumeViewScreen extends Component {
       var prep = ""
       var list = "buyList"
       if (this.state.back == "Buy") {
-        prep = "BuyList"
+        prep = "buyList"
       }
       var auxDocs = []
       this.state.docs.forEach((i) => {
@@ -74,7 +89,7 @@ class ResumeViewScreen extends Component {
           auxDocs.push(i)
         }
       })
-      await AsyncStorage.setItem(this.state.userid+"-"+list, JSON.stringify(auxDocs))
+      await AsyncStorage.setItem(this.state.userid+"."+list, JSON.stringify(auxDocs))
       this.props.navigation.push(prep)
     }
   
@@ -164,93 +179,30 @@ class ResumeViewScreen extends Component {
   
     sendDocument = async () => {
       alert("Accion desactivada por el momento")
-      /*console.log("send document")
-      const requestOptions = {
-        method: 'POST',
-        body: JSON.stringify({ entity: this.state.interpretedEntity })
-      };
-      fetch('https://app.dicloud.es/pruebajson.asp', requestOptions)
-        .then((response) => response.json())
-        .then((responseJson) => {
-          console.log("respuesta del servidor: " + JSON.stringify(responseJson.error))
-        }).catch((error) => {
-          console.log("error:"+error)
-        });*/
     }
   
     setControlVoice(){
         return(
           <View style={styles.resumeView}>
-            {this.state.interpretedEntity.length > 0 && 
-            (<View>
-              <Text style={styles.resumeText}>Entidad</Text>
-              <View style={{flexDirection:'row', width:"90%"}}>
-              <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedEntity => this.setState({interpretedEntity})}>{this.state.interpretedEntity}</TextInput>
-              <Icon
-                name='pencil'
-                type='font-awesome'
-                color='#000'
-                size={30}
-              />
-              </View>
-              </View>
-            )}
-            {this.state.nif.length > 0 &&
-              (<View>
-                <Text style={styles.resumeText}>NIF</Text>
-              <View style={{flexDirection:'row', width:"90%"}}>
-              <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedNif => this.setState({interpretedNif})}>{this.state.interpretedNif}</TextInput>
-              <Icon
-                name='pencil'
-                type='font-awesome'
-                color='#000'
-                size={30}
-              />
-              </View>
-            </View>
-            )}
-            {this.state.date.length > 0 &&
-              (<View>
-                <Text style={styles.resumeText}>Fecha</Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedDate => this.setState({interpretedDate})}>{this.state.interpretedDate}</TextInput>
-                <Icon
-                  name='pencil'
-                  type='font-awesome'
-                  color='#000'
-                  size={30}
-                />
+            <FlatList 
+              vertical
+              showsVerticalScrollIndicator={false}
+              data={this.state.data}
+              renderItem={({ item, index }) => (
+                (<View>
+                  <Text style={styles.resumeText}>{item.nameApp}</Text>
+                  <View style={{flexDirection:'row', width:"90%"}}>
+                  <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index]}</TextInput>
+                  <Icon
+                    name='pencil'
+                    type='font-awesome'
+                    color='#000'
+                    size={30}
+                  />
                 </View>
-                </View>
-            )}
-            {this.state.invoice.length > 0 &&
-              (<View>
-                <Text style={styles.resumeText}>Nº factura</Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedInvoice => this.setState({interpretedInvoice})}>{this.state.interpretedInvoice}</TextInput>
-                <Icon
-                  name='pencil'
-                  type='font-awesome'
-                  color='#000'
-                  size={30}
-                />
-                </View>
-                </View>
-            )}
-            {this.state.total.length > 0 &&
-              (<View>
-                <Text style={styles.resumeText}>Total</Text>
-                <View style={{flexDirection:'row', width:"90%"}}>
-                <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedTotal => this.setState({interpretedTotal})}>{this.state.interpretedTotal}</TextInput>
-                <Icon
-                  name='pencil'
-                  type='font-awesome'
-                  color='#000'
-                  size={30}
-                />
-                </View>
-                </View>
-            )}
+                </View>)
+              )}
+            />
           </View>
         )
     }
@@ -312,7 +264,7 @@ class ResumeViewScreen extends Component {
   
   
     _save = async () => {
-      var prep = ""
+      /*var prep = ""
       if (this.state.type == "Buy") {
         prep = this.state.id+""
       }
@@ -335,7 +287,7 @@ class ResumeViewScreen extends Component {
       }
       if (this.state.total != this.state.interpretedTotal) {
         await this.askSaveWord("total", prep+"interpretedTotal", this.state.interpretedTotal)
-      }
+      }*/
     }
   
     render () {
@@ -383,6 +335,72 @@ class ResumeViewScreen extends Component {
         flexDirection:'row', 
         textAlignVertical: 'center',
         height: 60
+      },
+      roundButton: {
+        width: 5,
+        height: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 6,
+        borderRadius: 50,
+        backgroundColor: '#1A5276',
+        borderWidth:2,
+        borderColor: '#1A5276',
+      },
+      roundButtonsView:{
+        paddingLeft:7,
+        paddingRight:7,
+        paddingBottom: 5
+      },
+      focusRoundButton: {
+        width: 5,
+        height: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 6,
+        borderRadius: 50,
+        borderWidth:2,
+        borderColor: '#1A5276',
+      },
+      imagesSection: {
+        flex: 1,
+        alignItems: 'center',
+        textAlign: "center",
+      },
+      flatlistView: {
+        paddingTop:20, 
+        backgroundColor:"#FFF", 
+        flexDirection: "row", 
+        justifyContent: 'center',
+      },
+      selectedImageView: {
+        flex: 1,
+        alignItems: 'center',
+        textAlign: "center",
+        backgroundColor: "#000",
+      },
+      sections: {
+        flex: 1,
+        backgroundColor:"#FFF",
+      },
+      resumeView: {
+        paddingTop: 30,
+        paddingLeft: 40,
+        backgroundColor: "#FFF",
+        paddingBottom: 100
+      },
+      resumeText: {
+        fontSize: 20,
+        textAlign: "justify",
+        paddingTop: 20,
+        color: "#000",
+        fontWeight: 'bold',
+      },
+      changeTranscript: {
+        color: '#000',
+        fontSize: 20,
+        fontStyle: 'italic',
+        width: "90%"
       },
     })
 

@@ -12,16 +12,6 @@ class ImageViewerScreen extends Component {
       super(props);
       this.state = {
         id: this.props.navigation.state.params.id,
-        entity: this.props.navigation.state.params.entity,
-        interpretedEntity: this.props.navigation.state.params.interpretedEntity,
-        nif: this.props.navigation.state.params.nif,
-        interpretedNif: this.props.navigation.state.params.interpretedNif,
-        date: this.props.navigation.state.params.date,
-        interpretedDate: this.props.navigation.state.params.interpretedDate,
-        invoice: this.props.navigation.state.params.invoice,
-        interpretedInvoice: this.props.navigation.state.params.interpretedInvoice,
-        total: this.props.navigation.state.params.total,
-        interpretedTotal: this.props.navigation.state.params.interpretedTotal,
         images: this.props.navigation.state.params.images,
         image: this.props.navigation.state.params.image,
         back: this.props.navigation.state.params.back,
@@ -34,23 +24,11 @@ class ImageViewerScreen extends Component {
     }
   
     goBack = () => {
-      if (this.state.back == "Buy" || this.state.back == "Sales" || this.state.back == "Pay") {
+      if (this.state.back == "Buy" || this.state.images == 0) {
         this.props.navigation.push(this.state.back, {id: this.state.id })
-      } else if (this.state.images == 0 && this.state.interpretedEntity.length == 0) {
-          this.props.navigation.push(this.state.type)
       } else {
           this.props.navigation.push("ResumeView", {
             id: this.state.id,
-            entity: this.state.entity,
-            interpretedEntity: this.state.interpretedEntity,
-            nif: this.state.nif,
-            interpretedNif: this.state.interpretedNif,
-            date: this.state.date,
-            interpretedDate: this.state.interpretedDate,
-            invoice: this.state.invoice,
-            interpretedInvoice: this.state.interpretedInvoice,
-            total: this.state.total,
-            interpretedTotal: this.state.interpretedTotal,
             images: this.state.images,
             back: this.state.back,
             type: this.state.type,
@@ -81,7 +59,7 @@ class ImageViewerScreen extends Component {
         }
       }
       this.setState({images: arrayImages})
-      await AsyncStorage.setItem(this.state.id+"-images", JSON.stringify(arrayImages))
+      await AsyncStorage.setItem(this.state.id+".images", JSON.stringify(arrayImages))
     }
   
     takePhoto = async() =>{
@@ -121,7 +99,7 @@ class ImageViewerScreen extends Component {
           }
         }
       } catch (err) {
-      console.log(err);
+        console.log(err);
       }
     }
   
@@ -160,10 +138,10 @@ class ImageViewerScreen extends Component {
           })
         }
       }
-      await AsyncStorage.setItem(this.state.id+"-images", JSON.stringify(arrayImages))
+      await AsyncStorage.setItem(this.state.id+".images", JSON.stringify(arrayImages))
       this.setState({images: arrayImages})
       if (this.state.images.length == 0) {
-        this.props.navigation.push(this.state.type)
+        this.props.navigation.push(this.state.type, {id: this.state.id})
       } else {
         this.goBack()
       }

@@ -9,6 +9,7 @@ import BuyListScreen from "./BuyList"
 import DictionaryViewScreen from "./DictionaryView"
 import ImageViewerScreen from "./ImageViewer"
 import BuyScreen from "./Buy.js"
+import ResumeViewScreen from './ResumeView';
 
 class LaunchScreen extends Component {  
 
@@ -109,6 +110,13 @@ const AppNavigator = createStackNavigator({
   },
   ImageViewer: {
     screen: ImageViewerScreen,
+    navigationOptions: {
+      header: null,
+      animationEnabled: false
+    }
+  },
+  ResumeView: {    
+    screen: ResumeViewScreen,
     navigationOptions: {
       header: null,
       animationEnabled: false

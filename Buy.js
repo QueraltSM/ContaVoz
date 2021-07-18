@@ -6,7 +6,6 @@ import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import * as ImagePicker from 'react-native-image-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
-import BuyList from './BuyList';
 
 class BuyScreen extends Component {
     
@@ -33,6 +32,7 @@ class BuyScreen extends Component {
         userid: "",
         flatlistPos: 0,
         saved: false,
+        titleApp: "Documento de Compra",
         data: [
           { nameDB: "Cuenta",
             required: "S",
@@ -241,10 +241,6 @@ class BuyScreen extends Component {
       }
     }
   
-    _continue = () => {
-      this._startRecognition()
-    }
-
     noMoreAudio() {
       this.showAlert("Error", "El documento de voz ha sido completado")
     }
@@ -314,8 +310,7 @@ class BuyScreen extends Component {
                     uri: uri
                   })
                   this.setState({images: arrayImages})
-                  this.saveInMemory("isBuy", JSON.stringify(true))
-                  this.saveInMemory(this.state.id+"-images", JSON.stringify(arrayImages))
+                  this.saveInMemory(this.state.id+".images", JSON.stringify(arrayImages))
                 }
               })
             } else {
@@ -355,8 +350,7 @@ class BuyScreen extends Component {
               uri: uri
             })
             this.setState({images: arrayImages})
-            this.saveInMemory("isBuy", JSON.stringify(true))
-            this.saveInMemory(this.state.id+"-images", JSON.stringify(arrayImages))
+            this.saveInMemory(this.state.id+".images", JSON.stringify(arrayImages))
           }
         })
       } else {
@@ -432,16 +426,6 @@ class BuyScreen extends Component {
     seeImage (image) {
       this.props.navigation.push('ImageViewer', {
         id: this.state.id,
-        entity: this.state.entity,
-        interpretedEntity: this.state.interpretedEntity,
-        nif: this.state.nif,
-        interpretedNif: this.state.interpretedNif,
-        date: this.state.date,
-        interpretedDate: this.state.interpretedDate,
-        invoice: this.state.invoice,
-        interpretedInvoice: this.state.interpretedInvoice,
-        total: this.state.total,
-        interpretedTotal: this.state.interpretedTotal,
         images: this.state.images,
         image: image,
         back: "Buy",
@@ -453,9 +437,9 @@ class BuyScreen extends Component {
       return (
         <ImageZoom
           cropWidth={Dimensions.get('window').width}
-          cropHeight={Dimensions.get('window').height/1.5}
+          cropHeight={Dimensions.get('window').height/2}
           imageWidth={Dimensions.get('window').width}
-          imageHeight={Dimensions.get('window').height/1.5}>
+          imageHeight={Dimensions.get('window').height/2}>
             <TouchableOpacity onPress={() => this.seeImage(item)}>
             <Image
               source={{
@@ -463,7 +447,7 @@ class BuyScreen extends Component {
               }}
               resizeMode="cover"
               key={item}
-              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/1.5, aspectRatio: 1 }}
+              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2, aspectRatio: 1 }}
             />
             </TouchableOpacity>
         </ImageZoom>)
@@ -547,8 +531,8 @@ class BuyScreen extends Component {
   
     setVoiceControl() {
       if (JSON.parse(this.state.is_recording) && this.state.savedData.length < this.state.data.length) {
-        return (<View style={styles.resumeView}><Text style={styles.transcript}></Text><Text style={styles.showTitle}>Escuchando {this.state.data[this.state.savedData.length].nameApp.toLowerCase()}...</Text></View>)
-      } else if (JSON.parse(this.state.getData) && !JSON.parse(this.state.setData)) {
+        return (<View style={styles.resumeView}><Text style={styles.showTitle}>Escuchando {this.state.data[this.state.savedData.length].nameApp.toLowerCase()}...</Text></View>)
+      } else if (this.state.savedData.length < this.state.data.length && JSON.parse(this.state.getData) && !JSON.parse(this.state.setData)) {
         return (this.setDataModal())
       }
       return null
@@ -603,12 +587,12 @@ class BuyScreen extends Component {
       this.setState({ savedData: array })
       this.setState({ listenedData: "" })
       this.setState({ interpretedData: "" })
-      this._continue()
     }
 
     saveData = async () => {
-      console.log("::saveData::")
-      if (this.state.interpretedData != this.state.listenedData) {
+      console.log(this.state.interpretedData)
+      console.log(this.state.listenedData)
+      if (this.state.data[this.state.savedData.length].type != "F" && this.state.interpretedData != this.state.listenedData) {
         this.askNewDataSave()
       } else {
         this.storeData()
@@ -641,10 +625,9 @@ class BuyScreen extends Component {
               <Text multiline={true} style={styles.transcript}>{this.state.listenedData}</Text>
               <Text style={styles.resumeText}>Texto interpretado <Icon name='pencil' type='font-awesome' color='#000' size={25}/></Text>
               <View style={{flexDirection:'row', width:"90%"}}>
-                <TextInput multiline={true} style={styles.changeTranscript} placeholder={this.state.interpretedData}></TextInput>
+                <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.interpretedData}</TextInput>
               </View>
               </View>
-              <Text style={styles.transcript}></Text>
               <View style={styles.modalNavBarButtons}>
                   <TouchableOpacity onPress={this.saveData}>
                       <Text style={styles.saveButton}>Guardar</Text>
@@ -679,40 +662,26 @@ class BuyScreen extends Component {
             <Text style={styles.showTitle}>Para comenzar debe adjuntar una imagen o pulsar el micrófono</Text>
           </View>
         )
-      } else if (!JSON.parse(this.state.is_recording) && this.state.savedData.length != this.state.data.length) {
+      } else if (!JSON.parse(this.state.is_recording) && this.state.savedData.length > 0 && this.state.savedData.length != this.state.data.length) {
         return(
           <View style={styles.resumeView}>
-            <Text style={styles.showTitle}>Hay un documento por voz no terminado</Text>
+            <Text style={styles.showTitle}>Existe un documento por voz no terminado</Text>
           </View>
         )
       } else if (this.state.savedData.length == this.state.data.length) {
         return(
           <View style={styles.resumeView}>
-            <Text style={styles.showTitle}>Hay un documento por voz terminado</Text>
+            <Text style={styles.showTitle}>Existe documento por voz terminado</Text>
           </View>
         )
       }
       return null
     }
   
-    /*sendDocument = async () => {
-      alert("Esta acción está desactivada por el momento")
-    }*/
-  
     seeDocument = () => {
+      this.state.images.length > 0 && (this.state.savedData.length == 0 || (this.state.data.length==this.state.savedData.length))
       this.props.navigation.push('ResumeView', {
         id: this.state.id,
-        entity: this.state.entity,
-        interpretedEntity: this.state.interpretedEntity,
-        nif: this.state.nif,
-        interpretedNif: this.state.interpretedNif,
-        date: this.state.date,
-        interpretedDate: this.state.interpretedDate,
-        invoice: this.state.invoice,
-        interpretedInvoice: this.state.interpretedInvoice,
-        total: this.state.total,
-        interpretedTotal: this.state.interpretedTotal,
-        images: this.state.images,
         back: "ResumeView",
         type: "Buy"
       })
@@ -758,14 +727,6 @@ class BuyScreen extends Component {
     setMenu() {
       return (
         <View style={styles.navBarBackHeader}>
-          <View style={{ width: 60,textAlign:'center', borderColor:"white", paddingTop:10, paddingBottom: 10, paddingLeft: 10, paddingRight: 10, borderWidth:1 }}>
-              <Icon
-                name='shopping-cart'
-                type='font-awesome'
-                color='#FFF'
-                size={30}
-              />
-            </View>
             <View style={{ width: 60,textAlign:'center' }}>
               <Icon
                 name='trash'
@@ -796,7 +757,8 @@ class BuyScreen extends Component {
                 onPress={this.goGallery}
               />
               </View>
-            {(this.state.images.length > 0 || this.state.data.length==this.state.savedData.length) &&
+            {(this.state.images.length > 0 && (this.state.savedData.length == 0 || this.state.data.length == this.state.savedData.length)
+            || (this.state.images.length == 0 && (this.state.data.length == this.state.savedData.length))) &&
             (<View style={{ width: 60,textAlign:'center' }}>
               <Icon
                 name='check-square'
@@ -814,6 +776,9 @@ class BuyScreen extends Component {
       return (
         <View style={{flex: 1, backgroundColor: "#fff" }}>
           <ScrollView style={{backgroundColor: "#fff", paddingBottom: 100 }}>
+          <View style={{backgroundColor: "#1A5276"}}>
+            <Text style={styles.mainHeader}>{this.state.titleApp}</Text>
+          </View>
             <View style={styles.sections}>
               {this.setImages()}
               {this.startProgramm()}
@@ -1004,10 +969,39 @@ class BuyScreen extends Component {
         paddingTop: 30,
         paddingLeft: 40,
         backgroundColor: "#FFF",
-        paddingBottom: 40
+        paddingBottom: 30
       },
       sections: {
         flex: 1,
         backgroundColor:"#FFF",
+      },
+      mainHeader: {
+        padding: 20,
+        alignItems: 'center',
+        textAlign: "center",
+        fontWeight: "bold",
+        color: "#FFF",
+        fontSize: 20,
+      },
+      roundButton: {
+        width: 5,
+        height: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 6,
+        borderRadius: 50,
+        backgroundColor: '#1A5276',
+        borderWidth:2,
+        borderColor: '#1A5276',
+      },
+      focusRoundButton: {
+        width: 5,
+        height: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 6,
+        borderRadius: 50,
+        borderWidth:2,
+        borderColor: '#1A5276',
       },
   })

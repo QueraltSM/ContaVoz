@@ -21,7 +21,7 @@ class DictionaryViewScreen extends Component {
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ id: value })
       })
-      await AsyncStorage.getItem(this.state.id+"-words").then((value) => {
+      await AsyncStorage.getItem(this.state.id+".words").then((value) => {
         if (value != null) {
           this.setState({ words: JSON.parse(value).reverse() })
         }
