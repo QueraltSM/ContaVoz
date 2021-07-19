@@ -4,13 +4,14 @@ import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 
-class BuyListScreen extends Component { 
+class PetitionListScreen extends Component { 
 
     constructor(props) {
       super(props);
       this.state = {
         userid: "",
-        buyList: []
+        list: [],
+        type: this.props.navigation.state.params.type,
       }
       this.init()
     }
@@ -28,38 +29,52 @@ class BuyListScreen extends Component {
       await AsyncStorage.getItem('userid').then((value) => {
         this.setState({ userid: value })
       })
-      await AsyncStorage.getItem(this.state.userid+".buyList").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+"."+this.state.type).then((value) => {
         if (value != null) {
-          this.setState({ buyList: JSON.parse(value) })
+          this.setState({ list: JSON.parse(value) })
         }
       })
     }
   
-    addBuy = async () => {
-      var array = this.state.buyList
+    addCharge = async () => {
+      var array = this.state.list
       var today = new Date()
       var document = {
-        id: "C_"+this.state.userid+"-"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2),
+        id: this.state.type + "_"+ this.state.userid+"-"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2),
         name: ("0" + (today.getDate())).slice(-2)+"/"+("0" + (today.getMonth() + 1)).slice(-2)+"/"+today.getFullYear()+" a las " + ("0" + (today.getHours())).slice(-2)+ ":"+("0" + (today.getMinutes())).slice(-2),
         time: new Date().getTime()
       }
       array.push(document)
-      await AsyncStorage.setItem(this.state.userid+".buyList", JSON.stringify(array))
-      this.props.navigation.push('Buy',{id: document.id})
+      await AsyncStorage.setItem(this.state.userid+"."+this.state.type, JSON.stringify(array))
+      this.openDocument(document.id)
     }
   
     openDocument(item) {
-      this.props.navigation.push("Buy", {id: item.id})
+      const requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({ idempresa:"1", id: "1", tipoconfig: this.state.type })
+      };
+      fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
+      .then((response) => response.json())
+      .then((responseJson) => {
+        var error = JSON.parse(JSON.stringify(responseJson.error))
+        if (error == "false") {
+          var configuraciones = JSON.parse(JSON.stringify(responseJson.configuraciones))
+          var titleApp = configuraciones[0].titulo
+          var data = configuraciones[0].campos
+          this.props.navigation.push("Petition", {id: item.id, titleApp: titleApp, data: data, type: this.state.type })
+        }
+      }).catch((error) => {});
     }
   
-    setBuyList() {
-      if (this.state.buyList.length > 0) {
+    setList() {
+      if (this.state.list.length > 0) {
         return (
           <View style={styles.voiceControlView}>
             <FlatList 
               vertical
               showsVerticalScrollIndicator={false}
-              data={ this.state.buyList.sort((a,b) => a.time < b.time) } 
+              data={ this.state.list.sort((a,b) => a.time < b.time) } 
               renderItem={({ item }) => (
                 (<TouchableOpacity onPress={() => this.openDocument(item)}>
                     <Text style={styles.registeredDocuments}>{item.name}</Text>
@@ -84,20 +99,20 @@ class BuyListScreen extends Component {
                 size={30}
               />
             </View>
-            <Text style={styles.navBarHeader}>Registros de compras</Text>
+            <Text style={styles.navBarHeader}>Historial de {this.state.type}</Text>
             <View style={{ width: 70,textAlign:'center' }}>
               <Icon
                 name='plus'
                 type='font-awesome'
                 color='#FFF'
                 size={30}
-                onPress={this.addBuy}
+                onPress={this.addCharge}
               />
             </View>
           </View>
           <ScrollView style={{backgroundColor: "#FFF" }}>
           <View style={styles.sections}>
-            {this.setBuyList()}
+            {this.setList()}
           </View>
           </ScrollView>   
         </View>
@@ -105,7 +120,7 @@ class BuyListScreen extends Component {
     }
   }
   
-  export default createAppContainer(BuyListScreen);
+  export default createAppContainer(PetitionListScreen);
 
   const styles = StyleSheet.create({
     voiceControlView: {

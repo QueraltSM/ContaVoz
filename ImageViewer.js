@@ -24,7 +24,7 @@ class ImageViewerScreen extends Component {
     }
   
     goBack = () => {
-      if (this.state.back == "Buy" || this.state.images == 0) {
+      if (this.state.back == "Petition" || this.state.images == 0) {
         this.props.navigation.push(this.state.back, {id: this.state.id })
       } else {
           this.props.navigation.push("ResumeView", {

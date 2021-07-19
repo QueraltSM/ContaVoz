@@ -48,8 +48,8 @@ class ResumeViewScreen extends Component {
   
     async init() {
       var prep = ""
-      if (this.state.type == "Buy") {
-        prep = "buyList"
+      if (this.state.type == "Charge") {
+        prep = "chargeList"
       }
       await AsyncStorage.getItem(this.state.id+".savedData").then((value) => {
         if (value != null) {
@@ -79,9 +79,9 @@ class ResumeViewScreen extends Component {
   
     async deleteDoc() {
       var prep = ""
-      var list = "buyList"
-      if (this.state.back == "Buy") {
-        prep = "buyList"
+      var list = "chargeList"
+      if (this.state.back == "Charge") {
+        prep = "chargeList"
       }
       var auxDocs = []
       this.state.docs.forEach((i) => {

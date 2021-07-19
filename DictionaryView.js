@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, FlatList, S
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
+import { CheckBox } from 'react-native-elements'
 
 class DictionaryViewScreen extends Component {
     constructor(props) {
@@ -12,7 +13,8 @@ class DictionaryViewScreen extends Component {
         words: [],
         addKey: "",
         addValue: "",
-        showForm: false
+        showForm: false,
+        checked: false
       };
       this.init()
     }
@@ -48,7 +50,8 @@ class DictionaryViewScreen extends Component {
         arrayWords.push({
           key: this.state.addKey,
           value: this.state.addValue,
-          time: new Date().getTime()
+          time: new Date().getTime(),
+          enterprise: this.state.checked
         })
       } else {
         var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.addKey.toLowerCase());
@@ -56,7 +59,7 @@ class DictionaryViewScreen extends Component {
         arrayWords[i].time = new Date().getTime()
       }
       this.setState({ words: arrayWords })
-      await AsyncStorage.setItem(this.state.id+"-words", JSON.stringify(arrayWords))
+      await AsyncStorage.setItem(this.state.id+".words", JSON.stringify(arrayWords))
     }
   
     _addWord = async () => {
@@ -93,7 +96,14 @@ class DictionaryViewScreen extends Component {
           
             <Text style={styles.resumeText}>Valor que debe tomar: </Text>
             <TextInput value={this.state.addValue} multiline={true} style={styles.changeTranscript} placeholder="Makro" onChangeText={addValue => this.setState({addValue})}></TextInput>
-            
+          
+            <CheckBox
+              title='Es una empresa'
+              checked={this.state.checked}
+              onPress={() => this.setState({checked: !this.state.checked})}
+              checkedColor="#154360"
+              containerStyle={{ backgroundColor: "white", borderWidth: 0, fontSize: 20 }}
+            />
             <Text style={styles.transcript}></Text>
             <TouchableOpacity onPress={this._addWord}>
               <Text style={styles.saveNewValue}>Guardar registro</Text>
@@ -170,7 +180,7 @@ class DictionaryViewScreen extends Component {
         }
       }
       this.setState({ words: arrayWords })
-      await AsyncStorage.setItem(this.state.id+"-words", JSON.stringify(arrayWords))
+      await AsyncStorage.setItem(this.state.id+".words", JSON.stringify(arrayWords))
     }
   
     setWords() {

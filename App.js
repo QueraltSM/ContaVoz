@@ -5,10 +5,10 @@ import { createStackNavigator } from 'react-navigation-stack';
 import AsyncStorage from '@react-native-community/async-storage';
 import MainScreen from "./Main"
 import LoginScreen from "./Login"
-import BuyListScreen from "./BuyList"
+import PetitionListScreen from "./PetitionList"
 import DictionaryViewScreen from "./DictionaryView"
 import ImageViewerScreen from "./ImageViewer"
-import BuyScreen from "./Buy.js"
+import PetitionScreen from "./Petition.js"
 import ResumeViewScreen from './ResumeView';
 
 class LaunchScreen extends Component {  
@@ -24,23 +24,12 @@ class LaunchScreen extends Component {
   }
 
   async init() {
-    const requestOptions = {
-      method: 'POST',
-      body: JSON.stringify({ idempresa:"1", id: "2" })
-    };
     await AsyncStorage.getItem("idempresa").then((value) => {
       this.setState({ idempresa: JSON.parse(value) })
     })
     await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: JSON.parse(value) })
     })
-    fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        console.log("respuesta del servidor: " + JSON.stringify(responseJson))
-      }).catch((error) => {
-        console.log("error:"+error)
-      });
     await AsyncStorage.getItem("saveData").then((value) => {
       if (value != null) {
          this.setState({ saveData: JSON.parse(value) })
@@ -94,15 +83,15 @@ const AppNavigator = createStackNavigator({
       animationEnabled: false
     }
   },
-  Buy: {
-    screen: BuyScreen,
+  Petition: {
+    screen: PetitionScreen,
     navigationOptions: {
       header: null,
       animationEnabled: false
     }
   },
-  BuyList: {
-    screen: BuyListScreen,
+  PetitionList: {
+    screen: PetitionListScreen,
     navigationOptions: {
       header: null,
       animationEnabled: false

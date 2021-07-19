@@ -11,9 +11,10 @@ class MainScreen extends Component {
       this.state = {
         fullname: "",
         userid: "",
-        buyList:[],
+        buyList: [],
         salesList:[],
-        payList:[]
+        payList:[],
+        chargeList:[],
       }
       this.init()
     }
@@ -25,17 +26,22 @@ class MainScreen extends Component {
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value})
       })
-      await AsyncStorage.getItem(this.state.userid+".buyList").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".compras").then((value) => {
         if (value != null) {
-          this.setState({buyList:JSON.parse(value) })
+          this.setState({chargeList:JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.userid+".salesList").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".cobros").then((value) => {
+        if (value != null) {
+          this.setState({chargeList:JSON.parse(value) })
+        }
+      })
+      await AsyncStorage.getItem(this.state.userid+".ventas").then((value) => {
         if (value != null) {
           this.setState({salesList:JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.userid+".payList").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".pagos").then((value) => {
         if (value != null) {
           this.setState({payList:JSON.parse(value) })
         }
@@ -43,31 +49,21 @@ class MainScreen extends Component {
     }
   
     goBuyScreen = async () => {
-      this.props.navigation.push('BuyList')
+      //this.props.navigation.push('PetitionList', {type:"compras"})
+      alert("No se ha activado de momento esta funcionalidad")
     }
   
     goSaleScreen = async () => {
-      alert("Ventas no se encuentra activo de momento")
-      /*var today = new Date()
-      var id = "V_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
-      await AsyncStorage.setItem('id', id)
-      this.props.navigation.push('Sale')*/
+      //this.props.navigation.push('PetitionList', {type:"ventas"})
+      alert("No se ha activado de momento esta funcionalidad")
     }
 
     goChargeScreen  = async () => {
-      alert("Cobros no se encuentra activo de momento")
-      /*var today = new Date()
-      var id = "G_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
-      await AsyncStorage.setItem('id', id)
-      this.props.navigation.push('Pay')*/
+      this.props.navigation.push('PetitionList', {type:"cobros"})
     }
   
     goPayScreen = async () => {
-      alert("Gastos no se encuentra activo de momento")
-      /*var today = new Date()
-      var id = "G_"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2)
-      await AsyncStorage.setItem('id', id)
-      this.props.navigation.push('Pay')*/
+      this.props.navigation.push('PetitionList', {type:"pagos"})
     }
   
     goDictionary = () => {
@@ -168,7 +164,7 @@ class MainScreen extends Component {
                     color='#FFF'
                     size={35}/>
                   </View>
-                <Text style={styles.mainButton}>Cobros ({this.state.payList.length})</Text>
+                <Text style={styles.mainButton}>Cobros ({this.state.chargeList.length})</Text>
               </TouchableOpacity>
               </View>
               <Icon
@@ -184,7 +180,7 @@ class MainScreen extends Component {
                   color='#FFF'
                   size={35}/>
                 </View>
-              <Text style={styles.mainButton}>Gastos ({this.state.payList.length})</Text>
+              <Text style={styles.mainButton}>Pagos ({this.state.payList.length})</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.twoColumnsInARow}>

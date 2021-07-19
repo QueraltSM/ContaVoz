@@ -7,54 +7,34 @@ import AsyncStorage from '@react-native-community/async-storage';
 import * as ImagePicker from 'react-native-image-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
 
-class BuyScreen extends Component {
+class PetitionScreen extends Component {
     
     constructor(props) {
       super(props);
       this.state = {
         id: this.props.navigation.state.params.id,
+        titleApp: this.props.navigation.state.params.titleApp,
+        data: JSON.parse(JSON.stringify(this.props.navigation.state.params.data)),
+        type: this.props.navigation.state.params.type,
         recognized: '',
         started: '',
         results: [],
         is_recording: false,
         nameDB: "",
         required: "",
-        nameApp: "",
-        type: "",
         listenedData: "",
         interpretedData: "",
+        optionalData: "",
+        optionalValue: "No registrado",
         getData: false,
         setData: false,
         images: [],
         words: [],
-        buyList: [],
+        list: [],
         savedData: [],
         userid: "",
         flatlistPos: 0,
         saved: false,
-        titleApp: "Documento de Compra",
-        data: [
-          { nameDB: "Cuenta",
-            required: "S",
-            nameApp: "Entidad",
-            type: "E"
-          },
-          { nameDB: "Fecha",
-            required: "S",
-            nameApp: "Fecha",
-            type: "F"
-          },
-          { nameDB: "Factura",
-            required: "S",
-            nameApp: "Documento",
-            type: ""
-          },
-          { nameDB: "Importe",
-            required: "S",
-            nameApp: "Importe",
-            type: "N"
-          },
-        ]
       }
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
       Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
@@ -67,7 +47,7 @@ class BuyScreen extends Component {
     }
   
     goBack = () => {
-      this.props.navigation.push('BuyList')
+      this.props.navigation.push('PetitionList', {type: this.state.type})
       return true
     }
   
@@ -95,9 +75,9 @@ class BuyScreen extends Component {
           this.setState({ images: JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.userid+".buyList").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+"."+this.state.type).then((value) => {
         if (value != null) {
-          this.setState({ buyList: JSON.parse(value) })
+          this.setState({ list: JSON.parse(value) })
         }
       })
     }
@@ -193,18 +173,37 @@ class BuyScreen extends Component {
       }
     }
 
-
-    async setListenedData() {
-      if (this.state.data[this.state.savedData.length].type == "F") {
-        this.setFixedDate()
+    async setFixedNumber() {
+      if (isNaN(this.state.listenedData)) {
+        this.showAlert("Error", "Debe de decir un número")
+        this.cancelData()
       } else {
-        var str = this.state.listenedData
-        for (let i = 0; i < this.state.words.length; i++) {
-          if (this.state.listenedData.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
-            str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
+        this.setState({ interpretedData: this.state.listenedData })
+      }
+    }
+
+    setFixedData() {
+      this.setState({optionalData: "NIF asociado"})
+      var str = this.state.listenedData
+      for (let i = 0; i < this.state.words.length; i++) {
+        if (this.state.listenedData.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
+          str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
+          if (this.state.data[this.state.savedData.length].type == "E" && JSON.parse(this.state.words[i].enterprise)) {
+            str = this.state.words[i].key
+            this.setState({optionalValue: this.state.words[i].value })
           }
         }
-        this.setState({ interpretedData: str })
+      }
+      this.setState({ interpretedData: str })
+    }
+
+    async setListenedData() {
+      if (this.state.data[this.state.savedData.length].tipoexp == "F") {
+        this.setFixedDate()
+      } else if (this.state.data[this.state.savedData.length].tipoexp == "N") {
+        this.setFixedNumber()
+      } else {
+        this.setFixedData()
       }
     }
   
@@ -428,8 +427,8 @@ class BuyScreen extends Component {
         id: this.state.id,
         images: this.state.images,
         image: image,
-        back: "Buy",
-        type: "Buy",
+        back: "Charge",
+        type: "Charge",
       })
     }
   
@@ -531,7 +530,7 @@ class BuyScreen extends Component {
   
     setVoiceControl() {
       if (JSON.parse(this.state.is_recording) && this.state.savedData.length < this.state.data.length) {
-        return (<View style={styles.resumeView}><Text style={styles.showTitle}>Escuchando {this.state.data[this.state.savedData.length].nameApp.toLowerCase()}...</Text></View>)
+        return (<View style={styles.resumeView}><Text style={styles.showTitle}>Escuchando {this.state.data[this.state.savedData.length].titulo.toLowerCase()}...</Text></View>)
       } else if (this.state.savedData.length < this.state.data.length && JSON.parse(this.state.getData) && !JSON.parse(this.state.setData)) {
         return (this.setDataModal())
       }
@@ -590,8 +589,6 @@ class BuyScreen extends Component {
     }
 
     saveData = async () => {
-      console.log(this.state.interpretedData)
-      console.log(this.state.listenedData)
       if (this.state.data[this.state.savedData.length].type != "F" && this.state.interpretedData != this.state.listenedData) {
         this.askNewDataSave()
       } else {
@@ -619,7 +616,7 @@ class BuyScreen extends Component {
             <ScrollView
             showsVerticalScrollIndicator={false}
             showsHorizontalScrollIndicator={false}>
-            <Text style={styles.listening}>{this.state.data[this.state.savedData.length].nameApp}</Text>
+            <Text style={styles.listening}>{this.state.data[this.state.savedData.length].titulo}</Text>
             <View style={styles.textForm}>
               <Text style={styles.resumeText}>Texto escuchado</Text>
               <Text multiline={true} style={styles.transcript}>{this.state.listenedData}</Text>
@@ -627,6 +624,12 @@ class BuyScreen extends Component {
               <View style={{flexDirection:'row', width:"90%"}}>
                 <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.interpretedData}</TextInput>
               </View>
+              <Text style={styles.resumeText}>{this.state.optionalData}</Text>
+              {this.state.optionalData.length > 0 &&
+              (<View style={{flexDirection:'row', width:"90%"}}>
+                <TextInput multiline={true} style={styles.changeTranscript} onChangeText={optionalValue => this.setState({optionalValue})}>{this.state.optionalValue}</TextInput>
+                <Text style={styles.transcript}></Text>
+              </View>)}
               </View>
               <View style={styles.modalNavBarButtons}>
                   <TouchableOpacity onPress={this.saveData}>
@@ -683,18 +686,18 @@ class BuyScreen extends Component {
       this.props.navigation.push('ResumeView', {
         id: this.state.id,
         back: "ResumeView",
-        type: "Buy"
+        type: "Charge"
       })
     }
 
     async deleteDoc() {
-      var buyDocs = []
-      this.state.buyList.forEach((i) => {
+      var chargeDocs = []
+      this.state.list.forEach((i) => {
         if (i.id != this.state.id) {
-          buyDocs.push(i)
+          chargeDocs.push(i)
         }
       })
-      await AsyncStorage.setItem(this.state.userid+".buyList", JSON.stringify(buyDocs))
+      await AsyncStorage.setItem(this.state.userid+"."+this.state.type, JSON.stringify(chargeDocs))
       this.goBack()
     }
   
@@ -775,7 +778,8 @@ class BuyScreen extends Component {
     render () {
       return (
         <View style={{flex: 1, backgroundColor: "#fff" }}>
-          <ScrollView style={{backgroundColor: "#fff", paddingBottom: 100 }}>
+          <ScrollView
+            style={{backgroundColor: "#fff", paddingBottom: 100 }}>
           <View style={{backgroundColor: "#1A5276"}}>
             <Text style={styles.mainHeader}>{this.state.titleApp}</Text>
           </View>
@@ -791,7 +795,7 @@ class BuyScreen extends Component {
     }
   }
 
-  export default createAppContainer(BuyScreen);
+  export default createAppContainer(PetitionScreen);
 
   const styles = StyleSheet.create({
     navBarBackHeader: {
