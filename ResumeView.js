@@ -102,9 +102,9 @@ class ResumeViewScreen extends Component {
       return (
         <ImageZoom
           cropWidth={Dimensions.get('window').width}
-          cropHeight={Dimensions.get('window').height/2.5}
+          cropHeight={Dimensions.get('window').height/2}
           imageWidth={Dimensions.get('window').width}
-          imageHeight={Dimensions.get('window').height/2.5}>
+          imageHeight={Dimensions.get('window').height/2}>
             <TouchableOpacity onPress={() => this.seeImage(item)}>
             <Image
               source={{
@@ -112,7 +112,7 @@ class ResumeViewScreen extends Component {
               }}
               resizeMode="cover"
               key={item}
-              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2.5, aspectRatio: 1 }}
+              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2, aspectRatio: 1 }}
             />
             </TouchableOpacity>
         </ImageZoom>)
@@ -226,6 +226,7 @@ class ResumeViewScreen extends Component {
   
   
     _save = async () => {
+      alert("Esta acción está desactivada temporalmente")
       /*var prep = ""
       if (this.state.type == "Buy") {
         prep = this.state.id+""
@@ -256,6 +257,9 @@ class ResumeViewScreen extends Component {
       return (
         <View style={{flex: 1, backgroundColor:"#FFF" }}>
           <ScrollView style={{backgroundColor: "#FFF" }}>
+          <View style={{backgroundColor: "#1A5276"}}>
+            <Text style={styles.mainHeader}>Documento finalizado</Text>
+          </View>
           <View style={styles.sections}>
             {this.setImages()}
             {this.setControlVoice()}
@@ -363,6 +367,14 @@ class ResumeViewScreen extends Component {
         fontSize: 20,
         fontStyle: 'italic',
         width: "90%"
+      },
+      mainHeader: {
+        padding: 20,
+        alignItems: 'center',
+        textAlign: "center",
+        fontWeight: "bold",
+        color: "#FFF",
+        fontSize: 20,
       },
     })
 

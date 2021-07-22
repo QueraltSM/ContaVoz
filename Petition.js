@@ -24,6 +24,7 @@ class PetitionScreen extends Component {
         interpretedData: "",
         optionalData: "",
         optionalValue: "",
+        lastOptionalValue: "",
         getData: false,
         setData: false,
         images: [],
@@ -182,26 +183,37 @@ class PetitionScreen extends Component {
     }
 
     async setFixedNumber() {
-      if (isNaN(this.state.listenedData)) {
-        this.showAlert("Error", "Debe de decir un número")
-        this.cancelData()
-      } else {
-        this.setState({ interpretedData: this.state.listenedData })
+      var str = this.state.listenedData
+      if (this.state.listenedData.toLowerCase().includes("con")) {
+        str = str.replace("con", ".")
+      } else if (this.state.listenedData.toLowerCase().includes("punto")) {
+        str = str.replace("punto", ".")
+      } else if (this.state.listenedData.toLowerCase().includes("coma")) {
+        str = str.replace("coma", ",")
       }
+      this.setState({ interpretedData: str.split(' ').join("")  })
+    }
+
+    setOptionalData(d,v){
+      this.setState({optionalData: d})
+      this.setState({optionalValue: v})
+      this.setState({lastOptionalValue: v})
     }
 
     setFixedData() {
       var str = this.state.listenedData
-      if (this.state.data[this.state.savedData.length].tipoexp == "E") {
-        this.setState({optionalData: "NIF asociado"})
-      }
       for (let i = 0; i < this.state.words.length; i++) {
         if (this.state.listenedData.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
           if (this.state.data[this.state.savedData.length].tipoexp == "E" && JSON.parse(this.state.words[i].enterprise)) {
+            this.setOptionalData("NIF asociado", this.state.words[i].value)
             str = this.state.words[i].key
-            this.setState({optionalValue: this.state.words[i].value })
           } else {
             str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
+          }
+        } else if (this.state.listenedData.toLowerCase().includes(this.state.words[i].value.toLowerCase())) {
+          if (this.state.data[this.state.savedData.length].tipoexp == "E" && JSON.parse(this.state.words[i].enterprise)) {
+            this.setOptionalData("Entidad asociada", this.state.words[i].key)
+            str = this.state.words[i].value
           }
         }
       }
@@ -213,6 +225,9 @@ class PetitionScreen extends Component {
         this.setFixedDate()
       } else if (this.state.data[this.state.savedData.length].tipoexp == "N") {
         this.setFixedNumber()
+      } else if (this.state.data[this.state.savedData.length].tipoexp == "") {
+        var s = this.state.listenedData
+        this.setState({ interpretedData: s.split(' ').join("") })
       } else {
         this.setFixedData()
       }
@@ -539,7 +554,7 @@ class PetitionScreen extends Component {
       const AsyncAlert = () => new Promise((resolve) => {
         Alert.alert(
           "Guardar empresa",
-          "¿Desea registrar los datos de esta empresa en el diccionario?",
+          "¿Desea registrar los datos de esta empresa?",
           [
             {
               text: 'Sí',
@@ -564,7 +579,7 @@ class PetitionScreen extends Component {
       const AsyncAlert = () => new Promise((resolve) => {
         Alert.alert(
           "Guardar palabra",
-          "¿Desea registrar esta palabra en el diccionario?",
+          "¿Desea registrar estos datos en el diccionario?",
           [
             {
               text: 'Sí',
@@ -599,8 +614,7 @@ class PetitionScreen extends Component {
     }
 
     saveData = async () => {
-      console.log("lognitud = " + this.state.optionalValue)
-      if (this.state.optionalValue.length > 0) {
+      if (this.state.lastOptionalValue != this.state.optionalValue) {
         this.askSaveEnterprise()
       } else if (this.state.data[this.state.savedData.length].tipoexp != "F" && this.state.interpretedData != this.state.listenedData) {
         this.askNewDataSave()
@@ -615,13 +629,11 @@ class PetitionScreen extends Component {
       this.setState({interpretedData: ""})
     }
 
-
     setDataModal() {
       if (this.state.listenedData.length == 0 || this.state.interpretedData.length == 0) {
         return null
       }
-      return(
-        <Modal
+      return(<Modal
           animationType = {"slide"}
           transparent={true}>
             <View style={styles.centeredView}>
@@ -636,7 +648,7 @@ class PetitionScreen extends Component {
               <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.interpretedData}</TextInput>
               {this.state.optionalData.length > 0 &&
               (<View><Text style={styles.resumeText}>{this.state.optionalData}</Text>
-                <TextInput placeholder="NIF no registrado" multiline={true} style={styles.changeTranscript} onChangeText={optionalValue => this.setState({optionalValue})}></TextInput>
+                <TextInput multiline={true} placeholder="NIF no registrado" style={styles.changeTranscript} onChangeText={optionalValue => this.setState({optionalValue})}>{this.state.optionalValue}</TextInput>
               </View>)}
               </View>
               <Text style={styles.transcript}></Text>

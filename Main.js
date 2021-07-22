@@ -36,18 +36,22 @@ class MainScreen extends Component {
     }
 
     goScreen = async (type) => {
-      const requestOptions = {
-        method: 'POST',
-        body: JSON.stringify({ idempresa:this.state.enterpriseid, id: this.state.userid, tipoconfig: type })
-      };
-      fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        var error = JSON.parse(JSON.stringify(responseJson.error))
-        if (error == "false") {
-          this.saveData(responseJson, type)
-        }
-      }).catch((error) => {});
+      if (type == "compras") {
+        alert("Compras está desactivada temporalmente")
+      } else {
+        const requestOptions = {
+          method: 'POST',
+          body: JSON.stringify({ idempresa:this.state.enterpriseid, id: this.state.userid, tipoconfig: type })
+        };
+        fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
+        .then((response) => response.json())
+        .then((responseJson) => {
+          var error = JSON.parse(JSON.stringify(responseJson.error))
+          if (error == "false") {
+            this.saveData(responseJson, type)
+          }
+        }).catch((error) => {});
+      }
     }
   
     goDictionary = () => {
@@ -143,7 +147,7 @@ class MainScreen extends Component {
             <TouchableOpacity onPress={() => this.goScreen("cobros")}>
                 <View style={styles.mainIcon}>
                   <Icon
-                    name='money'
+                    name='shopping-basket'
                     type='font-awesome'
                     color='#FFF'
                     size={35}/>
@@ -159,7 +163,7 @@ class MainScreen extends Component {
             <TouchableOpacity onPress={() => this.goScreen("pagos")}>
               <View style={styles.mainIcon}>
                 <Icon
-                  name='shopping-basket'
+                  name='money'
                   type='font-awesome'
                   color='#FFF'
                   size={35}/>
