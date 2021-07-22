@@ -9,7 +9,8 @@ import PetitionListScreen from "./PetitionList"
 import DictionaryViewScreen from "./DictionaryView"
 import ImageViewerScreen from "./ImageViewer"
 import PetitionScreen from "./Petition.js"
-import ResumeViewScreen from './ResumeView';
+import ResumeViewScreen from './ResumeView'
+import PetitionHistoryScreen from "./PetitionHistory"
 
 class LaunchScreen extends Component {  
 
@@ -92,6 +93,13 @@ const AppNavigator = createStackNavigator({
   },
   PetitionList: {
     screen: PetitionListScreen,
+    navigationOptions: {
+      header: null,
+      animationEnabled: false
+    }
+  },
+  PetitionHistory: {
+    screen: PetitionHistoryScreen,
     navigationOptions: {
       header: null,
       animationEnabled: false

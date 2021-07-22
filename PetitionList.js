@@ -1,7 +1,6 @@
 import React, {Component} from 'react';
 import {StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollView } from 'react-native';
 import { createAppContainer } from 'react-navigation';
-import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 
 class PetitionListScreen extends Component { 
@@ -9,11 +8,31 @@ class PetitionListScreen extends Component {
     constructor(props) {
       super(props);
       this.state = {
-        userid: "",
-        list: [],
-        type: this.props.navigation.state.params.type,
+        type: "",
+        config: "",
+        lists: []
       }
       this.init()
+    }
+
+    async init() {
+      await AsyncStorage.getItem("type").then((value) => {
+        this.setState({ type: value })
+      })
+      await AsyncStorage.getItem("config").then((value) => {
+        this.setState({ config: JSON.parse(value) })
+      })
+      var array = []
+      for (let i = 0; i < this.state.config.length; i++) {
+        await AsyncStorage.getItem(this.state.type+"."+i).then((value) => {
+          if (value != null) {
+            array.push(JSON.parse(value).length)
+          } else {
+            array.push(0)
+          }
+        })
+      }
+      this.setState({ lists: array })
     }
   
     componentDidMount(){
@@ -25,94 +44,36 @@ class PetitionListScreen extends Component {
       return true
     }
   
-    async init() {
-      await AsyncStorage.getItem('userid').then((value) => {
-        this.setState({ userid: value })
-      })
-      await AsyncStorage.getItem(this.state.userid+"."+this.state.type).then((value) => {
-        if (value != null) {
-          this.setState({ list: JSON.parse(value) })
-        }
-      })
+    openDocument = async (item, index) => {
+      await AsyncStorage.setItem("listid", this.state.type+"."+index)
+      await AsyncStorage.setItem("data", JSON.stringify(item))
+      this.props.navigation.push("PetitionHistory")
     }
-  
-    addCharge = async () => {
-      var array = this.state.list
-      var today = new Date()
-      var document = {
-        id: this.state.type + "_"+ this.state.userid+"-"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2),
-        name: ("0" + (today.getDate())).slice(-2)+"/"+("0" + (today.getMonth() + 1)).slice(-2)+"/"+today.getFullYear()+" a las " + ("0" + (today.getHours())).slice(-2)+ ":"+("0" + (today.getMinutes())).slice(-2),
-        time: new Date().getTime()
-      }
-      array.push(document)
-      await AsyncStorage.setItem(this.state.userid+"."+this.state.type, JSON.stringify(array))
-      this.openDocument(document.id)
+
+    setData (item, index) {
+      return (<TouchableOpacity onPress={() => this.openDocument(item, index)}>
+                <Text style={styles.registeredDocuments}>{item.titulo} ({this.state.lists[index]})</Text>
+              </TouchableOpacity>)
     }
-  
-    openDocument(item) {
-      const requestOptions = {
-        method: 'POST',
-        body: JSON.stringify({ idempresa:"1", id: "1", tipoconfig: this.state.type })
-      };
-      fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        var error = JSON.parse(JSON.stringify(responseJson.error))
-        if (error == "false") {
-          var configuraciones = JSON.parse(JSON.stringify(responseJson.configuraciones))
-          var titleApp = configuraciones[0].titulo
-          var data = configuraciones[0].campos
-          this.props.navigation.push("Petition", {id: item.id, titleApp: titleApp, data: data, type: this.state.type })
-        }
-      }).catch((error) => {});
-    }
-  
-    setList() {
-      if (this.state.list.length > 0) {
-        return (
-          <View style={styles.voiceControlView}>
-            <FlatList 
-              vertical
-              showsVerticalScrollIndicator={false}
-              data={ this.state.list.sort((a,b) => a.time < b.time) } 
-              renderItem={({ item }) => (
-                (<TouchableOpacity onPress={() => this.openDocument(item)}>
-                    <Text style={styles.registeredDocuments}>{item.name}</Text>
-                  </TouchableOpacity>
-                ) 
-              )}
-          />
-        </View>)
-      }
-      return (<View style={styles.resumeView}><Text style={styles.showTitle}>No hay registros</Text></View>)
-    }
-  
     render () {
       return (
         <View style={{flex: 1, backgroundColor:"#FFF" }}>
           <View style={styles.navBarBackHeader}>
-          <View style={{ width: 70,textAlign:'center' }}>
-              <Icon
-                name='trash'
-                type='font-awesome'
-                color='#1A5276'
-                size={30}
-              />
-            </View>
-            <Text style={styles.navBarHeader}>Historial de {this.state.type}</Text>
-            <View style={{ width: 70,textAlign:'center' }}>
-              <Icon
-                name='plus'
-                type='font-awesome'
-                color='#FFF'
-                size={30}
-                onPress={this.addCharge}
-              />
-            </View>
+            <Text style={styles.navBarHeader}>Tipos de {this.state.type}</Text>
           </View>
-          <ScrollView style={{backgroundColor: "#FFF" }}>
+          <ScrollView vertical style={{backgroundColor: "#FFF" }}>
           <View style={styles.sections}>
-            {this.setList()}
+            <View style={styles.voiceControlView}>
+            <FlatList 
+              vertical
+              showsVerticalScrollIndicator={false}
+              data={ this.state.config } 
+              renderItem={({ item, index }) => (
+              (<View>
+                {this.setData(item, index)}
+              </View>))}
+            />
+          </View>
           </View>
           </ScrollView>   
         </View>

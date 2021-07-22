@@ -11,12 +11,23 @@ class ImageViewerScreen extends Component {
     constructor(props) {
       super(props);
       this.state = {
-        id: this.props.navigation.state.params.id,
-        images: this.props.navigation.state.params.images,
-        image: this.props.navigation.state.params.image,
+        id: "",
+        images: [],
         back: this.props.navigation.state.params.back,
-        type: this.props.navigation.state.params.type,
+        image: this.props.navigation.state.params.image
       }
+      this.init()
+    }
+
+    async init() {
+      await AsyncStorage.getItem("id").then((value) => {
+        this.setState({ id: value })
+      })
+      await AsyncStorage.getItem(this.state.id+".images").then((value) => {
+        if (value != null) {
+          this.setState({ images: JSON.parse(value) })
+        }
+      })
     }
   
     componentDidMount(){
@@ -24,16 +35,7 @@ class ImageViewerScreen extends Component {
     }
   
     goBack = () => {
-      if (this.state.back == "Petition" || this.state.images == 0) {
-        this.props.navigation.push(this.state.back, {id: this.state.id })
-      } else {
-          this.props.navigation.push("ResumeView", {
-            id: this.state.id,
-            images: this.state.images,
-            back: this.state.back,
-            type: this.state.type,
-          })
-        }
+      this.props.navigation.push(this.state.back)
       return true
     }
   
@@ -141,7 +143,7 @@ class ImageViewerScreen extends Component {
       await AsyncStorage.setItem(this.state.id+".images", JSON.stringify(arrayImages))
       this.setState({images: arrayImages})
       if (this.state.images.length == 0) {
-        this.props.navigation.push(this.state.type, {id: this.state.id})
+        this.props.navigation.push("Petition", {id: this.state.id, type: this.state.type })
       } else {
         this.goBack()
       }

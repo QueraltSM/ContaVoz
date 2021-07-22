@@ -10,47 +10,31 @@ class ResumeViewScreen extends Component {
     constructor(props) {
       super(props)
       this.state = {
-        id: this.props.navigation.state.params.id,
+        id: "",
+        listid: "",
+        data: [],
         interpreptedData1: "",
         interpreptedData2: "",
-        back: this.props.navigation.state.params.back,
-        type: this.props.navigation.state.params.type,
         flatlistPos: 0,
         images: [],
         words: [],
         doc: [],
+        list: [],
         userid: "",
-        data: [
-          { nameDB: "Cuenta",
-            required: "S",
-            nameApp: "Entidad",
-            type: "E"
-          },
-          { nameDB: "Fecha",
-            required: "S",
-            nameApp: "Fecha",
-            type: "F"
-          },
-          { nameDB: "Factura",
-            required: "S",
-            nameApp: "Documento",
-            type: ""
-          },
-          { nameDB: "Importe",
-            required: "S",
-            nameApp: "Importe",
-            type: "N"
-          },
-        ]
       }
       this.init()
     }
   
     async init() {
-      var prep = ""
-      if (this.state.type == "Charge") {
-        prep = "chargeList"
-      }
+      await AsyncStorage.getItem("id").then((value) => {
+        this.setState({ id: value })
+      })
+      await AsyncStorage.getItem("listid").then((value) => {
+        this.setState({ listid: value })
+      })
+      await AsyncStorage.getItem("data").then((value) => {
+        this.setState({ data: JSON.parse(value).campos})
+      })
       await AsyncStorage.getItem(this.state.id+".savedData").then((value) => {
         if (value != null) {
           this.setState({ doc: JSON.parse(value) })
@@ -58,7 +42,7 @@ class ResumeViewScreen extends Component {
       })
       await AsyncStorage.getItem(this.state.id+".images").then((value) => {
         if (value != null) {
-          this.setState({ words: JSON.parse(value) })
+          this.setState({ images: JSON.parse(value) })
         }
       })
       await AsyncStorage.getItem(this.state.id+".words").then((value) => {
@@ -73,44 +57,23 @@ class ResumeViewScreen extends Component {
     }
   
     goBack = () => {
-      this.props.navigation.push(this.state.type, {id: this.state.id })
+      this.props.navigation.push("Petition")
       return true
     }
   
     async deleteDoc() {
-      var prep = ""
-      var list = "chargeList"
-      if (this.state.back == "Charge") {
-        prep = "chargeList"
-      }
-      var auxDocs = []
-      this.state.docs.forEach((i) => {
+      var chargeDocs = []
+      this.state.list.forEach((i) => {
         if (i.id != this.state.id) {
-          auxDocs.push(i)
+          chargeDocs.push(i)
         }
       })
-      await AsyncStorage.setItem(this.state.userid+"."+list, JSON.stringify(auxDocs))
-      this.props.navigation.push(prep)
+      await AsyncStorage.setItem(this.state.listid, JSON.stringify(chargeDocs))
+      this.props.navigation.push("PetitionList")
     }
   
     seeImage (image) {
-      this.props.navigation.push('ImageViewer', {
-        id: this.state.id,
-        entity: this.state.entity,
-        interpretedEntity: this.state.interpretedEntity,
-        nif: this.state.nif,
-        interpretedNif: this.state.interpretedNif,
-        date: this.state.date,
-        interpretedDate: this.state.interpretedDate,
-        invoice: this.state.invoice,
-        interpretedInvoice: this.state.interpretedInvoice,
-        total: this.state.total,
-        interpretedTotal: this.state.interpretedTotal,
-        images: this.state.images,
-        image: image,
-        back: this.state.back,
-        type: this.state.type
-      })
+      this.props.navigation.push('ImageViewer',{image: image, back:"ResumeView"})
     }
   
     setFlatlistPos(i) {
@@ -181,6 +144,18 @@ class ResumeViewScreen extends Component {
       alert("Accion desactivada por el momento")
     }
   
+    setData = (item, index) => {
+      return (<View>
+        {this.state.doc.length > 0 && (<View>
+        <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={25}
+        /></Text>
+        <View style={{flexDirection:'row', width:"90%"}}>
+        <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index]}</TextInput>
+        </View>
+      </View>)}  
+      </View>)
+    }
+
     setControlVoice(){
         return(
           <View style={styles.resumeView}>
@@ -188,20 +163,7 @@ class ResumeViewScreen extends Component {
               vertical
               showsVerticalScrollIndicator={false}
               data={this.state.data}
-              renderItem={({ item, index }) => (
-                (<View>
-                  <Text style={styles.resumeText}>{item.nameApp}</Text>
-                  <View style={{flexDirection:'row', width:"90%"}}>
-                  <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index]}</TextInput>
-                  <Icon
-                    name='pencil'
-                    type='font-awesome'
-                    color='#000'
-                    size={30}
-                  />
-                </View>
-                </View>)
-              )}
+              renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
             />
           </View>
         )

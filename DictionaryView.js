@@ -91,19 +91,20 @@ class DictionaryViewScreen extends Component {
                   />
                 </TouchableOpacity>
             </View>
-            <Text style={styles.resumeText}>Palabra: </Text>
+            <Text style={styles.resumeText}>Palabra:</Text>
             <TextInput value={this.state.addKey} multiline={true} style={styles.changeTranscript} placeholder="Macro" onChangeText={addKey => this.setState({addKey})}></TextInput>
-          
-            <Text style={styles.resumeText}>Valor que debe tomar: </Text>
+            <Text style={styles.resumeText}>Valor que debe tomar:</Text>
             <TextInput value={this.state.addValue} multiline={true} style={styles.changeTranscript} placeholder="Makro" onChangeText={addValue => this.setState({addValue})}></TextInput>
-          
+            <View style={{flexDirection:'row',alignItems:'center',justifyContent:'center'}}>
             <CheckBox
-              title='Es una empresa'
+              size={30}
+              title={<Text style={styles.enterpriseLabel}> Es una empresa</Text>}
               checked={this.state.checked}
               onPress={() => this.setState({checked: !this.state.checked})}
               checkedColor="#154360"
-              containerStyle={{ backgroundColor: "white", borderWidth: 0, fontSize: 20 }}
+              containerStyle={{ backgroundColor: "white", borderWidth: 0 }}
             />
+            </View>
             <Text style={styles.transcript}></Text>
             <TouchableOpacity onPress={this._addWord}>
               <Text style={styles.saveNewValue}>Guardar registro</Text>
@@ -252,6 +253,13 @@ class DictionaryViewScreen extends Component {
         paddingLeft: 40,
         backgroundColor: "#FFF",
         paddingBottom: 100
+    },
+    enterpriseLabel: {
+      textAlign: 'left',
+      color: '#154360',
+      fontWeight: 'bold',
+      fontSize: 18,
+      width: "90%",
     },
     showTitle:{
         textAlign: 'center',

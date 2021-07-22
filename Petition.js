@@ -12,20 +12,18 @@ class PetitionScreen extends Component {
     constructor(props) {
       super(props);
       this.state = {
-        id: this.props.navigation.state.params.id,
-        titleApp: this.props.navigation.state.params.titleApp,
-        data: JSON.parse(JSON.stringify(this.props.navigation.state.params.data)),
-        type: this.props.navigation.state.params.type,
+        title:"",
+        listid: "",
+        id: "",
+        data: [],
         recognized: '',
         started: '',
         results: [],
         is_recording: false,
-        nameDB: "",
-        required: "",
         listenedData: "",
         interpretedData: "",
         optionalData: "",
-        optionalValue: "No registrado",
+        optionalValue: "",
         getData: false,
         setData: false,
         images: [],
@@ -47,11 +45,21 @@ class PetitionScreen extends Component {
     }
   
     goBack = () => {
-      this.props.navigation.push('PetitionList', {type: this.state.type})
+      this.props.navigation.push('PetitionHistory')
       return true
     }
   
     async init() {
+      await AsyncStorage.getItem("listid").then((value) => {
+        this.setState({ listid: value })
+      })
+      await AsyncStorage.getItem("id").then((value) => {
+        this.setState({ id: value })
+      })
+      await AsyncStorage.getItem("data").then((value) => {
+        this.setState({ title: JSON.parse(value).titulo }) 
+        this.setState({ data: JSON.parse(value).campos })  
+      })
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
       })
@@ -75,7 +83,7 @@ class PetitionScreen extends Component {
           this.setState({ images: JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.userid+"."+this.state.type).then((value) => {
+      await AsyncStorage.getItem(this.state.listid).then((value) => {
         if (value != null) {
           this.setState({ list: JSON.parse(value) })
         }
@@ -183,14 +191,17 @@ class PetitionScreen extends Component {
     }
 
     setFixedData() {
-      this.setState({optionalData: "NIF asociado"})
       var str = this.state.listenedData
+      if (this.state.data[this.state.savedData.length].tipoexp == "E") {
+        this.setState({optionalData: "NIF asociado"})
+      }
       for (let i = 0; i < this.state.words.length; i++) {
         if (this.state.listenedData.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
-          str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
-          if (this.state.data[this.state.savedData.length].type == "E" && JSON.parse(this.state.words[i].enterprise)) {
+          if (this.state.data[this.state.savedData.length].tipoexp == "E" && JSON.parse(this.state.words[i].enterprise)) {
             str = this.state.words[i].key
             this.setState({optionalValue: this.state.words[i].value })
+          } else {
+            str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
           }
         }
       }
@@ -423,13 +434,7 @@ class PetitionScreen extends Component {
     }
   
     seeImage (image) {
-      this.props.navigation.push('ImageViewer', {
-        id: this.state.id,
-        images: this.state.images,
-        image: image,
-        back: "Charge",
-        type: "Charge",
-      })
+      this.props.navigation.push('ImageViewer', {image: image,back: "Petition"})
     }
   
     setImageZoom(item) {
@@ -484,49 +489,6 @@ class PetitionScreen extends Component {
         </View>
       )
     }
-    
-    startVoiceControl() {
-        if (JSON.parse(this.state.programStarted)) {
-        return (
-            <View style={styles.startVoiceControlView}>
-            <Text>
-            <Text style={styles.resumeText}>Entidad </Text>
-            <Icon
-                name='pencil'
-                type='font-awesome'
-                color='#000'
-                size={25}
-            />
-            </Text>
-            <View style={{flexDirection:'row', width:"100%"}}>
-            <TextInput multiline={true} style={styles.changeTranscript} placeholder="Disoft" onChangeText={interpretedEntity => this.setState({interpretedEntity})} value={this.state.interpretedEntity}></TextInput>
-            {this.setMicrophoneEntity()}
-            </View>
-            <Text style={styles.transcript}></Text>
-            <Text>
-            <Text style={styles.resumeText}>NIF </Text>
-            <Icon
-                name='pencil'
-                type='font-awesome'
-                color='#000'
-                size={25}
-            />
-            </Text>
-            <View style={{flexDirection:'row', width:"100%"}}>
-            <TextInput multiline={true} style={styles.changeTranscript} placeholder="B35222249" onChangeText={interpretedNif => this.setState({interpretedNif})} value={this.state.interpretedEntiinterpretedNifty}></TextInput>
-            {this.setMicrophoneNif()}
-            </View>
-            {(JSON.parse(this.state.setEntity)|| JSON.parse(this.state.setNIF)) &&
-            (<View>
-            <Text style={styles.transcript}></Text>
-                <TouchableOpacity onPress={this.jump}>
-                <Text style={styles.exitNewValue}>Saltar</Text>
-                </TouchableOpacity>
-            </View>)}
-            </View>)
-          }
-          return null
-    }
   
     setVoiceControl() {
       if (JSON.parse(this.state.is_recording) && this.state.savedData.length < this.state.data.length) {
@@ -543,7 +505,8 @@ class PetitionScreen extends Component {
         arrayWords.push({
           key: this.state.listenedData,
           value: this.state.interpretedData,
-          time: new Date().getTime()
+          time: new Date().getTime(),
+          enterprise: false
         })
       } else {
         var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.listenedData.toLowerCase());
@@ -552,6 +515,49 @@ class PetitionScreen extends Component {
       this.setState({ words: arrayWords })
       await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(arrayWords))
       this.storeData()
+    }
+
+    async storeEnterpriseInDicctionary() {
+      var arrayWords =  this.state.words
+      if (!this.state.words.some(item => item.key.toLowerCase() === this.state.interpretedData.toLowerCase())) {
+        arrayWords.push({
+          key: this.state.interpretedData,
+          value: this.state.optionalValue,
+          time: new Date().getTime(),
+          enterprise: true
+        })
+      } else {
+        var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.interpretedData.toLowerCase());
+        arrayWords[i].value = this.state.optionalValue
+      }
+      this.setState({ words: arrayWords })
+      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(arrayWords))
+      this.storeData()
+    }
+
+    async askSaveEnterprise() {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "Guardar empresa",
+          "¿Desea registrar los datos de esta empresa en el diccionario?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(this.storeEnterpriseInDicctionary());
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve(this.storeData());
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+        await AsyncAlert();
     }
 
     async askNewDataSave () {
@@ -580,6 +586,10 @@ class PetitionScreen extends Component {
     }
 
     async storeData () {
+      if (this.state.data[this.state.savedData.length].tipoexp == "E") {
+        this.setState({ optionalData: "" })
+        this.setState({ optionalValue: "" })
+      }
       var array = this.state.savedData
       array.push(this.state.interpretedData)
       await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
@@ -589,7 +599,10 @@ class PetitionScreen extends Component {
     }
 
     saveData = async () => {
-      if (this.state.data[this.state.savedData.length].type != "F" && this.state.interpretedData != this.state.listenedData) {
+      console.log("lognitud = " + this.state.optionalValue)
+      if (this.state.optionalValue.length > 0) {
+        this.askSaveEnterprise()
+      } else if (this.state.data[this.state.savedData.length].tipoexp != "F" && this.state.interpretedData != this.state.listenedData) {
         this.askNewDataSave()
       } else {
         this.storeData()
@@ -617,20 +630,16 @@ class PetitionScreen extends Component {
             showsVerticalScrollIndicator={false}
             showsHorizontalScrollIndicator={false}>
             <Text style={styles.listening}>{this.state.data[this.state.savedData.length].titulo}</Text>
-            <View style={styles.textForm}>
-              <Text style={styles.resumeText}>Texto escuchado</Text>
-              <Text multiline={true} style={styles.transcript}>{this.state.listenedData}</Text>
+            <View>
+              <Text style={styles.resumeText}>Texto escuchado</Text><Text multiline={true} style={styles.transcript}>{this.state.listenedData}</Text>
               <Text style={styles.resumeText}>Texto interpretado <Icon name='pencil' type='font-awesome' color='#000' size={25}/></Text>
-              <View style={{flexDirection:'row', width:"90%"}}>
-                <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.interpretedData}</TextInput>
-              </View>
-              <Text style={styles.resumeText}>{this.state.optionalData}</Text>
+              <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.interpretedData}</TextInput>
               {this.state.optionalData.length > 0 &&
-              (<View style={{flexDirection:'row', width:"90%"}}>
-                <TextInput multiline={true} style={styles.changeTranscript} onChangeText={optionalValue => this.setState({optionalValue})}>{this.state.optionalValue}</TextInput>
-                <Text style={styles.transcript}></Text>
+              (<View><Text style={styles.resumeText}>{this.state.optionalData}</Text>
+                <TextInput placeholder="NIF no registrado" multiline={true} style={styles.changeTranscript} onChangeText={optionalValue => this.setState({optionalValue})}></TextInput>
               </View>)}
               </View>
+              <Text style={styles.transcript}></Text>
               <View style={styles.modalNavBarButtons}>
                   <TouchableOpacity onPress={this.saveData}>
                       <Text style={styles.saveButton}>Guardar</Text>
@@ -683,11 +692,7 @@ class PetitionScreen extends Component {
   
     seeDocument = () => {
       this.state.images.length > 0 && (this.state.savedData.length == 0 || (this.state.data.length==this.state.savedData.length))
-      this.props.navigation.push('ResumeView', {
-        id: this.state.id,
-        back: "ResumeView",
-        type: "Charge"
-      })
+      this.props.navigation.push('ResumeView')
     }
 
     async deleteDoc() {
@@ -697,10 +702,9 @@ class PetitionScreen extends Component {
           chargeDocs.push(i)
         }
       })
-      await AsyncStorage.setItem(this.state.userid+"."+this.state.type, JSON.stringify(chargeDocs))
+      await AsyncStorage.setItem(this.state.listid, JSON.stringify(chargeDocs))
       this.goBack()
     }
-  
   
     askDeleteDoc = async () => {
       const AsyncAlert = () => new Promise((resolve) => {
@@ -728,7 +732,7 @@ class PetitionScreen extends Component {
     }
 
     setMenu() {
-      return (
+        return (
         <View style={styles.navBarBackHeader}>
             <View style={{ width: 60,textAlign:'center' }}>
               <Icon
@@ -781,7 +785,7 @@ class PetitionScreen extends Component {
           <ScrollView
             style={{backgroundColor: "#fff", paddingBottom: 100 }}>
           <View style={{backgroundColor: "#1A5276"}}>
-            <Text style={styles.mainHeader}>{this.state.titleApp}</Text>
+            <Text style={styles.mainHeader}>{this.state.title}</Text>
           </View>
             <View style={styles.sections}>
               {this.setImages()}
@@ -817,6 +821,7 @@ class PetitionScreen extends Component {
         backgroundColor:"#FFF", 
         flexDirection:'row',
         alignSelf: 'center',
+        paddingBottom: 20
       },
       exitText: {
         fontSize: 17,
@@ -888,7 +893,6 @@ class PetitionScreen extends Component {
         shadowRadius: 4,
         elevation: 5,
         width:"80%",
-        maxHeight:"60%"
       },
       footBar: {
         alignItems: 'center',
@@ -933,15 +937,6 @@ class PetitionScreen extends Component {
         paddingTop: 20,
         color: "#000",
         fontWeight: 'bold',
-      },
-      startVoiceControlView: {
-        flex: 1,
-        backgroundColor: "#FFF",
-        paddingTop: 40,
-        alignContent: "center",
-        alignSelf: "center",
-        width: "80%",
-        paddingBottom:50
       },
       exitButton: {
         fontSize: 17,

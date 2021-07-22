@@ -10,11 +10,8 @@ class MainScreen extends Component {
       super(props);
       this.state = {
         fullname: "",
+        enterpriseid: "",
         userid: "",
-        buyList: [],
-        salesList:[],
-        payList:[],
-        chargeList:[],
       }
       this.init()
     }
@@ -23,47 +20,34 @@ class MainScreen extends Component {
       await AsyncStorage.getItem("fullname").then((value) => {
         this.setState({ fullname: value })
       })
+      await AsyncStorage.getItem("idempresa").then((value) => {
+        this.setState({ enterpriseid: value})
+      })
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value})
       })
-      await AsyncStorage.getItem(this.state.userid+".compras").then((value) => {
-        if (value != null) {
-          this.setState({chargeList:JSON.parse(value) })
-        }
-      })
-      await AsyncStorage.getItem(this.state.userid+".cobros").then((value) => {
-        if (value != null) {
-          this.setState({chargeList:JSON.parse(value) })
-        }
-      })
-      await AsyncStorage.getItem(this.state.userid+".ventas").then((value) => {
-        if (value != null) {
-          this.setState({salesList:JSON.parse(value) })
-        }
-      })
-      await AsyncStorage.getItem(this.state.userid+".pagos").then((value) => {
-        if (value != null) {
-          this.setState({payList:JSON.parse(value) })
-        }
-      })
     }
   
-    goBuyScreen = async () => {
-      //this.props.navigation.push('PetitionList', {type:"compras"})
-      alert("No se ha activado de momento esta funcionalidad")
-    }
-  
-    goSaleScreen = async () => {
-      //this.props.navigation.push('PetitionList', {type:"ventas"})
-      alert("No se ha activado de momento esta funcionalidad")
+    async saveData(responseJson, type) {
+      var config = JSON.parse(JSON.stringify(responseJson.configuraciones))
+      await AsyncStorage.setItem("config", JSON.stringify(config))
+      await AsyncStorage.setItem("type", type)
+      this.props.navigation.push('PetitionList')
     }
 
-    goChargeScreen  = async () => {
-      this.props.navigation.push('PetitionList', {type:"cobros"})
-    }
-  
-    goPayScreen = async () => {
-      this.props.navigation.push('PetitionList', {type:"pagos"})
+    goScreen = async (type) => {
+      const requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({ idempresa:this.state.enterpriseid, id: this.state.userid, tipoconfig: type })
+      };
+      fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
+      .then((response) => response.json())
+      .then((responseJson) => {
+        var error = JSON.parse(JSON.stringify(responseJson.error))
+        if (error == "false") {
+          this.saveData(responseJson, type)
+        }
+      }).catch((error) => {});
     }
   
     goDictionary = () => {
@@ -125,7 +109,7 @@ class MainScreen extends Component {
           <Text style={styles.text}>Usuario {this.state.fullname}</Text>
           <View style={styles.twoColumnsInARow}>
           <View>
-            <TouchableOpacity onPress={this.goBuyScreen}>
+            <TouchableOpacity onPress={() => this.goScreen("compras")}>
               <View style={styles.mainIcon}>
                 <Icon
                   name='shopping-cart'
@@ -133,7 +117,7 @@ class MainScreen extends Component {
                   color='#FFF'
                   size={35}/>
                 </View>
-              <Text style={styles.mainButton}>Compras ({this.state.buyList.length})</Text>
+              <Text style={styles.mainButton}>Compras</Text>
             </TouchableOpacity>
             </View>
               <Icon
@@ -142,7 +126,7 @@ class MainScreen extends Component {
                 color='#FFF'
                 size={35}/>
               <View>
-              <TouchableOpacity onPress={this.goSaleScreen}>
+              <TouchableOpacity onPress={() => this.goScreen("ventas")}>
                 <View style={styles.mainIcon}>
                   <Icon
                     name='tag'
@@ -150,13 +134,13 @@ class MainScreen extends Component {
                     color='#FFF'
                     size={35}/>
                   </View>
-                <Text style={styles.mainButton}>Ventas ({this.state.salesList.length})</Text>
+                <Text style={styles.mainButton}>Ventas</Text>
               </TouchableOpacity>
               </View>
             </View>
             <View style={styles.twoColumnsInARow}>
             <View>
-              <TouchableOpacity onPress={this.goChargeScreen}>
+            <TouchableOpacity onPress={() => this.goScreen("cobros")}>
                 <View style={styles.mainIcon}>
                   <Icon
                     name='money'
@@ -164,7 +148,7 @@ class MainScreen extends Component {
                     color='#FFF'
                     size={35}/>
                   </View>
-                <Text style={styles.mainButton}>Cobros ({this.state.chargeList.length})</Text>
+                <Text style={styles.mainButton}>Cobros</Text>
               </TouchableOpacity>
               </View>
               <Icon
@@ -172,7 +156,7 @@ class MainScreen extends Component {
                 type='font-awesome'
                 color='#FFF'
                 size={35}/>
-            <TouchableOpacity onPress={this.goPayScreen}>
+            <TouchableOpacity onPress={() => this.goScreen("pagos")}>
               <View style={styles.mainIcon}>
                 <Icon
                   name='shopping-basket'
@@ -180,7 +164,7 @@ class MainScreen extends Component {
                   color='#FFF'
                   size={35}/>
                 </View>
-              <Text style={styles.mainButton}>Pagos ({this.state.payList.length})</Text>
+              <Text style={styles.mainButton}>Pagos</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.twoColumnsInARow}>
