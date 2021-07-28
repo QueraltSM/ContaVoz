@@ -21,11 +21,12 @@ class ResumeViewScreen extends Component {
         doc: [],
         list: [],
         userid: "",
+        type: "",
       }
       this.init()
     }
   
-    async init() {
+    async init() { 
       await AsyncStorage.getItem("id").then((value) => {
         this.setState({ id: value })
       })
@@ -34,6 +35,9 @@ class ResumeViewScreen extends Component {
       })
       await AsyncStorage.getItem("data").then((value) => {
         this.setState({ data: JSON.parse(value).campos})
+      })
+      await AsyncStorage.getItem("type").then((value) => {
+        this.setState({ type: value })
       })
       await AsyncStorage.getItem(this.state.id+".savedData").then((value) => {
         if (value != null) {
@@ -142,11 +146,12 @@ class ResumeViewScreen extends Component {
   
     sendDocument = async () => {
       alert("Accion desactivada por el momento")
+      // check when data is empty, because it will not be sent
     }
   
     setData = (item, index) => {
       return (<View>
-        {this.state.doc.length > 0 && (<View>
+        {this.state.doc.length > 0 && this.state.doc[index].lenght > 0 && (<View>
         <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={25}
         /></Text>
         <View style={{flexDirection:'row', width:"90%"}}>
@@ -165,6 +170,8 @@ class ResumeViewScreen extends Component {
               data={this.state.data}
               renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
             />
+            {this.state.type == "compras" && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con pago</Text></TouchableOpacity></View>)}
+            {this.state.type == "ventas" && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)}
           </View>
         )
     }
@@ -375,6 +382,13 @@ class ResumeViewScreen extends Component {
         fontWeight: "bold",
         color: "#FFF",
         fontSize: 20,
+      },
+      saveButton: {
+        fontSize: 20,
+        textAlign: "center",
+        fontWeight: 'bold',
+        color: "#2E8B57",
+        fontWeight: 'bold',
       },
     })
 

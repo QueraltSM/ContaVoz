@@ -495,19 +495,29 @@ class PetitionScreen extends Component {
       return (
         <View style={styles.imagesSection}>
         <Text style={styles.transcript}></Text>
-        <Image
-            source={require('./assets/no-photo.png')}
-            resizeMode="contain"
-            key="0"
-            style={{ width: 130, height: 130 }}
-        />
+        <Image source={require('./assets/no-photo.png')} resizeMode="contain" key="0" style={{ width: 130, height: 130 }} />
         </View>
       )
     }
   
+    skipData = async () => {
+      var array = this.state.savedData
+      array.push("")
+      await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
+      this.setState({ savedData: array })
+      this.setState({ listenedData: "" })
+      this.setState({ interpretedData: "" })
+      this.setState({ is_recording: JSON.parse(false) })
+    }
+
     setVoiceControl() {
       if (JSON.parse(this.state.is_recording) && this.state.savedData.length < this.state.data.length) {
-        return (<View style={styles.resumeView}><Text style={styles.showTitle}>Escuchando {this.state.data[this.state.savedData.length].titulo.toLowerCase()}...</Text></View>)
+        return (
+        <View style={styles.resumeView}>
+          <Text style={styles.showTitle}>Escuchando {this.state.data[this.state.savedData.length].titulo.toLowerCase()}...</Text>
+          {this.state.data[this.state.savedData.length].obligatorio=="N" &&
+          (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+        </View>)
       } else if (this.state.savedData.length < this.state.data.length && JSON.parse(this.state.getData) && !JSON.parse(this.state.setData)) {
         return (this.setDataModal())
       }
@@ -616,7 +626,7 @@ class PetitionScreen extends Component {
     saveData = async () => {
       if (this.state.lastOptionalValue != this.state.optionalValue) {
         this.askSaveEnterprise()
-      } else if (this.state.data[this.state.savedData.length].tipoexp != "F" && this.state.interpretedData != this.state.listenedData) {
+      } else if (this.state.data[this.state.savedData.length].tipoexp != "F" && this.state.interpretedData.toLowerCase() != this.state.listenedData.toLowerCase()) {
         this.askNewDataSave()
       } else {
         this.storeData()
@@ -682,7 +692,6 @@ class PetitionScreen extends Component {
       if (!JSON.parse(this.state.is_recording) && this.state.images.length == 0 && this.state.savedData.length==0) {
         return(
           <View style={styles.resumeView}>
-            <Text style={styles.showTitle}></Text>
             <Text style={styles.showTitle}>Para comenzar debe adjuntar una imagen o pulsar el micrófono</Text>
           </View>
         )
@@ -881,9 +890,10 @@ class PetitionScreen extends Component {
         textAlign: 'center',
         color: '#154360',
         fontWeight: 'bold',
-        fontSize: 18,
+        fontSize: 22,
         width: "90%",
         paddingBottom: 20,
+        paddingTop: 20
       },
       centeredView: {
         flex: 1,
@@ -956,6 +966,16 @@ class PetitionScreen extends Component {
         fontWeight: 'bold',
         color: "#B03A2E",
         fontWeight: 'bold',
+      },
+      skipButton: {
+        width: "80%",
+        fontSize: 22,
+        paddingTop: 20,
+        textAlign: "right",
+        fontWeight: 'bold',
+        color: "gray",
+        fontWeight: 'bold',
+        fontStyle: 'italic',
       },
       saveNewValue: {
         fontSize: 17,

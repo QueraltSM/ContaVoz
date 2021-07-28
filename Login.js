@@ -80,7 +80,30 @@ class LoginScreen extends Component {
   
     async saveUser() {
       await AsyncStorage.setItem('saveData', JSON.stringify(true));
+      this.getConfig()
       this.goHome()
+    }
+
+    async saveConfig(i,config) {
+      await AsyncStorage.setItem(i, JSON.stringify(config));
+    }
+
+    async getConfig() {
+      var petition = ["ventas", "pagos", "cobros"]
+      petition.forEach((i)=> {
+        const requestOptions = {
+          method: 'POST',
+          body: JSON.stringify({ idempresa:this.state.idempresa, id: this.state.userid, tipoconfig: i })
+        };
+        fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
+        .then((response) => response.json())
+        .then((responseJson) => {
+          var error = JSON.parse(JSON.stringify(responseJson.error))
+          if (error == "false") {
+            this.saveConfig(i,JSON.stringify(responseJson.configuraciones))
+          }
+        }).catch((error) => {});
+      })
     }
   
     async goHome() {
@@ -104,7 +127,6 @@ class LoginScreen extends Component {
           .then((response) => response.json())
           .then((responseJson) => {
             let error = JSON.stringify(responseJson.error_code)
-            console.log("respuesta:"+JSON.stringify(responseJson))
             if (error == 0) {
               this.setState({fullname: JSON.parse(JSON.stringify(responseJson.fullName))})
               this.setState({token: JSON.parse(JSON.stringify(responseJson.token))})

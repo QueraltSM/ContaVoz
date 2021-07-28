@@ -100,9 +100,7 @@ class ImageViewerScreen extends Component {
             this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
           }
         }
-      } catch (err) {
-        console.log(err);
-      }
+      } catch (err) {}
     }
   
     goGallery = async () => {

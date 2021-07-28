@@ -52,7 +52,7 @@ class PetitionListScreen extends Component {
 
     setData (item, index) {
       return (<TouchableOpacity onPress={() => this.openDocument(item, index)}>
-                <Text style={styles.registeredDocuments}>{item.titulo} · {this.state.lists[index]}</Text>
+                <Text style={styles.registeredDocuments}>{item.titulo} ({this.state.lists[index]})</Text>
               </TouchableOpacity>)
     }
     render () {

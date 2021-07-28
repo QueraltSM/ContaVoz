@@ -226,10 +226,6 @@ class DictionaryViewScreen extends Component {
         </View>)
     }
   
-    saveDocument() {
-      console.log("saveDocument")
-    }
-  
     render() {
       return (
         <View style={{flex: 1}}>

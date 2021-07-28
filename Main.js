@@ -27,31 +27,16 @@ class MainScreen extends Component {
         this.setState({ userid: value})
       })
     }
-  
-    async saveData(responseJson, type) {
-      var config = JSON.parse(JSON.stringify(responseJson.configuraciones))
-      await AsyncStorage.setItem("config", JSON.stringify(config))
-      await AsyncStorage.setItem("type", type)
-      this.props.navigation.push('PetitionList')
-    }
+
 
     goScreen = async (type) => {
-      if (type == "compras") {
-        alert("Compras está desactivada temporalmente")
-      } else {
-        const requestOptions = {
-          method: 'POST',
-          body: JSON.stringify({ idempresa:this.state.enterpriseid, id: this.state.userid, tipoconfig: type })
-        };
-        fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
-        .then((response) => response.json())
-        .then((responseJson) => {
-          var error = JSON.parse(JSON.stringify(responseJson.error))
-          if (error == "false") {
-            this.saveData(responseJson, type)
-          }
-        }).catch((error) => {});
-      }
+      var config = ""
+      await AsyncStorage.getItem(type).then((value) => {
+        config = JSON.parse(JSON.stringify(value))
+      })
+      await AsyncStorage.setItem("config", JSON.parse(config))
+      await AsyncStorage.setItem("type", type)
+      this.props.navigation.push('PetitionList')
     }
   
     goDictionary = () => {
