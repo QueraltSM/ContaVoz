@@ -14,7 +14,9 @@ class DictionaryViewScreen extends Component {
         addKey: "",
         addValue: "",
         showForm: false,
-        checked: false
+        showSeach: false,
+        checked: false,
+        keyword: ""
       };
       this.init()
     }
@@ -69,12 +71,17 @@ class DictionaryViewScreen extends Component {
         await this.pushArrayWords()
         this.setState({ addKey: "" })
         this.setState({ addValue: "" })
+        this.setState({ checked: JSON.parse(false) })
         this.formAction()
       }
     }
   
     formAction = () => {
       this.setState({showForm: !this.state.showForm})
+    }
+
+    searchAction = () => {
+      this.setState({showSeach: !this.state.showSeach})
     }
   
     setMenuButtons() {
@@ -123,8 +130,7 @@ class DictionaryViewScreen extends Component {
               size={28}
             />
           </TouchableOpacity>
-      </View>
-        )
+      </View>)
     }
   
     setMenu() {
@@ -183,17 +189,49 @@ class DictionaryViewScreen extends Component {
       this.setState({ words: arrayWords })
       await AsyncStorage.setItem(this.state.id+".words", JSON.stringify(arrayWords))
     }
+
+    setSeachBox() {
+      if (this.state.showSeach) {
+        return (<View style={styles.dictionaryView}>
+          <View style={{ width: "90%", flexDirection:'row', justifyContent: 'flex-end'}}>
+            <TouchableOpacity onPress={() => this.searchAction()} style={styles.searchButton}>
+               <Icon
+                 name='search'
+                 type='font-awesome'
+                 color='#2874A6'
+                 size={28}
+               />
+             </TouchableOpacity>
+          </View>
+          <Text style = { styles.resumeText }>Buscar palabra:</Text>
+          <TextInput multiline={true} style = { styles.resumeText } placeholder="Makro" onChangeText={(keyword) => this.setState({keyword: keyword})}  
+           value={this.state.alias}/> 
+         </View>)
+      }
+      return (
+        <View style={{ width: "90%", flexDirection:'row', justifyContent: 'flex-end'}}>
+        <TouchableOpacity onPress={() => this.searchAction()}>
+            <Icon
+              name='search'
+              type='font-awesome'
+              color='#2874A6'
+              size={28}
+            />
+          </TouchableOpacity>
+      </View>)
+    }
   
     setWords() {
       if (this.state.words.length > 0) {
         return (
           <View style={styles.resumeView}>
+            {this.setSeachBox()}
             <Text style={styles.showTitle}>Listado de palabras</Text>
-          <FlatList 
-            vertical
-            showsVerticalScrollIndicator={false}
-            data={ this.state.words.sort((a,b) => a.time < b.time) } 
-            renderItem={({ item }) => (
+            <FlatList 
+              vertical
+              showsVerticalScrollIndicator={false}
+              data={ this.state.words.sort((a,b) => a.time < b.time) } 
+              renderItem={({ item }) => (
               <View style={{paddingBottom: 20}}>
               <View style={styles.wordsBox}>
               <Text style={styles.wordsBoxText}>
@@ -345,4 +383,21 @@ class DictionaryViewScreen extends Component {
         color: "#2E8B57",
         fontWeight: 'bold',
       },
+      formBox: {
+        fontSize: 18,
+        textAlign: "center",
+        color:"#1A5276",
+        fontWeight: 'bold'
+      },
+      searchBox:{
+        width: "90%", 
+        flexDirection:'row', 
+        textAlign: 'center',
+        paddingBottom: 30
+      },
+      searchButton:{
+        width: "90%", 
+        flexDirection:'row', 
+        justifyContent: 'flex-end',
+      }
   })

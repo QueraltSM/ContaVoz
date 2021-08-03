@@ -30,13 +30,17 @@ class MainScreen extends Component {
 
 
     goScreen = async (type) => {
-      var config = ""
-      await AsyncStorage.getItem(type).then((value) => {
-        config = JSON.parse(JSON.stringify(value))
-      })
-      await AsyncStorage.setItem("config", JSON.parse(config))
-      await AsyncStorage.setItem("type", type)
-      this.props.navigation.push('PetitionList')
+      if (type == "compras") {
+        alert("Compras no está disponible de momento")
+      } else {
+        var config = ""
+        await AsyncStorage.getItem(type).then((value) => {
+          config = JSON.parse(JSON.stringify(value))
+        })
+        await AsyncStorage.setItem("config", JSON.parse(config))
+        await AsyncStorage.setItem("type", type)
+        this.props.navigation.push('PetitionList')
+      }
     }
   
     goDictionary = () => {

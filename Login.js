@@ -85,7 +85,7 @@ class LoginScreen extends Component {
     }
 
     async saveConfig(i,config) {
-      await AsyncStorage.setItem(i, JSON.stringify(config));
+      await AsyncStorage.setItem(i, JSON.stringify(config))
     }
 
     async getConfig() {

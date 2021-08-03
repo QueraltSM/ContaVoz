@@ -22,6 +22,8 @@ class ResumeViewScreen extends Component {
         list: [],
         userid: "",
         type: "",
+        cobroData: [],
+        isCobroLinked: false
       }
       this.init()
     }
@@ -34,7 +36,7 @@ class ResumeViewScreen extends Component {
         this.setState({ listid: value })
       })
       await AsyncStorage.getItem("data").then((value) => {
-        this.setState({ data: JSON.parse(value).campos})
+        this.setState({ data: JSON.parse(value).campos })
       })
       await AsyncStorage.getItem("type").then((value) => {
         this.setState({ type: value })
@@ -42,6 +44,14 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem(this.state.id+".savedData").then((value) => {
         if (value != null) {
           this.setState({ doc: JSON.parse(value) })
+        }
+      })
+      await AsyncStorage.getItem("cobros").then((value) => {
+        this.setState({ cobroData: JSON.parse(JSON.parse(value))[0].campos })
+      })
+      await AsyncStorage.getItem(this.state.id+".isCobroLinked").then((value) => {
+        if (value != null) {
+          this.setState({ isCobroLinked: JSON.parse(value) })
         }
       })
       await AsyncStorage.getItem(this.state.id+".images").then((value) => {
@@ -128,10 +138,10 @@ class ResumeViewScreen extends Component {
           <View style={styles.imagesSection}>
             <View style={styles.selectedImageView}>
               <FlatList 
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={this.state.images}
-              renderItem={({ item, index }) => (
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={this.state.images}
+                renderItem={({ item, index }) => (
                 (<View>
                   {this.setImageZoom(item)}
                   { this.state.images.length > 1 && this.setFlatlistButtons(index)}
@@ -151,7 +161,7 @@ class ResumeViewScreen extends Component {
   
     setData = (item, index) => {
       return (<View>
-        {this.state.doc.length > 0 && this.state.doc[index].lenght > 0 && (<View>
+        {this.state.doc.length > 0 && this.state.doc[index] != "" && (<View>
         <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={25}
         /></Text>
         <View style={{flexDirection:'row', width:"90%"}}>
@@ -161,17 +171,114 @@ class ResumeViewScreen extends Component {
       </View>)
     }
 
+    setCobroData = (item, index) => {
+      if (JSON.stringify(this.state.data[index].idcampo == JSON.stringify(this.state.cobroData[index].idcampo))) {
+        return (<View>
+          {this.state.doc[index] != "" && (<View>
+          <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={25}
+          /></Text>
+          <View style={{flexDirection:'row', width:"90%"}}>
+          <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index]}</TextInput>
+          </View>
+        </View>)}  
+        </View>)
+      }
+      return null
+    }
+
+    linkToCobro = () => {
+      if (this.state.isCobroLinked) {
+        return(
+          <View>
+            <Text style={styles.showTitle}>Documento de cobro asociado</Text>
+            <FlatList 
+              vertical
+              showsVerticalScrollIndicator={false}
+              data={this.state.cobroData}
+              renderItem={({ item, index }) => (<View>{this.setCobroData(item, index)}</View>)}
+            />
+            <Text style={styles.transcript}></Text>
+          </View>
+        )
+      }
+      return null
+    }
+
+    deleteCobro = async () => {
+      await AsyncStorage.setItem(this.state.id+".isCobroLinked", JSON.stringify(false))
+      this.setState({ isCobroLinked: false })
+    }
+
+     saveCobro = async () => {
+      await AsyncStorage.setItem(this.state.id+".isCobroLinked", JSON.stringify(true))
+      this.setState({ isCobroLinked: true })
+    }
+
+    async askUnlinkCobro() {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "¿Desvincular con cobro",
+          "¿Está seguro que desea desvincular esta venta con un documento cobro?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(this.deleteCobro());
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve();
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+        await AsyncAlert();
+    }
+
+    async askLinkCobro() {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "¿Vincular con cobro",
+          "¿Está seguro que desea vincular esta venta con un documento cobro?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(this.saveCobro());
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve();
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+        await AsyncAlert();
+    }
+
     setControlVoice(){
         return(
           <View style={styles.resumeView}>
+            <Text style={styles.showTitle}>Documento de {this.state.type}</Text>
             <FlatList 
               vertical
               showsVerticalScrollIndicator={false}
               data={this.state.data}
               renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
             />
+            <Text style={styles.transcript}></Text>
             {this.state.type == "compras" && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con pago</Text></TouchableOpacity></View>)}
-            {this.state.type == "ventas" && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)}
+            {this.state.type == "ventas" && !this.state.isCobroLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askLinkCobro()}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)}
+            {this.linkToCobro()}
+            {this.state.type == "ventas" && this.state.isCobroLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askUnlinkCobro()}><Text style={styles.deleteButton}>Desvincular con cobro</Text></TouchableOpacity></View>)}
           </View>
         )
     }
@@ -389,6 +496,27 @@ class ResumeViewScreen extends Component {
         fontWeight: 'bold',
         color: "#2E8B57",
         fontWeight: 'bold',
+      },
+      deleteButton: {
+        fontSize: 20,
+        textAlign: "center",
+        fontWeight: 'bold',
+        color: "#761A1B",
+        fontWeight: 'bold',
+      },
+      transcript: {
+        color: '#000',
+        fontSize: 20,
+        width: "90%"
+      },
+      showTitle:{
+        textAlign: 'center',
+        color: '#154360',
+        fontWeight: 'bold',
+        fontSize: 22,
+        width: "90%",
+        paddingBottom: 20,
+        paddingTop: 20
       },
     })
 

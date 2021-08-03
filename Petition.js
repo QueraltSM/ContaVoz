@@ -34,6 +34,7 @@ class PetitionScreen extends Component {
         userid: "",
         flatlistPos: 0,
         saved: false,
+        importe:""
       }
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
       Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
@@ -63,6 +64,9 @@ class PetitionScreen extends Component {
       })
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
+      })
+      await AsyncStorage.getItem(this.state.id+".importe").then((value) => {
+        this.setState({ importe: value })
       })
       await AsyncStorage.getItem(this.state.id+".saved").then((value) => {
         if (value != null) {
@@ -184,12 +188,8 @@ class PetitionScreen extends Component {
 
     async setFixedNumber() {
       var str = this.state.listenedData
-      if (this.state.listenedData.toLowerCase().includes("con")) {
-        str = str.replace("con", ".")
-      } else if (this.state.listenedData.toLowerCase().includes("punto")) {
+      if (this.state.listenedData.toLowerCase().includes("punto")) {
         str = str.replace("punto", ".")
-      } else if (this.state.listenedData.toLowerCase().includes("coma")) {
-        str = str.replace("coma", ",")
       }
       this.setState({ interpretedData: str.split(' ').join("")  })
     }
@@ -239,21 +239,26 @@ class PetitionScreen extends Component {
       this.setState({
         listenedData: word[0],
       });
+      this.setState({listenedData:this.state.listenedData.split(' ').join("")})
       this.setState({getData: true})
       this.setListenedData()
     }
   
     async _startRecognition(e) {
       this.setState({is_recording: JSON.stringify(true)})
-      this.setState({
-        recognized: '',
-        started: '',
-        results: [],
-      });
-      try {
-        await Voice.start('es');
-      } catch (e) {
-        console.error(e);
+      var idcampo = this.state.data[this.state.savedData.length].idcampo
+      var xdefecto = this.state.data[this.state.savedData.length].xdefecto
+      if (((!idcampo.includes("base") || !idcampo.includes("porcentaje")) && xdefecto=="") || !idcampo.includes("cuota")) {
+        this.setState({
+          recognized: '',
+          started: '',
+          results: [],
+        });
+        try {
+          await Voice.start('es');
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
   
@@ -280,6 +285,17 @@ class PetitionScreen extends Component {
           onPress={() => this.noMoreAudio()}
         />
       } else {
+        var idcampo = this.state.data[this.state.savedData.length].idcampo
+        var xdefecto = this.state.data[this.state.savedData.length].xdefecto
+        if (((idcampo.includes("base") || idcampo.includes("porcentaje")) && xdefecto!="") || idcampo.includes("cuota")) {
+          return <Icon
+          name='microphone'
+          type='font-awesome'
+          color='#FFF'
+          size={30}
+          onPress={this._startRecognition.bind(this)}
+        />
+        } 
         if (JSON.parse(this.state.is_recording) && !JSON.parse(this.state.saved)) {
           return <Icon
             name='microphone-slash'
@@ -510,16 +526,141 @@ class PetitionScreen extends Component {
       this.setState({ is_recording: JSON.parse(false) })
     }
 
-    setVoiceControl() {
-      if (JSON.parse(this.state.is_recording) && this.state.savedData.length < this.state.data.length) {
-        return (
-        <View style={styles.resumeView}>
-          <Text style={styles.showTitle}>Escuchando {this.state.data[this.state.savedData.length].titulo.toLowerCase()}...</Text>
+    setVoiceControlOthers() {
+      return (<View style={styles.resumeView}>
+        <Text style={styles.showTitle}>Escuchando {this.state.data[this.state.savedData.length].titulo.toLowerCase()}...</Text>
+        {this.state.data[this.state.savedData.length].tipoexp=="N" &&
+        <Text style={styles.showSubTitle}>Las cifras decimales debe decirlas con "punto", por ejemplo 144.99</Text>}
+        {this.state.data[this.state.savedData.length].obligatorio=="N" &&
+        (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+      </View>)
+    }
+
+    setBase() {
+      if (this.state.data[this.state.savedData.length].xdefecto == "") {
+          return this.setVoiceControlOthers()
+      } else {
+        var porcentaje = this.state.data[this.state.savedData.length].xdefecto
+        var x = 100 + Number(porcentaje)
+        var base = ( Number(this.state.importe) * 100 ) / x
+        var finalBase = Math.round(base * 100) / 100
+        return (<View style={styles.resumeView}>
+          <Text style={styles.showTitle}>{this.state.data[this.state.savedData.length].titulo}: {finalBase}</Text>
+          {this.state.data[this.state.savedData.length].tipoexp=="N" &&
+          <Text style={styles.showSubTitle}>Ha obtenido una base de {finalBase} para importe {this.state.importe} y porcentaje de {porcentaje}%</Text>}
           {this.state.data[this.state.savedData.length].obligatorio=="N" &&
           (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+            <Text style={styles.transcript}></Text>
+              <View style={styles.modalNavBarButtons}>
+                  <TouchableOpacity onPress={() => this.saveData()}>
+                      <Text style={styles.saveButton}>Guardar</Text>
+                  </TouchableOpacity>
+                  <Icon
+                    name='window-close'
+                    type='font-awesome'
+                    color='#FFF'
+                    size={32}
+                  />
+                  <Icon
+                    name='window-close'
+                    type='font-awesome'
+                    color='#FFF'
+                    size={32}
+                  />
+                  <TouchableOpacity onPress={this.cancelData}>
+                      <Text style={styles.exitButton}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
         </View>)
+      }
+    }
+
+    setPorcentaje() {
+      if (this.state.data[this.state.savedData.length].xdefecto == "") {
+          return this.setVoiceControlOthers()
+      } else {
+        var xdefecto = this.state.data[this.state.savedData.length].xdefecto
+        return (<View style={styles.resumeView}>
+          <Text style={styles.showTitle}>{this.state.data[this.state.savedData.length].titulo}: {xdefecto}</Text>
+          {this.state.data[this.state.savedData.length].tipoexp=="N" &&
+          <Text style={styles.showSubTitle}>Tiene establecido un {xdefecto}% de porcentaje por defecto para importe {this.state.importe}</Text>}
+          {this.state.data[this.state.savedData.length].obligatorio=="N" &&
+          (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+            <Text style={styles.transcript}></Text>
+              <View style={styles.modalNavBarButtons}>
+                  <TouchableOpacity onPress={() => this.saveData()}>
+                      <Text style={styles.saveButton}>Guardar</Text>
+                  </TouchableOpacity>
+                  <Icon
+                    name='window-close'
+                    type='font-awesome'
+                    color='#FFF'
+                    size={32}
+                  />
+                  <Icon
+                    name='window-close'
+                    type='font-awesome'
+                    color='#FFF'
+                    size={32}
+                  />
+                  <TouchableOpacity onPress={this.cancelData}>
+                      <Text style={styles.exitButton}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View></View>)
+      }
+    }
+
+    setCuota() {
+        var base = Number(this.state.savedData[this.state.savedData.length-2]) 
+        var porcentaje = Number(this.state.savedData[this.state.savedData.length-1]) 
+        var cuota = base*porcentaje
+        cuota = Math.round(cuota * 100) / 100
+        return (<View style={styles.resumeView}>
+          <Text style={styles.showTitle}>{this.state.data[this.state.savedData.length].titulo}: {cuota}</Text>
+          {this.state.data[this.state.savedData.length].tipoexp=="N" &&
+          <Text style={styles.showSubTitle}>Ha obtenido una cuota de {cuota} para importe {this.state.importe} y porcentaje de {porcentaje}%</Text>}
+          {this.state.data[this.state.savedData.length].obligatorio=="N" &&
+          (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+            <Text style={styles.transcript}></Text>
+              <View style={styles.modalNavBarButtons}>
+              <TouchableOpacity onPress={() => this.saveData()}>
+                      <Text style={styles.saveButton}>Guardar</Text>
+                  </TouchableOpacity>
+                  <Icon
+                    name='window-close'
+                    type='font-awesome'
+                    color='#FFF'
+                    size={32}
+                  />
+                  <Icon
+                    name='window-close'
+                    type='font-awesome'
+                    color='#FFF'
+                    size={32}
+                  />
+                  <TouchableOpacity onPress={this.cancelData}>
+                      <Text style={styles.exitButton}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
+        </View>)
+    }
+
+    setVoiceControlView() {
+      if (this.state.data[this.state.savedData.length].idcampo.includes("base")) {
+        return this.setBase()
+      } else if (this.state.data[this.state.savedData.length].idcampo.includes("porcentaje")) {
+        return this.setPorcentaje()
+      } else if (this.state.data[this.state.savedData.length].idcampo.includes("cuota")) {
+        return this.setCuota()
+      }
+      return this.setVoiceControlOthers()
+    }
+
+    setVoiceControl() {
+      if (JSON.parse(this.state.is_recording) && this.state.savedData.length < this.state.data.length) {
+        return this.setVoiceControlView()
       } else if (this.state.savedData.length < this.state.data.length && JSON.parse(this.state.getData) && !JSON.parse(this.state.setData)) {
-        return (this.setDataModal())
+        return this.setDataModal()
       }
       return null
     }
@@ -616,7 +757,30 @@ class PetitionScreen extends Component {
         this.setState({ optionalValue: "" })
       }
       var array = this.state.savedData
-      array.push(this.state.interpretedData)
+      var idcampo = this.state.data[this.state.savedData.length].idcampo
+      this.setState({ is_recording: JSON.stringify(false) })
+      if (idcampo.includes("base")) {
+        var xdefecto = this.state.data[this.state.savedData.length].xdefecto
+        var x = 100 + Number(xdefecto)
+        var base = ( Number(this.state.savedData[this.state.savedData.length-1]) * 100 ) / x //redondear a 2 decimales
+        var finalBase = Math.round(base * 100) / 100
+        array.push(finalBase)
+      } else if (idcampo.includes("porcentaje")) {
+        var xdefecto = this.state.data[this.state.savedData.length].xdefecto
+        array.push(xdefecto)
+      } else if (idcampo.includes("cuota")) {
+        var base = Number(this.state.savedData[this.state.savedData.length-3]) 
+        var porcentaje = Number(this.state.data[this.state.savedData.length-2].xdefecto) 
+        var cuota = base*porcentaje
+        cuota = Math.round(cuota * 100) / 100
+        array.push(cuota)
+      } else {
+        array.push(this.state.interpretedData)
+      }
+      if (idcampo.includes("importe")) {
+        await AsyncStorage.setItem(this.state.id+".importe",  this.state.interpretedData )
+        this.setState({ importe: this.state.interpretedData })
+      }
       await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
       this.setState({ savedData: array })
       this.setState({ listenedData: "" })
@@ -626,7 +790,7 @@ class PetitionScreen extends Component {
     saveData = async () => {
       if (this.state.lastOptionalValue != this.state.optionalValue) {
         this.askSaveEnterprise()
-      } else if (this.state.data[this.state.savedData.length].tipoexp != "F" && this.state.interpretedData.toLowerCase() != this.state.listenedData.toLowerCase()) {
+      } else if (this.state.data[this.state.savedData.length].tipoexp != "F" && this.state.interpretedData.toLowerCase().split(' ').join("") != this.state.listenedData.toLowerCase().split(' ').join("") ) {
         this.askNewDataSave()
       } else {
         this.storeData()
@@ -895,6 +1059,15 @@ class PetitionScreen extends Component {
         paddingBottom: 20,
         paddingTop: 20
       },
+      showSubTitle: {
+        textAlign: 'center',
+        color: '#154360',
+        fontWeight: 'bold',
+        fontSize: 15,
+        width: "90%",
+        paddingBottom: 20,
+        paddingTop: 20
+      },
       centeredView: {
         flex: 1,
         justifyContent: "center",
@@ -973,7 +1146,7 @@ class PetitionScreen extends Component {
         paddingTop: 20,
         textAlign: "right",
         fontWeight: 'bold',
-        color: "gray",
+        color: "#761A1B",
         fontWeight: 'bold',
         fontStyle: 'italic',
       },

@@ -47,6 +47,7 @@ class PetitionListScreen extends Component {
     openDocument = async (item, index) => {
       await AsyncStorage.setItem("listid", this.state.type+"."+index)
       await AsyncStorage.setItem("data", JSON.stringify(item))
+      await AsyncStorage.setItem("historial", item.titulo)
       this.props.navigation.push("PetitionHistory")
     }
 

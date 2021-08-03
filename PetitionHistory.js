@@ -14,6 +14,7 @@ class PetitionHistoryScreen extends Component {
         config: "",
         userid: "",
         list: [],
+        history: ""
       }
       this.init()
     }
@@ -30,6 +31,9 @@ class PetitionHistoryScreen extends Component {
     async init() {
         await AsyncStorage.getItem("listid").then((value) => {
           this.setState({ id: value })
+        })
+        await AsyncStorage.getItem("historial").then((value) => {
+          this.setState({ history: value.toLowerCase() })
         })
         await AsyncStorage.getItem("type").then((value) => {
           this.setState({ type: value })
@@ -88,7 +92,7 @@ class PetitionHistoryScreen extends Component {
       return (
         <View style={{flex: 1, backgroundColor:"#FFF" }}>
           <View style={styles.navBarBackHeader}>
-          <View style={{ width: 70,textAlign:'center' }}>
+          <View style={{ width: 70, textAlign:'center' }}>
               <Icon
                 name='trash'
                 type='font-awesome'
@@ -96,7 +100,7 @@ class PetitionHistoryScreen extends Component {
                 size={30}
               />
             </View>
-            <Text style={styles.navBarHeader}>Historial de {this.state.type}</Text>
+            <Text style={styles.navBarHeader}>Todos los {this.state.history}</Text>
             <View style={{ width: 70,textAlign:'center' }}>
               <Icon
                 name='plus'
@@ -150,14 +154,14 @@ class PetitionHistoryScreen extends Component {
         backgroundColor:"#1A5276", 
         flexDirection:'row', 
         textAlignVertical: 'center',
-        height: 60
+        padding: 10
       },
       navBarHeader: {
         flex: 1,
         color: '#FFF',
         fontWeight: 'bold',
         fontSize: 20,
-        textAlign: 'center'
+        textAlign: 'center',
       },
       sections: {
         flex: 1,
