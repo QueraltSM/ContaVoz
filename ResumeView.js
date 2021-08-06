@@ -12,7 +12,6 @@ class ResumeViewScreen extends Component {
       this.state = {
         id: "",
         listid: "",
-        data: [],
         interpreptedData1: "",
         interpreptedData2: "",
         flatlistPos: 0,
@@ -35,15 +34,13 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem("listid").then((value) => {
         this.setState({ listid: value })
       })
-      await AsyncStorage.getItem("data").then((value) => {
-        this.setState({ data: JSON.parse(value).campos })
-      })
       await AsyncStorage.getItem("type").then((value) => {
         this.setState({ type: value })
       })
       await AsyncStorage.getItem(this.state.id+".savedData").then((value) => {
         if (value != null) {
           this.setState({ doc: JSON.parse(value) })
+          console.log(value)
         }
       })
       await AsyncStorage.getItem("cobros").then((value) => {
@@ -161,24 +158,24 @@ class ResumeViewScreen extends Component {
   
     setData = (item, index) => {
       return (<View>
-        {this.state.doc.length > 0 && this.state.doc[index] != "" && (<View>
+        {this.state.doc.length > 0 && this.state.doc[index].valor != "" && (<View>
         <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={25}
         /></Text>
         <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index]}</TextInput>
+        <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
         </View>
       </View>)}  
       </View>)
     }
 
     setCobroData = (item, index) => {
-      if (JSON.stringify(this.state.data[index].idcampo == JSON.stringify(this.state.cobroData[index].idcampo))) {
+      if (JSON.stringify(this.state.doc[index].idcampo == JSON.stringify(this.state.cobroData[index].idcampo))) {
         return (<View>
           {this.state.doc[index] != "" && (<View>
           <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={25}
           /></Text>
           <View style={{flexDirection:'row', width:"90%"}}>
-          <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index]}</TextInput>
+          <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
           </View>
         </View>)}  
         </View>)
@@ -271,7 +268,7 @@ class ResumeViewScreen extends Component {
             <FlatList 
               vertical
               showsVerticalScrollIndicator={false}
-              data={this.state.data}
+              data={this.state.doc}
               renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
             />
             <Text style={styles.transcript}></Text>

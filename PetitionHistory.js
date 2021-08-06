@@ -63,7 +63,7 @@ class PetitionHistoryScreen extends Component {
     }
   
     async openDocument(item) {
-      await AsyncStorage.setItem("id", item.id)
+      await AsyncStorage.setItem("id", item.time + "")
       this.props.navigation.push("Petition")
    
     }

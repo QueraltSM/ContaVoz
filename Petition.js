@@ -201,20 +201,19 @@ class PetitionScreen extends Component {
     }
 
     setFixedData() {
+      var listenedData = this.state.listenedData.toLowerCase()
+      var tipoexp = this.state.data[this.state.savedData.length].tipoexp
       var str = this.state.listenedData
+      this.setOptionalData("Empresa no registrada", "")
       for (let i = 0; i < this.state.words.length; i++) {
-        if (this.state.listenedData.toLowerCase().includes(this.state.words[i].key.toLowerCase())) {
-          if (this.state.data[this.state.savedData.length].tipoexp == "E" && JSON.parse(this.state.words[i].enterprise)) {
+        if (listenedData.includes(this.state.words[i].key.toLowerCase()) && tipoexp == "E" ) {
             this.setOptionalData("NIF asociado", this.state.words[i].value)
             str = this.state.words[i].key
-          } else {
-            str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
-          }
-        } else if (this.state.listenedData.toLowerCase().includes(this.state.words[i].value.toLowerCase())) {
-          if (this.state.data[this.state.savedData.length].tipoexp == "E" && JSON.parse(this.state.words[i].enterprise)) {
+          } else if (listenedData.includes(this.state.words[i].value.toLowerCase()) && tipoexp == "E") {
             this.setOptionalData("Entidad asociada", this.state.words[i].key)
             str = this.state.words[i].value
-          }
+        } else {
+            str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
         }
       }
       this.setState({ interpretedData: str })
@@ -239,7 +238,9 @@ class PetitionScreen extends Component {
       this.setState({
         listenedData: word[0],
       });
-      this.setState({listenedData:this.state.listenedData.split(' ').join("")})
+      if (this.state.data[this.state.savedData.length].tipoexp != "E") {
+        this.setState({listenedData:this.state.listenedData.split(' ').join("")})
+      }
       this.setState({getData: true})
       this.setListenedData()
     }
@@ -248,7 +249,7 @@ class PetitionScreen extends Component {
       this.setState({is_recording: JSON.stringify(true)})
       var idcampo = this.state.data[this.state.savedData.length].idcampo
       var xdefecto = this.state.data[this.state.savedData.length].xdefecto
-      if (((!idcampo.includes("base") || !idcampo.includes("porcentaje")) && xdefecto=="") || !idcampo.includes("cuota")) {
+      if (!idcampo.includes("base") && !idcampo.includes("porcentaje") && !idcampo.includes("cuota")) {
         this.setState({
           recognized: '',
           started: '',
@@ -272,7 +273,7 @@ class PetitionScreen extends Component {
     }
   
     noMoreAudio() {
-      this.showAlert("Error", "El documento de voz ha sido completado")
+      this.showAlert("Atención", "El documento de voz ha sido completado")
     }
 
     setMicrophoneIcon() {
@@ -280,18 +281,18 @@ class PetitionScreen extends Component {
         return <Icon
           name='microphone'
           type='font-awesome'
-          color='#FFF'
+          color='#1A5276'
           size={30}
           onPress={() => this.noMoreAudio()}
         />
       } else {
         var idcampo = this.state.data[this.state.savedData.length].idcampo
         var xdefecto = this.state.data[this.state.savedData.length].xdefecto
-        if (((idcampo.includes("base") || idcampo.includes("porcentaje")) && xdefecto!="") || idcampo.includes("cuota")) {
+        if (idcampo.includes("base") || idcampo.includes("porcentaje") || idcampo.includes("cuota")) {
           return <Icon
           name='microphone'
           type='font-awesome'
-          color='#FFF'
+          color='#1A5276'
           size={30}
           onPress={this._startRecognition.bind(this)}
         />
@@ -300,7 +301,7 @@ class PetitionScreen extends Component {
           return <Icon
             name='microphone-slash'
             type='font-awesome'
-            color='#FFF'
+            color='#B03A2E'
             size={30}
             onPress={this._stopRecognition.bind(this)}
           />
@@ -308,7 +309,7 @@ class PetitionScreen extends Component {
         return <Icon
           name='microphone'
           type='font-awesome'
-          color='#FFF'
+          color='#1A5276'
           size={30}
           onPress={this._startRecognition.bind(this)}
         />
@@ -530,26 +531,23 @@ class PetitionScreen extends Component {
       return (<View style={styles.resumeView}>
         <Text style={styles.showTitle}>Escuchando {this.state.data[this.state.savedData.length].titulo.toLowerCase()}...</Text>
         {this.state.data[this.state.savedData.length].tipoexp=="N" &&
-        <Text style={styles.showSubTitle}>Las cifras decimales debe decirlas con "punto", por ejemplo 144.99</Text>}
+        <Text style={styles.showTitle}>Las cifras decimales debe decirlas con "punto", por ejemplo 144.99</Text>}
+        <Text style={styles.changeTranscript}></Text>
+        <Text style={styles.showTitle}>Pulse el micrófono cuando termine de hablar</Text>
         {this.state.data[this.state.savedData.length].obligatorio=="N" &&
         (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
     }
 
     setBase() {
-      if (this.state.data[this.state.savedData.length].xdefecto == "") {
-          return this.setVoiceControlOthers()
-      } else {
-        var porcentaje = this.state.data[this.state.savedData.length].xdefecto
+        var porcentaje = this.state.data[this.state.savedData.length+1].xdefecto
         var x = 100 + Number(porcentaje)
         var base = ( Number(this.state.importe) * 100 ) / x
         var finalBase = Math.round(base * 100) / 100
         return (<View style={styles.resumeView}>
           <Text style={styles.showTitle}>{this.state.data[this.state.savedData.length].titulo}: {finalBase}</Text>
           {this.state.data[this.state.savedData.length].tipoexp=="N" &&
-          <Text style={styles.showSubTitle}>Ha obtenido una base de {finalBase} para importe {this.state.importe} y porcentaje de {porcentaje}%</Text>}
-          {this.state.data[this.state.savedData.length].obligatorio=="N" &&
-          (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+          <Text style={styles.showTitle}>Ha obtenido una base de {finalBase} para un importe {this.state.importe} y un porcentaje de {porcentaje}%</Text>}
             <Text style={styles.transcript}></Text>
               <View style={styles.modalNavBarButtons}>
                   <TouchableOpacity onPress={() => this.saveData()}>
@@ -567,61 +565,23 @@ class PetitionScreen extends Component {
                     color='#FFF'
                     size={32}
                   />
-                  <TouchableOpacity onPress={this.cancelData}>
-                      <Text style={styles.exitButton}>Cancelar</Text>
-                  </TouchableOpacity>
+                  {this.state.data[this.state.savedData.length].obligatorio=="N" &&<TouchableOpacity onPress={this.skipData}><Text style={styles.exitButton}>Omitir</Text></TouchableOpacity>}
                 </View>
         </View>)
-      }
-    }
-
-    setPorcentaje() {
-      if (this.state.data[this.state.savedData.length].xdefecto == "") {
-          return this.setVoiceControlOthers()
-      } else {
-        var xdefecto = this.state.data[this.state.savedData.length].xdefecto
-        return (<View style={styles.resumeView}>
-          <Text style={styles.showTitle}>{this.state.data[this.state.savedData.length].titulo}: {xdefecto}</Text>
-          {this.state.data[this.state.savedData.length].tipoexp=="N" &&
-          <Text style={styles.showSubTitle}>Tiene establecido un {xdefecto}% de porcentaje por defecto para importe {this.state.importe}</Text>}
-          {this.state.data[this.state.savedData.length].obligatorio=="N" &&
-          (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
-            <Text style={styles.transcript}></Text>
-              <View style={styles.modalNavBarButtons}>
-                  <TouchableOpacity onPress={() => this.saveData()}>
-                      <Text style={styles.saveButton}>Guardar</Text>
-                  </TouchableOpacity>
-                  <Icon
-                    name='window-close'
-                    type='font-awesome'
-                    color='#FFF'
-                    size={32}
-                  />
-                  <Icon
-                    name='window-close'
-                    type='font-awesome'
-                    color='#FFF'
-                    size={32}
-                  />
-                  <TouchableOpacity onPress={this.cancelData}>
-                      <Text style={styles.exitButton}>Cancelar</Text>
-                  </TouchableOpacity>
-                </View></View>)
-      }
     }
 
     setCuota() {
-        var base = Number(this.state.savedData[this.state.savedData.length-2]) 
-        var porcentaje = Number(this.state.savedData[this.state.savedData.length-1]) 
+        var base = Number(this.state.savedData[this.state.savedData.length-2].valor) 
+        var porcentaje = Number(this.state.data[this.state.savedData.length-1].xdefecto) 
         var cuota = base*porcentaje
         cuota = Math.round(cuota * 100) / 100
         return (<View style={styles.resumeView}>
-          <Text style={styles.showTitle}>{this.state.data[this.state.savedData.length].titulo}: {cuota}</Text>
+          {(this.state.data[this.state.savedData.length].idcampo.includes("porcentaje") && this.state.data[this.state.savedData.length].xdefecto != "")
+          && <Text style={styles.showTitle}>{this.state.data[this.state.savedData.length+1].titulo}: {cuota}</Text>
+          }
           {this.state.data[this.state.savedData.length].tipoexp=="N" &&
-          <Text style={styles.showSubTitle}>Ha obtenido una cuota de {cuota} para importe {this.state.importe} y porcentaje de {porcentaje}%</Text>}
-          {this.state.data[this.state.savedData.length].obligatorio=="N" &&
-          (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
-            <Text style={styles.transcript}></Text>
+          <Text style={styles.showTitle}>Ha obtenido una cuota de {cuota} para importe {this.state.importe} y porcentaje de {porcentaje}%</Text>}
+          <Text style={styles.transcript}></Text>
               <View style={styles.modalNavBarButtons}>
               <TouchableOpacity onPress={() => this.saveData()}>
                       <Text style={styles.saveButton}>Guardar</Text>
@@ -638,19 +598,15 @@ class PetitionScreen extends Component {
                     color='#FFF'
                     size={32}
                   />
-                  <TouchableOpacity onPress={this.cancelData}>
-                      <Text style={styles.exitButton}>Cancelar</Text>
-                  </TouchableOpacity>
+                {this.state.data[this.state.savedData.length].obligatorio=="N" &&<TouchableOpacity onPress={this.skipData}><Text style={styles.exitButton}>Omitir</Text></TouchableOpacity>}
                 </View>
         </View>)
     }
 
     setVoiceControlView() {
-      if (this.state.data[this.state.savedData.length].idcampo.includes("base")) {
+      if (this.state.data[this.state.savedData.length].idcampo.includes("base") && this.state.data[this.state.savedData.length+1].xdefecto != "") {
         return this.setBase()
-      } else if (this.state.data[this.state.savedData.length].idcampo.includes("porcentaje")) {
-        return this.setPorcentaje()
-      } else if (this.state.data[this.state.savedData.length].idcampo.includes("cuota")) {
+      } else if ((this.state.data[this.state.savedData.length].idcampo.includes("porcentaje") && this.state.data[this.state.savedData.length].xdefecto != "") || (this.state.data[this.state.savedData.length].idcampo.includes("cuota"))) {
         return this.setCuota()
       }
       return this.setVoiceControlOthers()
@@ -690,7 +646,6 @@ class PetitionScreen extends Component {
           key: this.state.interpretedData,
           value: this.state.optionalValue,
           time: new Date().getTime(),
-          enterprise: true
         })
       } else {
         var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.interpretedData.toLowerCase());
@@ -705,7 +660,7 @@ class PetitionScreen extends Component {
       const AsyncAlert = () => new Promise((resolve) => {
         Alert.alert(
           "Guardar empresa",
-          "¿Desea registrar los datos de esta empresa?",
+          "¿Desea guardar los datos de esta empresa en el diccionario?",
           [
             {
               text: 'Sí',
@@ -752,39 +707,49 @@ class PetitionScreen extends Component {
     }
 
     async storeData () {
+      var valor = this.state.interpretedData
       if (this.state.data[this.state.savedData.length].tipoexp == "E") {
         this.setState({ optionalData: "" })
         this.setState({ optionalValue: "" })
       }
       var array = this.state.savedData
       var idcampo = this.state.data[this.state.savedData.length].idcampo
-      this.setState({ is_recording: JSON.stringify(false) })
+      var xdefecto = this.state.data[this.state.savedData.length].xdefecto
       if (idcampo.includes("base")) {
-        var xdefecto = this.state.data[this.state.savedData.length].xdefecto
         var x = 100 + Number(xdefecto)
-        var base = ( Number(this.state.savedData[this.state.savedData.length-1]) * 100 ) / x //redondear a 2 decimales
+        var base = (Number(this.state.importe) * 100) / x
         var finalBase = Math.round(base * 100) / 100
-        array.push(finalBase)
-      } else if (idcampo.includes("porcentaje")) {
-        var xdefecto = this.state.data[this.state.savedData.length].xdefecto
-        array.push(xdefecto)
-      } else if (idcampo.includes("cuota")) {
-        var base = Number(this.state.savedData[this.state.savedData.length-3]) 
-        var porcentaje = Number(this.state.data[this.state.savedData.length-2].xdefecto) 
+        valor = finalBase
+      } else if (idcampo.includes("porcentaje") && xdefecto == "") {
+        valor = xdefecto
+      } else if (idcampo.includes("porcentaje") && xdefecto != "" || idcampo.includes("cuota")) {
+        var porcentaje = this.state.data[this.state.savedData.length-1].xdefecto
+        array.push({
+          idcampo:this.state.data[this.state.savedData.length-1].idcampo,
+          titulo: this.state.data[this.state.savedData.length-1].titulo,
+          tipoexp: this.state.data[this.state.savedData.length-1].tipoexp,
+          valor: porcentaje
+        })
+        var base = Number(this.state.savedData[this.state.savedData.length-2].valor) 
         var cuota = base*porcentaje
         cuota = Math.round(cuota * 100) / 100
-        array.push(cuota)
-      } else {
-        array.push(this.state.interpretedData)
+        valor = cuota
       }
+      array.push({
+        idcampo:this.state.data[this.state.savedData.length].idcampo,
+        titulo: this.state.data[this.state.savedData.length].titulo,
+        tipoexp: this.state.data[this.state.savedData.length].tipoexp,
+        valor: valor
+      })
       if (idcampo.includes("importe")) {
         await AsyncStorage.setItem(this.state.id+".importe",  this.state.interpretedData )
         this.setState({ importe: this.state.interpretedData })
       }
-      await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
+      this.setState({ is_recording: JSON.stringify(false) })
       this.setState({ savedData: array })
       this.setState({ listenedData: "" })
       this.setState({ interpretedData: "" })
+      await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
     }
 
     saveData = async () => {
@@ -827,7 +792,7 @@ class PetitionScreen extends Component {
               </View>
               <Text style={styles.transcript}></Text>
               <View style={styles.modalNavBarButtons}>
-                  <TouchableOpacity onPress={this.saveData}>
+                  <TouchableOpacity onPress={() => this.saveData()}>
                       <Text style={styles.saveButton}>Guardar</Text>
                   </TouchableOpacity>
                   <Icon
@@ -852,7 +817,7 @@ class PetitionScreen extends Component {
       </Modal>)
     }
   
-    startProgramm() {
+    startProgramm = () => {
       if (!JSON.parse(this.state.is_recording) && this.state.images.length == 0 && this.state.savedData.length==0) {
         return(
           <View style={styles.resumeView}>
@@ -883,7 +848,7 @@ class PetitionScreen extends Component {
     async deleteDoc() {
       var chargeDocs = []
       this.state.list.forEach((i) => {
-        if (i.id != this.state.id) {
+        if (i.time != this.state.id) {
           chargeDocs.push(i)
         }
       })
@@ -923,7 +888,7 @@ class PetitionScreen extends Component {
               <Icon
                 name='trash'
                 type='font-awesome'
-                color='#FFF'
+                color='#1A5276'
                 size={30}
                 onPress={this.askDeleteDoc}
               />
@@ -932,7 +897,7 @@ class PetitionScreen extends Component {
               <Icon
                 name='camera'
                 type='font-awesome'
-                color='#FFF'
+                color='#1A5276'
                 size={30}
                 onPress={this.takePhoto}
               />
@@ -944,7 +909,7 @@ class PetitionScreen extends Component {
               <Icon
                 name='image'
                 type='font-awesome'
-                color='#FFF'
+                color='#1A5276'
                 size={30}
                 onPress={this.goGallery}
               />
@@ -955,7 +920,7 @@ class PetitionScreen extends Component {
               <Icon
                 name='check-square'
                 type='font-awesome'
-                color='#FFF'
+                color='#1A5276'
                 size={30}
                 onPress={this.seeDocument}
               />
@@ -990,7 +955,7 @@ class PetitionScreen extends Component {
     navBarBackHeader: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor:"#1A5276", 
+        backgroundColor:"white", 
         flexDirection:'row', 
         textAlignVertical: 'center',
         height: 60
@@ -1087,7 +1052,7 @@ class PetitionScreen extends Component {
         shadowOpacity: 0.25,
         shadowRadius: 4,
         elevation: 5,
-        width:"80%",
+        width:"90%",
       },
       footBar: {
         alignItems: 'center',
@@ -1097,7 +1062,7 @@ class PetitionScreen extends Component {
         textAlignVertical: 'center',
       },
       iconsView: {
-        backgroundColor: "#1A5276",
+        backgroundColor: "white",
         borderRadius: 10,
         paddingTop: 15,
         paddingLeft: 15,
@@ -1134,7 +1099,7 @@ class PetitionScreen extends Component {
         fontWeight: 'bold',
       },
       exitButton: {
-        fontSize: 17,
+        fontSize: 22,
         textAlign: "center",
         fontWeight: 'bold',
         color: "#B03A2E",
@@ -1162,12 +1127,14 @@ class PetitionScreen extends Component {
         fontWeight: 'bold',
         color: "#2E8B57",
         fontWeight: 'bold',
+        fontSize: 22,
       },
       exitNewValue: {
         fontSize: 17,
         textAlign: "left",
         color: "#B03A2E",
         fontWeight: 'bold',
+        fontSize: 22,
       },
       resumeView: {
         paddingTop: 30,

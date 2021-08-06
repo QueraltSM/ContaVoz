@@ -15,7 +15,6 @@ class DictionaryViewScreen extends Component {
         addValue: "",
         showForm: false,
         showSeach: false,
-        checked: false,
         keyword: ""
       };
       this.init()
@@ -52,8 +51,7 @@ class DictionaryViewScreen extends Component {
         arrayWords.push({
           key: this.state.addKey,
           value: this.state.addValue,
-          time: new Date().getTime(),
-          enterprise: this.state.checked
+          time: new Date().getTime()
         })
       } else {
         var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.addKey.toLowerCase());
@@ -64,6 +62,18 @@ class DictionaryViewScreen extends Component {
       await AsyncStorage.setItem(this.state.id+".words", JSON.stringify(arrayWords))
     }
   
+    _searchWord = async () => {
+      await this.showAll()
+      var filteredWords = []
+      this.state.words.forEach(i => {
+        if (i.key.toLowerCase().includes(this.state.keyword.toLowerCase()) || i.value.toLowerCase().includes(this.state.keyword.toLowerCase())) {
+          filteredWords.push(i)
+        }
+      })
+      this.setState({ words: filteredWords })
+      this.setState({ keyword: "" })
+    }
+
     _addWord = async () => {
       if (this.state.addKey == "" || this.state.addValue == "") {
         this.showAlert("Error", "Complete todos los campos")
@@ -71,7 +81,6 @@ class DictionaryViewScreen extends Component {
         await this.pushArrayWords()
         this.setState({ addKey: "" })
         this.setState({ addValue: "" })
-        this.setState({ checked: JSON.parse(false) })
         this.formAction()
       }
     }
@@ -84,53 +93,22 @@ class DictionaryViewScreen extends Component {
       this.setState({showSeach: !this.state.showSeach})
     }
   
-    setMenuButtons() {
+    setAddWordBox() {
       if (this.state.showForm) {
         return(
           <View style={styles.dictionaryView}>
-            <View style={{ width: "90%", flexDirection:'row', justifyContent: 'flex-end'}}>
-              <TouchableOpacity onPress={() => this.formAction()}>
-                  <Icon
-                    name='times'
-                    type='font-awesome'
-                    color='#B03A2E'
-                    size={30}
-                  />
-                </TouchableOpacity>
-            </View>
             <Text style={styles.resumeText}>Palabra:</Text>
             <TextInput value={this.state.addKey} multiline={true} style={styles.changeTranscript} placeholder="Macro" onChangeText={addKey => this.setState({addKey})}></TextInput>
             <Text style={styles.resumeText}>Valor que debe tomar:</Text>
             <TextInput value={this.state.addValue} multiline={true} style={styles.changeTranscript} placeholder="Makro" onChangeText={addValue => this.setState({addValue})}></TextInput>
-            <View style={{flexDirection:'row',alignItems:'center',justifyContent:'center'}}>
-            <CheckBox
-              size={30}
-              title={<Text style={styles.enterpriseLabel}> Es una empresa</Text>}
-              checked={this.state.checked}
-              onPress={() => this.setState({checked: !this.state.checked})}
-              checkedColor="#154360"
-              containerStyle={{ backgroundColor: "white", borderWidth: 0 }}
-            />
-            </View>
             <Text style={styles.transcript}></Text>
-            <TouchableOpacity onPress={this._addWord}>
+            <TouchableOpacity onPress={() => this._addWord()}>
               <Text style={styles.saveNewValue}>Guardar registro</Text>
             </TouchableOpacity>
             <Text style={styles.transcript}></Text>
           </View>
         )
       }
-      return (
-        <View style={{ width: "90%", flexDirection:'row', justifyContent: 'flex-end'}}>
-        <TouchableOpacity onPress={() => this.formAction()}>
-            <Icon
-              name='plus'
-              type='font-awesome'
-              color='#2E8B57'
-              size={28}
-            />
-          </TouchableOpacity>
-      </View>)
     }
   
     setMenu() {
@@ -190,42 +168,90 @@ class DictionaryViewScreen extends Component {
       await AsyncStorage.setItem(this.state.id+".words", JSON.stringify(arrayWords))
     }
 
-    setSeachBox() {
-      if (this.state.showSeach) {
-        return (<View style={styles.dictionaryView}>
-          <View style={{ width: "90%", flexDirection:'row', justifyContent: 'flex-end'}}>
-            <TouchableOpacity onPress={() => this.searchAction()} style={styles.searchButton}>
-               <Icon
-                 name='search'
-                 type='font-awesome'
-                 color='#2874A6'
-                 size={28}
-               />
-             </TouchableOpacity>
-          </View>
-          <Text style = { styles.resumeText }>Buscar palabra:</Text>
-          <TextInput multiline={true} style = { styles.resumeText } placeholder="Makro" onChangeText={(keyword) => this.setState({keyword: keyword})}  
-           value={this.state.alias}/> 
-         </View>)
-      }
+    setMenuButtons() {
       return (
-        <View style={{ width: "90%", flexDirection:'row', justifyContent: 'flex-end'}}>
-        <TouchableOpacity onPress={() => this.searchAction()}>
+        <View style={{ width: "90%", flexDirection:'row', justifyContent: 'flex-end', paddingTop: 20}}>
+            {this.state.showForm && <TouchableOpacity onPress={() => this.formAction()}>
+              <Icon
+                name='times'
+                type='font-awesome'
+                color='#B03A2E'
+                size={28}
+              />
+            </TouchableOpacity>}
+            {!this.state.showForm && <TouchableOpacity onPress={() => this.formAction()}>
+            <Icon
+              name='plus'
+              type='font-awesome'
+              color='#2E8B57'
+              size={28}
+            />
+          </TouchableOpacity>}
+          <Icon
+              name='search'
+              type='font-awesome'
+              color='white'
+              size={28}
+            />
+          {!this.state.showSeach && <TouchableOpacity onPress={() => this.searchAction()}>
             <Icon
               name='search'
               type='font-awesome'
-              color='#2874A6'
+              color='#2E8B57'
+              size={27}
+            />
+          </TouchableOpacity>}
+          {this.state.showSeach && <TouchableOpacity onPress={() => this.searchAction()}>
+              <Icon
+                name='times'
+                type='font-awesome'
+                color='#B03A2E'
+                size={28}
+              />
+            </TouchableOpacity>}
+            <Icon
+              name='search'
+              type='font-awesome'
+              color='white'
               size={28}
             />
-          </TouchableOpacity>
-      </View>)
+            <TouchableOpacity onPress={() => this.showAll()}>
+              <Icon
+                name='list'
+                type='font-awesome'
+                color='#2E8B57'
+                size={28}
+              />
+            </TouchableOpacity>
+        </View>)
+    }
+
+    async showAll() {
+      await AsyncStorage.getItem(this.state.id+".words").then((value) => {
+        if (value != null) {
+          this.setState({ words: JSON.parse(value).reverse() })
+        }
+      })
+    }
+
+    setSeachBox() {
+      if (this.state.showSeach) {
+        return (<View style={styles.dictionaryView}>
+          <Text style = { styles.resumeText }>Buscar palabra:</Text>
+          <TextInput multiline={true} style = { styles.changeTranscript } placeholder="Makro" onChangeText={(keyword) => this.setState({keyword: keyword})}  
+           value={this.state.keyword}/> 
+          <Text style={styles.transcript}></Text>
+            <TouchableOpacity onPress={() => this._searchWord()}>
+              <Text style={styles.saveNewValue}>Buscar</Text>
+            </TouchableOpacity>
+         </View>)
+      }
     }
   
     setWords() {
       if (this.state.words.length > 0) {
         return (
           <View style={styles.resumeView}>
-            {this.setSeachBox()}
             <Text style={styles.showTitle}>Listado de palabras</Text>
             <FlatList 
               vertical
@@ -271,6 +297,8 @@ class DictionaryViewScreen extends Component {
           {this.setMenu()}
           <View style={{paddingBottom: 50}}>
             {this.setMenuButtons()}
+            {this.setAddWordBox()}
+            {this.setSeachBox()}
             {this.setWords()}
           </View>
           </ScrollView>
@@ -287,13 +315,6 @@ class DictionaryViewScreen extends Component {
         paddingLeft: 40,
         backgroundColor: "#FFF",
         paddingBottom: 100
-    },
-    enterpriseLabel: {
-      textAlign: 'left',
-      color: '#154360',
-      fontWeight: 'bold',
-      fontSize: 18,
-      width: "90%",
     },
     showTitle:{
         textAlign: 'center',
