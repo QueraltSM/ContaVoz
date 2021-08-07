@@ -26,7 +26,10 @@
     "react-native-voice": "^0.3.0",
     "react-native-web": "~0.13.12",
     "react-navigation": "^4.4.4",
-    "react-navigation-stack": "^2.10.4"
+    "react-navigation-stack": "^2.10.4",
+    "words-to-numbers": "^1.5.1",
+    "words-to-numbers-es": "^0.1.0",
+    "written-number": "^0.11.1"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0"
