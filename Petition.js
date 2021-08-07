@@ -35,7 +35,6 @@ class PetitionScreen extends Component {
         userid: "",
         flatlistPos: 0,
         saved: false,
-        importe:""
       }
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
       Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
@@ -65,9 +64,6 @@ class PetitionScreen extends Component {
       })
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
-      })
-      await AsyncStorage.getItem(this.state.id+".importe").then((value) => {
-        this.setState({ importe: value })
       })
       await AsyncStorage.getItem(this.state.id+".saved").then((value) => {
         if (value != null) {
@@ -297,7 +293,7 @@ class PetitionScreen extends Component {
 
     setMicrophoneIcon() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      if (lastSaved==-1) {
+      if (this.state.savedData.length>0 && lastSaved==-1) {
         return <Icon
           name='microphone'
           type='font-awesome'
@@ -562,14 +558,15 @@ class PetitionScreen extends Component {
 
     setBase() {
         var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-        var porcentaje = this.state.data[lastSaved+1].xdefecto
+        var importe = Number(this.state.savedData[lastSaved-1].valor)
+        var porcentaje = this.state.savedData[lastSaved+1].valor
         var x = 100 + Number(porcentaje)
-        var base = ( Number(this.state.importe) * 100 ) / x
+        var base = ( importe * 100 ) / x
         var finalBase = Math.round(base * 100) / 100
         return (<View style={styles.resumeView}>
           <Text style={styles.showTitle}>{this.state.data[lastSaved].titulo}: {finalBase}</Text>
           {this.state.data[lastSaved].tipoexp=="N" &&
-          <Text style={styles.showTitle}>Ha obtenido una base de {finalBase} para un importe {this.state.importe} y un porcentaje de {porcentaje}%</Text>}
+          <Text style={styles.showTitle}>Ha obtenido una base de {finalBase} para un importe {importe} y un porcentaje de {porcentaje}%</Text>}
             <Text style={styles.transcript}></Text>
               <View style={styles.modalNavBarButtons}>
                   <TouchableOpacity onPress={() => this.saveData()}>
@@ -592,6 +589,12 @@ class PetitionScreen extends Component {
         </View>)
     }
 
+    skipPorcentaje = async () => {
+      this.setState({ listenedData: "" })
+      this.setState({ interpretedData: "" })  
+      this.setState({ is_recording: JSON.parse(false) })
+    }
+
     setPorcentaje() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       return (<View style={styles.resumeView}>
@@ -601,22 +604,21 @@ class PetitionScreen extends Component {
         <Text style={styles.changeTranscript}></Text>
         <Text style={styles.showTitle}>Pulse el micrófono cuando termine de hablar</Text>
         {this.state.data[lastSaved].obligatorio=="N" &&
-        (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+        (<View><TouchableOpacity onPress={this.skipPorcentaje}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
     }
 
     setCuota() {
         var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+        var importe = Number(this.state.savedData[lastSaved-3].valor)
         var base = Number(this.state.savedData[lastSaved-2].valor) 
         var porcentaje = Number(this.state.savedData[lastSaved-1].valor) 
         var cuota = base*porcentaje
         cuota = Math.round(cuota * 100) / 100
         return (<View style={styles.resumeView}>
-          {(this.state.data[lastSaved].idcampo.includes("porcentaje") && this.state.data[lastSaved].xdefecto != "")
-          && <Text style={styles.showTitle}>{this.state.data[lastSaved+1].titulo}: {cuota}</Text>
-          }
+          <Text style={styles.showTitle}>{this.state.savedData[lastSaved].titulo}: {cuota}</Text>
           {this.state.data[lastSaved].tipoexp=="N" &&
-          <Text style={styles.showTitle}>Ha obtenido una cuota de {cuota} para importe {this.state.importe} y porcentaje de {porcentaje}%</Text>}
+          <Text style={styles.showTitle}>Ha obtenido una cuota de {cuota} para importe {importe} y porcentaje de {porcentaje}%</Text>}
           <Text style={styles.transcript}></Text>
               <View style={styles.modalNavBarButtons}>
               <TouchableOpacity onPress={() => this.saveData()}>
@@ -642,7 +644,7 @@ class PetitionScreen extends Component {
     setVoiceControlView() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (this.state.data[lastSaved].idcampo.includes("base")) {
-        if (this.state.data[lastSaved+1].xdefecto != "") {
+        if (this.state.data[lastSaved+1].xdefecto != "" || this.state.savedData[lastSaved+1].valor != null) {
           return this.setBase()
         } else {
           return this.setPorcentaje()
@@ -760,32 +762,34 @@ class PetitionScreen extends Component {
       var idcampo = this.state.data[lastSaved].idcampo
       var xdefecto = this.state.data[lastSaved].xdefecto
       if (idcampo.includes("base")) {
+        var importe = this.state.savedData[lastSaved-1].valor
         var x = 100 + Number(xdefecto)
-        var base = (Number(this.state.importe) * 100) / x
+        var base = (Number(importe) * 100) / x
         var finalBase = Math.round(base * 100) / 100
         valor = finalBase
       } else if (idcampo.includes("porcentaje") && xdefecto == "") {
         valor = xdefecto
       } else if (idcampo.includes("porcentaje") && xdefecto != "" || idcampo.includes("cuota")) {
         var porcentaje = this.state.data[lastSaved-1].xdefecto
-        array.push({
-          idcampo:this.state.data[lastSaved-1].idcampo,
-          titulo: this.state.data[lastSaved-1].titulo,
-          tipoexp: this.state.data[lastSaved-1].tipoexp,
-          valor: porcentaje
-        })
         var base = Number(this.state.savedData[lastSaved-2].valor) 
         var cuota = base*porcentaje
         cuota = Math.round(cuota * 100) / 100
         valor = cuota
       }
-      array[lastSaved].valor = valor
       if (idcampo.includes("importe")) {
-        await AsyncStorage.setItem(this.state.id+".importe",  this.state.interpretedData )
-        this.setState({ importe: this.state.interpretedData })
+        var number = evaluate(valor)
+        if (number>0 || Number(valor)>0) {
+          array[lastSaved].valor = valor
+          await AsyncStorage.setItem(this.state.id+".importe",  this.state.interpretedData )
+        } else {
+          this.showAlert("Error", "Diga un número válido")
+        }
+      } else {
+        array[lastSaved].valor = valor
       }
       this.resetListening()
       this.setState({ savedData: array })
+      console.log(JSON.stringify(array))
       await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
     }
 
@@ -826,20 +830,16 @@ class PetitionScreen extends Component {
     }
 
     async savePercentage() {
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+      var lastSaved = Number(this.state.savedData.findIndex(obj => obj.valor == null))+1
       var array = this.state.savedData
-      var valor = 0
+      var valor = this.state.listenedData
       var number = evaluate(this.state.listenedData);
       if (number>0) {
         valor = number
       }
-      array.push({
-        idcampo:this.state.data[lastSaved-1].idcampo,
-        titulo: this.state.data[lastSaved-1].titulo,
-        tipoexp: this.state.data[lastSaved-1].tipoexp,
-        valor: valor
-      })
+      array[lastSaved].valor = valor
       await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
+      this.setState({savedData: array})
       this.resetListening()
     }
 
