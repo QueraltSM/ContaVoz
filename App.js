@@ -17,7 +17,7 @@ class LaunchScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      saveData: false,
+      isUserLoggedIn: false,
       idempresa: "",
       userid: ""
     }
@@ -31,13 +31,13 @@ class LaunchScreen extends Component {
     await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: JSON.parse(value) })
     })
-    await AsyncStorage.getItem("saveData").then((value) => {
+    await AsyncStorage.getItem("isUserLoggedIn").then((value) => {
       if (value != null) {
-         this.setState({ saveData: JSON.parse(value) })
+         this.setState({ isUserLoggedIn: JSON.parse(value) })
       }
     })
     var page = "Login"
-    if (JSON.parse(this.state.saveData)) {
+    if (JSON.parse(this.state.isUserLoggedIn)) {
       page = "Main"
     }
     this.props.navigation.push(page)

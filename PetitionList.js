@@ -8,7 +8,6 @@ class PetitionListScreen extends Component {
     constructor(props) {
       super(props);
       this.state = {
-        type: "",
         config: "",
         lists: []
       }
@@ -16,9 +15,6 @@ class PetitionListScreen extends Component {
     }
 
     async init() {
-      await AsyncStorage.getItem("type").then((value) => {
-        this.setState({ type: value })
-      })
       await AsyncStorage.getItem("config").then((value) => {
         this.setState({ config: JSON.parse(value) })
       })
@@ -45,7 +41,7 @@ class PetitionListScreen extends Component {
     }
   
     openDocument = async (item, index) => {
-      await AsyncStorage.setItem("listid", this.state.type+"."+index)
+      await AsyncStorage.setItem("petitionType", this.state.type+"."+index)
       await AsyncStorage.setItem("data", JSON.stringify(item))
       await AsyncStorage.setItem("historial", item.titulo)
       this.props.navigation.push("PetitionHistory")
@@ -60,7 +56,7 @@ class PetitionListScreen extends Component {
       return (
         <View style={{flex: 1, backgroundColor:"#FFF" }}>
           <View style={styles.navBarBackHeader}>
-            <Text style={styles.navBarHeader}>Tipos de {this.state.type}</Text>
+            <Text style={styles.navBarHeader}>Tipos de documentos</Text>
           </View>
           <ScrollView vertical style={{backgroundColor: "#FFF" }}>
           <View style={styles.sections}>

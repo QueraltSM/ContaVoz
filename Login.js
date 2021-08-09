@@ -8,9 +8,9 @@ class LoginScreen extends Component {
     constructor(props) {
       super(props);
       this.state = { 
-        alias: "", 
+        company: "", 
         user: "",
-        pass: "",
+        password: "",
         token: "",
         fullname: "",
         idempresa: "",
@@ -22,9 +22,9 @@ class LoginScreen extends Component {
     }
   
     async init () {
-      await AsyncStorage.getItem("alias").then((value) => {
+      await AsyncStorage.getItem("company").then((value) => {
         if (value != null) {
-          this.setState({ alias: value })
+          this.setState({ company: value })
         }
       })
       await AsyncStorage.getItem("user").then((value) => {
@@ -32,9 +32,9 @@ class LoginScreen extends Component {
           this.setState({ user: value })
         }
       })
-      await AsyncStorage.getItem("pass").then((value) => {
+      await AsyncStorage.getItem("password").then((value) => {
         if (value != null) {
-          this.setState({ pass: value })
+          this.setState({ password: value })
         }
       })
     }
@@ -57,7 +57,7 @@ class LoginScreen extends Component {
       var error = ""
       switch(error_code) {
         case "1":
-          error = "Alias incorrecto"
+          error = "Compañía incorrecta"
           break;
         case "2":
           error = "Usuario o contraseña incorrectas"
@@ -79,7 +79,7 @@ class LoginScreen extends Component {
   
   
     async saveUser() {
-      await AsyncStorage.setItem('saveData', JSON.stringify(true));
+      await AsyncStorage.setItem('isUserLoggedIn', JSON.stringify(true));
       this.getConfig()
       this.goHome()
     }
@@ -107,9 +107,9 @@ class LoginScreen extends Component {
     }
   
     async goHome() {
-      await AsyncStorage.setItem('alias', this.state.alias);
+      await AsyncStorage.setItem('company', this.state.company);
       await AsyncStorage.setItem('user', this.state.user);
-      await AsyncStorage.setItem('pass', this.state.pass);
+      await AsyncStorage.setItem('password', this.state.password);
       await AsyncStorage.setItem('fullname', this.state.fullname);
       await AsyncStorage.setItem('idempresa',  this.state.idempresa + "");
       await AsyncStorage.setItem('token',  this.state.token);
@@ -118,15 +118,16 @@ class LoginScreen extends Component {
     }
   
     login = async () => {
-      if (this.state.alias != undefined && this.state.user != undefined && this.state.pass != undefined) {
+      if (this.state.company != undefined && this.state.user != undefined && this.state.password != undefined) {
         const requestOptions = {
           method: 'POST',
-          body: JSON.stringify({aliasDb: this.state.alias, user: this.state.user, password: this.state.pass, appSource: "Disoft"})
+          body: JSON.stringify({aliasDb: this.state.company, user: this.state.user, password: this.state.password, appSource: "Disoft"})
         };
         fetch('https://app.dicloud.es/login.asp', requestOptions)
           .then((response) => response.json())
           .then((responseJson) => {
             let error = JSON.stringify(responseJson.error_code)
+            console.log(JSON.stringify(responseJson))
             if (error == 0) {
               this.setState({fullname: JSON.parse(JSON.stringify(responseJson.fullName))})
               this.setState({token: JSON.parse(JSON.stringify(responseJson.token))})
@@ -157,9 +158,9 @@ class LoginScreen extends Component {
           </View>
           <TextInput  
             style = { styles.textBox }
-            placeholder="Alias"  
-            onChangeText={(alias) => this.setState({alias})}  
-            value={this.state.alias}
+            placeholder="Compañía"  
+            onChangeText={(company) => this.setState({company})}  
+            value={this.state.company}
           /> 
           <TextInput  
             style = { styles.textBox }
@@ -172,8 +173,8 @@ class LoginScreen extends Component {
               style = { styles.textBox }
               placeholder="Contraseña"
               secureTextEntry = { this.state.hidePassword }
-              onChangeText={(pass) => this.setState({pass})}  
-              value={this.state.pass}
+              onChangeText={(password) => this.setState({password})}  
+              value={this.state.password}
             />  
             <TouchableOpacity activeOpacity = { 0.8 } style = { styles.visibilityBtn } onPress = { this.managePasswordVisibility }>
               {this.state.hidePassword &&

@@ -141,7 +141,7 @@ class ImageViewerScreen extends Component {
       await AsyncStorage.setItem(this.state.id+".images", JSON.stringify(arrayImages))
       this.setState({images: arrayImages})
       if (this.state.images.length == 0) {
-        this.props.navigation.push("Petition", {id: this.state.id, type: this.state.type })
+        this.props.navigation.push("Petition", {id: this.state.id })
       } else {
         this.goBack()
       }

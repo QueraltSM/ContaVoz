@@ -9,9 +9,10 @@ class PetitionHistoryScreen extends Component {
     constructor(props) {
       super(props);
       this.state = {
-        id:  "",
-        type:  "",
+        type: "",
+        petitionType:  "",
         config: "",
+        idempresa: "",
         userid: "",
         list: [],
         history: ""
@@ -29,19 +30,22 @@ class PetitionHistoryScreen extends Component {
     }
   
     async init() {
-        await AsyncStorage.getItem("listid").then((value) => {
-          this.setState({ id: value })
+        await AsyncStorage.getItem("type").then((value) => {
+          this.setState({ type: value })
+        })
+        await AsyncStorage.getItem("petitionType").then((value) => {
+          this.setState({ petitionType: value })
         })
         await AsyncStorage.getItem("historial").then((value) => {
           this.setState({ history: value.toLowerCase() })
         })
-        await AsyncStorage.getItem("type").then((value) => {
-          this.setState({ type: value })
-        })
-        await AsyncStorage.getItem(this.state.id).then((value) => {
+        await AsyncStorage.getItem(this.state.petitionType).then((value) => {
             if (value != null) {
                 this.setState({ list: JSON.parse(value) })
             }
+        })
+        await AsyncStorage.getItem("idempresa").then((value) => {
+          this.setState({ idempresa: value })
         })
         await AsyncStorage.getItem("userid").then((value) => {
           this.setState({ userid: value })
@@ -51,19 +55,18 @@ class PetitionHistoryScreen extends Component {
     addPetition = async () => {
       var array = this.state.list
       var today = new Date()
-      var type = this.state.type.substring(0, 1).toUpperCase()
       var document = {
-        id: type + "_"+ this.state.userid+"-"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2),
-        name: ("0" + (today.getDate())).slice(-2)+"/"+("0" + (today.getMonth() + 1)).slice(-2)+"/"+today.getFullYear()+" a las " + ("0" + (today.getHours())).slice(-2)+ ":"+("0" + (today.getMinutes())).slice(-2),
+        id: this.state.type + "_"+ this.state.idempresa+"-"+this.state.userid+"-"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2) + ":" + ("0" + (today.getSeconds())).slice(-2),
+        name: ("0" + (today.getDate())).slice(-2)+"/"+("0" + (today.getMonth() + 1)).slice(-2)+"/"+today.getFullYear()+" a las " + ("0" + (today.getHours())).slice(-2)+ ":"+("0" + (today.getMinutes())).slice(-2)+ ":" + ("0" + (today.getSeconds())).slice(-2),
         time: new Date().getTime()
       }
       array.push(document)
-      await AsyncStorage.setItem(this.state.id, JSON.stringify(array))
+      await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(array))
       this.openDocument(document)
     }
   
     async openDocument(item) {
-      await AsyncStorage.setItem("id", item.time + "")
+      await AsyncStorage.setItem("petitionID", JSON.stringify(item))
       this.props.navigation.push("Petition")
    
     }

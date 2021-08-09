@@ -14,8 +14,9 @@ class PetitionScreen extends Component {
       super(props);
       this.state = {
         title:"",
-        listid: "",
-        id: "",
+        petitionType: "",
+        petitionID: "",
+        petitionTime: "",
         data: [],
         recognized: '',
         started: '',
@@ -52,11 +53,12 @@ class PetitionScreen extends Component {
     }
   
     async init() {
-      await AsyncStorage.getItem("listid").then((value) => {
-        this.setState({ listid: value })
+      await AsyncStorage.getItem("petitionType").then((value) => {
+        this.setState({ petitionType: value })
       })
-      await AsyncStorage.getItem("id").then((value) => {
-        this.setState({ id: value })
+      await AsyncStorage.getItem("petitionID").then((value) => {
+        this.setState({ petitionID: JSON.parse(value).id })
+        this.setState({ petitionTime: JSON.parse(value).time })
       })
       await AsyncStorage.getItem("data").then((value) => {
         this.setState({ title: JSON.parse(value).titulo }) 
@@ -65,12 +67,12 @@ class PetitionScreen extends Component {
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
       })
-      await AsyncStorage.getItem(this.state.id+".saved").then((value) => {
+      await AsyncStorage.getItem(this.state.petitionID+".saved").then((value) => {
         if (value != null) {
           this.setState({ saved: JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.id+".savedData").then((value) => {
+      await AsyncStorage.getItem(this.state.petitionID+".savedData").then((value) => {
         if (value != null) {
           this.setState({ savedData: JSON.parse(value) })
         }
@@ -82,10 +84,11 @@ class PetitionScreen extends Component {
             idcampo:i.idcampo,
             titulo: i.titulo,
             tipoexp: i.tipoexp,
+            xdefecto: i.xdefecto,
             valor: null
           })
         })
-        await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
+        await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
         this.setState({ savedData: array })
       }
       await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
@@ -93,12 +96,12 @@ class PetitionScreen extends Component {
           this.setState({ words: JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.id+".images").then((value) => {
+      await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
         if (value != null) {
           this.setState({ images: JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.listid).then((value) => {
+      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
         if (value != null) {
           this.setState({ list: JSON.parse(value) })
         }
@@ -361,14 +364,14 @@ class PetitionScreen extends Component {
                   console.log(JSON.stringify(response));
                 } else {
                   var arrayImages = this.state.images
-                  var newID = this.state.id+"_"+(this.state.images.length+1)
+                  var newID = this.state.petitionID+"_"+(this.state.images.length+1)
                   var uri = JSON.stringify(response.assets[0]["uri"])
                   arrayImages.push({
                     id: newID,
                     uri: uri
                   })
                   this.setState({images: arrayImages})
-                  this.saveInMemory(this.state.id+".images", JSON.stringify(arrayImages))
+                  this.saveInMemory(this.state.petitionID+".images", JSON.stringify(arrayImages))
                 }
               })
             } else {
@@ -402,13 +405,13 @@ class PetitionScreen extends Component {
           } else {
             var arrayImages = this.state.images
             var uri = JSON.stringify(response.assets[0]["uri"])
-            var newID = this.state.id+"_"+(this.state.images.length+1)
+            var newID = this.state.petitionID+"_"+(this.state.images.length+1)
             arrayImages.push({
               id: newID,
               uri: uri
             })
             this.setState({images: arrayImages})
-            this.saveInMemory(this.state.id+".images", JSON.stringify(arrayImages))
+            this.saveInMemory(this.state.petitionID+".images", JSON.stringify(arrayImages))
           }
         })
       } else {
@@ -536,7 +539,7 @@ class PetitionScreen extends Component {
     skipData = async () => {
       var array = this.state.savedData
       array.push("")
-      await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
       this.setState({ savedData: array })
       this.setState({ listenedData: "" })
       this.setState({ interpretedData: "" })
@@ -557,9 +560,16 @@ class PetitionScreen extends Component {
     }
 
     setBase() {
+      console.log("::setbase::")
         var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+        console.log("lastSaved:"+lastSaved)
         var importe = Number(this.state.savedData[lastSaved-1].valor)
+        console.log("importe:"+importe)
         var porcentaje = this.state.savedData[lastSaved+1].valor
+        if (porcentaje == null) {
+          porcentaje =  this.state.data[lastSaved+1].xdefecto
+        }
+        console.log("porcentaje:"+porcentaje)
         var x = 100 + Number(porcentaje)
         var base = ( importe * 100 ) / x
         var finalBase = Math.round(base * 100) / 100
@@ -589,10 +599,42 @@ class PetitionScreen extends Component {
         </View>)
     }
 
-    skipPorcentaje = async () => {
+    async setNullPorcentaje() {
+      var array = this.state.savedData
+      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+      array[lastSaved].valor = ""
+      array[lastSaved+1].valor = ""
+      array[lastSaved+2].valor = ""
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
+      this.setState({ savedData: array })
       this.setState({ listenedData: "" })
       this.setState({ interpretedData: "" })  
       this.setState({ is_recording: JSON.parse(false) })
+    }
+
+    async skipPorcentaje() {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "Omitir porcentaje",
+          "Si omite este dato no se podrán calcular la base y la cuota. ¿Está seguro de que desea omitir el porcentaje?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(this.setNullPorcentaje());
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve(this.setPorcentaje());
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+        await AsyncAlert();
     }
 
     setPorcentaje() {
@@ -604,7 +646,7 @@ class PetitionScreen extends Component {
         <Text style={styles.changeTranscript}></Text>
         <Text style={styles.showTitle}>Pulse el micrófono cuando termine de hablar</Text>
         {this.state.data[lastSaved].obligatorio=="N" &&
-        (<View><TouchableOpacity onPress={this.skipPorcentaje}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+        (<View><TouchableOpacity onPress={() => this.skipPorcentaje()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
     }
 
@@ -644,6 +686,10 @@ class PetitionScreen extends Component {
     setVoiceControlView() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (this.state.data[lastSaved].idcampo.includes("base")) {
+        if (this.state.data[lastSaved+1].xdefecto != "") {
+          this.storePorcentajeFromBase(this.state.data[lastSaved+1].xdefecto)
+        }
+        console.log(JSON.stringify(this.state.savedData[lastSaved+1]))
         if (this.state.data[lastSaved+1].xdefecto != "" || this.state.savedData[lastSaved+1].valor != null) {
           return this.setBase()
         } else {
@@ -767,11 +813,9 @@ class PetitionScreen extends Component {
         var base = (Number(importe) * 100) / x
         var finalBase = Math.round(base * 100) / 100
         valor = finalBase
-      } else if (idcampo.includes("porcentaje") && xdefecto == "") {
-        valor = xdefecto
-      } else if (idcampo.includes("porcentaje") && xdefecto != "" || idcampo.includes("cuota")) {
-        var porcentaje = this.state.data[lastSaved-1].xdefecto
+      } else if (idcampo.includes("cuota")) {
         var base = Number(this.state.savedData[lastSaved-2].valor) 
+        var porcentaje = Number(this.state.savedData[lastSaved-1].valor)
         var cuota = base*porcentaje
         cuota = Math.round(cuota * 100) / 100
         valor = cuota
@@ -780,7 +824,7 @@ class PetitionScreen extends Component {
         var number = evaluate(valor)
         if (number>0 || Number(valor)>0) {
           array[lastSaved].valor = valor
-          await AsyncStorage.setItem(this.state.id+".importe",  this.state.interpretedData )
+          await AsyncStorage.setItem(this.state.ipetitionIDd+".importe",  this.state.interpretedData )
         } else {
           this.showAlert("Error", "Diga un número válido")
         }
@@ -790,7 +834,7 @@ class PetitionScreen extends Component {
       this.resetListening()
       this.setState({ savedData: array })
       console.log(JSON.stringify(array))
-      await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
     }
 
     async resetListening() {
@@ -829,6 +873,14 @@ class PetitionScreen extends Component {
       }
     }
 
+    async storePorcentajeFromBase(porcentaje) {
+      var lastSaved = Number(this.state.savedData.findIndex(obj => obj.valor == null))+1
+      var array = this.state.savedData
+      array[lastSaved].valor = porcentaje
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
+      this.setState({savedData: array})
+    }
+
     async savePercentage() {
       var lastSaved = Number(this.state.savedData.findIndex(obj => obj.valor == null))+1
       var array = this.state.savedData
@@ -838,7 +890,7 @@ class PetitionScreen extends Component {
         valor = number
       }
       array[lastSaved].valor = valor
-      await AsyncStorage.setItem(this.state.id+".savedData", JSON.stringify(array))
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
       this.setState({savedData: array})
       this.resetListening()
     }
@@ -961,11 +1013,11 @@ class PetitionScreen extends Component {
     async deleteDoc() {
       var chargeDocs = []
       this.state.list.forEach((i) => {
-        if (i.time != this.state.id) {
+        if (i.time != this.state.petitionTime) {
           chargeDocs.push(i)
         }
       })
-      await AsyncStorage.setItem(this.state.listid, JSON.stringify(chargeDocs))
+      await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(chargeDocs))
       this.goBack()
     }
   

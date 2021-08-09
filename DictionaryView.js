@@ -9,7 +9,7 @@ class DictionaryViewScreen extends Component {
     constructor(props) {
       super(props);
       this.state = {
-        id: "",
+        userid: "",
         words: [],
         addKey: "",
         addValue: "",
@@ -22,9 +22,9 @@ class DictionaryViewScreen extends Component {
   
     async init() {
       await AsyncStorage.getItem("userid").then((value) => {
-        this.setState({ id: value })
+        this.setState({ userid: value })
       })
-      await AsyncStorage.getItem(this.state.id+".words").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
         if (value != null) {
           this.setState({ words: JSON.parse(value).reverse() })
         }
@@ -59,7 +59,7 @@ class DictionaryViewScreen extends Component {
         arrayWords[i].time = new Date().getTime()
       }
       this.setState({ words: arrayWords })
-      await AsyncStorage.setItem(this.state.id+".words", JSON.stringify(arrayWords))
+      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(arrayWords))
     }
   
     _searchWord = async () => {
@@ -165,7 +165,7 @@ class DictionaryViewScreen extends Component {
         }
       }
       this.setState({ words: arrayWords })
-      await AsyncStorage.setItem(this.state.id+".words", JSON.stringify(arrayWords))
+      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(arrayWords))
     }
 
     setMenuButtons() {
@@ -227,7 +227,7 @@ class DictionaryViewScreen extends Component {
     }
 
     async showAll() {
-      await AsyncStorage.getItem(this.state.id+".words").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
         if (value != null) {
           this.setState({ words: JSON.parse(value).reverse() })
         }

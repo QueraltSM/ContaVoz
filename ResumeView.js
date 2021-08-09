@@ -10,8 +10,10 @@ class ResumeViewScreen extends Component {
     constructor(props) {
       super(props)
       this.state = {
-        id: "",
-        listid: "",
+        title: "",
+        petitionID: "",
+        petitionType: "",
+        petitionTime: "",
         interpreptedData1: "",
         interpreptedData2: "",
         flatlistPos: 0,
@@ -20,43 +22,43 @@ class ResumeViewScreen extends Component {
         doc: [],
         list: [],
         userid: "",
-        type: "",
         cobroData: [],
-        isCobroLinked: false
+        isChargeLinked: false,
+        isPayLinked: false
       }
       this.init()
     }
   
     async init() { 
-      await AsyncStorage.getItem("id").then((value) => {
-        this.setState({ id: value })
+      await AsyncStorage.getItem("petitionID").then((value) => {
+        this.setState({ petitionID: JSON.parse(value).id })
+        this.setState({ petitionTime: JSON.parse(value).time })
       })
-      await AsyncStorage.getItem("listid").then((value) => {
-        this.setState({ listid: value })
+      await AsyncStorage.getItem("petitionType").then((value) => {
+        this.setState({ petitionType: value })
       })
-      await AsyncStorage.getItem("type").then((value) => {
-        this.setState({ type: value })
+      await AsyncStorage.getItem("data").then((value) => {
+        this.setState({ title: JSON.parse(value).titulo }) 
       })
-      await AsyncStorage.getItem(this.state.id+".savedData").then((value) => {
+      await AsyncStorage.getItem(this.state.petitionID+".savedData").then((value) => {
         if (value != null) {
           this.setState({ doc: JSON.parse(value) })
-          console.log(value)
         }
       })
       await AsyncStorage.getItem("cobros").then((value) => {
         this.setState({ cobroData: JSON.parse(JSON.parse(value))[0].campos })
       })
-      await AsyncStorage.getItem(this.state.id+".isCobroLinked").then((value) => {
+      await AsyncStorage.getItem(this.state.petitionID+".isChargeLinked").then((value) => {
         if (value != null) {
-          this.setState({ isCobroLinked: JSON.parse(value) })
+          this.setState({ isChargeLinked: JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.id+".images").then((value) => {
+      await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
         if (value != null) {
           this.setState({ images: JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem(this.state.id+".words").then((value) => {
+      await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
         if (value != null) {
           this.setState({ words: JSON.parse(value) })
         }
@@ -75,11 +77,11 @@ class ResumeViewScreen extends Component {
     async deleteDoc() {
       var chargeDocs = []
       this.state.list.forEach((i) => {
-        if (i.id != this.state.id) {
+        if (i.time != this.state.petitionTime) {
           chargeDocs.push(i)
         }
       })
-      await AsyncStorage.setItem(this.state.listid, JSON.stringify(chargeDocs))
+      await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(chargeDocs))
       this.props.navigation.push("PetitionList")
     }
   
@@ -158,7 +160,7 @@ class ResumeViewScreen extends Component {
   
     setData = (item, index) => {
       return (<View>
-        {this.state.doc.length > 0 && this.state.doc[index].valor != "" && (<View>
+        {this.state.doc.length > 0 && this.state.doc[index].valor != null && this.state.doc[index].valor != "" &&  (<View>
         <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={25}
         /></Text>
         <View style={{flexDirection:'row', width:"90%"}}>
@@ -184,7 +186,7 @@ class ResumeViewScreen extends Component {
     }
 
     linkToCobro = () => {
-      if (this.state.isCobroLinked) {
+      if (this.state.isChargeLinked) {
         return(
           <View>
             <Text style={styles.showTitle}>Documento de cobro asociado</Text>
@@ -202,13 +204,13 @@ class ResumeViewScreen extends Component {
     }
 
     deleteCobro = async () => {
-      await AsyncStorage.setItem(this.state.id+".isCobroLinked", JSON.stringify(false))
-      this.setState({ isCobroLinked: false })
+      await AsyncStorage.setItem(this.state.petitionID+".isChargeLinked", JSON.stringify(false))
+      this.setState({ isChargeLinked: false })
     }
 
      saveCobro = async () => {
-      await AsyncStorage.setItem(this.state.id+".isCobroLinked", JSON.stringify(true))
-      this.setState({ isCobroLinked: true })
+      await AsyncStorage.setItem(this.state.petitionID+".isChargeLinked", JSON.stringify(true))
+      this.setState({ isChargeLinked: true })
     }
 
     async askUnlinkCobro() {
@@ -264,7 +266,6 @@ class ResumeViewScreen extends Component {
     setControlVoice(){
         return(
           <View style={styles.resumeView}>
-            <Text style={styles.showTitle}>Documento de {this.state.type}</Text>
             <FlatList 
               vertical
               showsVerticalScrollIndicator={false}
@@ -272,10 +273,10 @@ class ResumeViewScreen extends Component {
               renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
             />
             <Text style={styles.transcript}></Text>
-            {this.state.type == "compras" && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con pago</Text></TouchableOpacity></View>)}
-            {this.state.type == "ventas" && !this.state.isCobroLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askLinkCobro()}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)}
+            {this.state.doc.length > 0 && this.state.petitionType.includes("compra") && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con pago</Text></TouchableOpacity></View>)}
+            {this.state.doc.length > 0 && this.state.petitionType.includes("venta") && !this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askLinkCobro()}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)}
             {this.linkToCobro()}
-            {this.state.type == "ventas" && this.state.isCobroLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askUnlinkCobro()}><Text style={styles.deleteButton}>Desvincular con cobro</Text></TouchableOpacity></View>)}
+            {this.state.doc.length > 0 && this.state.petitionType.includes("venta") && this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askUnlinkCobro()}><Text style={styles.deleteButton}>Desvincular con cobro</Text></TouchableOpacity></View>)}
           </View>
         )
     }
@@ -338,30 +339,6 @@ class ResumeViewScreen extends Component {
   
     _save = async () => {
       alert("Esta acción está desactivada temporalmente")
-      /*var prep = ""
-      if (this.state.type == "Buy") {
-        prep = this.state.id+""
-      }
-      if (this.state.entity == this.state.interpretedEntity && this.state.nif == this.state.interpretedNif
-        && this.state.date == this.state.interpretedDate && this.state.invoice == this.state.interpretedInvoice && 
-        this.state.total == this.state.interpretedTotal) {
-          this.sendDocument()
-      }
-      if (this.state.entity != this.state.interpretedEntity) {
-        await this.askSaveWord("entidad", prep+"interpretedEntity", this.state.interpretedEntity)
-      }
-      if (this.state.date != this.state.interpretedDate) {
-        await this.askSaveWord("fecha", prep+"interpretedDate", this.state.interpretedDate)
-      }
-      if (this.state.nif != this.state.interpretedNif) {
-        await this.askSaveWord("NIF", prep+"interpretedNif", this.state.interpretedNif)
-      }
-      if (this.state.invoice != this.state.interpretedInvoice) {
-        await this.askSaveWord("nº de factura", prep+"interpretedInvoice", this.state.interpretedInvoice)
-      }
-      if (this.state.total != this.state.interpretedTotal) {
-        await this.askSaveWord("total", prep+"interpretedTotal", this.state.interpretedTotal)
-      }*/
     }
   
     render () {
@@ -369,7 +346,7 @@ class ResumeViewScreen extends Component {
         <View style={{flex: 1, backgroundColor:"#FFF" }}>
           <ScrollView style={{backgroundColor: "#FFF" }}>
           <View style={{backgroundColor: "#1A5276"}}>
-            <Text style={styles.mainHeader}>Documento finalizado</Text>
+            <Text style={styles.mainHeader}>{this.state.title}</Text>
           </View>
           <View style={styles.sections}>
             {this.setImages()}

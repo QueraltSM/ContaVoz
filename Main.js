@@ -38,7 +38,7 @@ class MainScreen extends Component {
           config = JSON.parse(JSON.stringify(value))
         })
         await AsyncStorage.setItem("config", JSON.parse(config))
-        await AsyncStorage.setItem("type", type)
+        await AsyncStorage.setItem("type", type.substring(0, 1).toUpperCase())
         this.props.navigation.push('PetitionList')
       }
     }
@@ -49,10 +49,10 @@ class MainScreen extends Component {
   
     saveLogout =  async (state) => {
       if (!state) {
-        await AsyncStorage.setItem("saveData", JSON.stringify(false));
+        await AsyncStorage.setItem("isUserLoggedIn", JSON.stringify(false));
         await AsyncStorage.setItem("alias", "");
         await AsyncStorage.setItem("user", "");
-        await AsyncStorage.setItem("pass", "");
+        await AsyncStorage.setItem("password", "");
       }
       this.props.navigation.push("Login")
     }
