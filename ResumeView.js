@@ -171,11 +171,12 @@ class ResumeViewScreen extends Component {
     }
 
     setCobroData = (item, index) => {
-      if (JSON.stringify(this.state.doc[index].idcampo == JSON.stringify(this.state.cobroData[index].idcampo))) {
+      console.log(JSON.stringify(this.state.doc[index].valor))
+      console.log( JSON.stringify(this.state.doc[index].valor) != null)
+      if (JSON.stringify(this.state.doc[index].idcampo == JSON.stringify(this.state.cobroData[index].idcampo)) && JSON.stringify(this.state.doc[index].valor) != "null" && JSON.stringify(this.state.doc[index].valor) != "" ) {
         return (<View>
           {this.state.doc[index] != "" && (<View>
-          <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={25}
-          /></Text>
+          <Text style={styles.resumeText}>{item.titulo}</Text>
           <View style={{flexDirection:'row', width:"90%"}}>
           <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
           </View>
@@ -264,6 +265,8 @@ class ResumeViewScreen extends Component {
     }
 
     setControlVoice(){
+        var lastSaved = this.state.doc.findIndex(obj => obj.valor == null)
+        console.log(lastSaved)
         return(
           <View style={styles.resumeView}>
             <FlatList 
@@ -273,10 +276,10 @@ class ResumeViewScreen extends Component {
               renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
             />
             <Text style={styles.transcript}></Text>
-            {this.state.doc.length > 0 && this.state.petitionType.includes("compra") && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con pago</Text></TouchableOpacity></View>)}
-            {this.state.doc.length > 0 && this.state.petitionType.includes("venta") && !this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askLinkCobro()}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)}
+            {this.state.doc.length > 0 && lastSaved>0 && this.state.title.toLocaleLowerCase().includes("compra") && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con pago</Text></TouchableOpacity></View>)}
+            {this.state.doc.length > 0  && lastSaved>0 && this.state.title.toLocaleLowerCase().includes("venta") && !this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askLinkCobro()}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)}
             {this.linkToCobro()}
-            {this.state.doc.length > 0 && this.state.petitionType.includes("venta") && this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askUnlinkCobro()}><Text style={styles.deleteButton}>Desvincular con cobro</Text></TouchableOpacity></View>)}
+            {this.state.doc.length > 0  && lastSaved>0 && this.state.title.toLocaleLowerCase().includes("venta") && this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askUnlinkCobro()}><Text style={styles.deleteButton}>Desvincular con cobro</Text></TouchableOpacity></View>)}
           </View>
         )
     }

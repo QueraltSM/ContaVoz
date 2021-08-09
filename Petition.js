@@ -536,9 +536,10 @@ class PetitionScreen extends Component {
       )
     }
   
-    skipData = async () => {
+    async skipData () {
+      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       var array = this.state.savedData
-      array.push("")
+      array[lastSaved].valor = ""
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
       this.setState({ savedData: array })
       this.setState({ listenedData: "" })
@@ -555,16 +556,13 @@ class PetitionScreen extends Component {
         <Text style={styles.changeTranscript}></Text>
         <Text style={styles.showTitle}>Pulse el micrófono cuando termine de hablar</Text>
         {this.state.data[lastSaved].obligatorio=="N" &&
-        (<View><TouchableOpacity onPress={this.skipData}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+        (<View><TouchableOpacity onPress={() => this.skipData()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
     }
 
     setBase() {
-      console.log("::setbase::")
         var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-        console.log("lastSaved:"+lastSaved)
         var importe = Number(this.state.savedData[lastSaved-1].valor)
-        console.log("importe:"+importe)
         var porcentaje = this.state.savedData[lastSaved+1].valor
         if (porcentaje == null) {
           porcentaje =  this.state.data[lastSaved+1].xdefecto
@@ -594,9 +592,22 @@ class PetitionScreen extends Component {
                     color='#FFF'
                     size={32}
                   />
-                  {this.state.data[lastSaved].obligatorio=="N" &&<TouchableOpacity onPress={this.skipData}><Text style={styles.exitButton}>Omitir</Text></TouchableOpacity>}
+                  {this.state.data[lastSaved].obligatorio=="N" &&<TouchableOpacity onPress={() => this.skipBase()}><Text style={styles.exitButton}>Omitir</Text></TouchableOpacity>}
                 </View>
         </View>)
+    }
+
+    async setNullBase() {
+      var array = this.state.savedData
+      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+      array[lastSaved].valor = ""
+      array[lastSaved+1].valor = ""
+      array[lastSaved+2].valor = ""
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
+      this.setState({ savedData: array })
+      this.setState({ listenedData: "" })
+      this.setState({ interpretedData: "" })  
+      this.setState({ is_recording: JSON.parse(false) })
     }
 
     async setNullPorcentaje() {
@@ -610,6 +621,31 @@ class PetitionScreen extends Component {
       this.setState({ listenedData: "" })
       this.setState({ interpretedData: "" })  
       this.setState({ is_recording: JSON.parse(false) })
+    }
+
+    async skipBase() {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "Omitir base",
+          "Si omite este dato no se podrá calcular la cuota. ¿Está seguro de que desea omitir la base?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(this.setNullBase());
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve(this.setPorcentaje());
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+        await AsyncAlert();
     }
 
     async skipPorcentaje() {
@@ -678,7 +714,7 @@ class PetitionScreen extends Component {
                     color='#FFF'
                     size={32}
                   />
-                {this.state.data[lastSaved].obligatorio=="N" &&<TouchableOpacity onPress={this.skipData}><Text style={styles.exitButton}>Omitir</Text></TouchableOpacity>}
+                {this.state.data[lastSaved].obligatorio=="N" &&<TouchableOpacity onPress={() => this.skipData()}><Text style={styles.exitButton}>Omitir</Text></TouchableOpacity>}
                 </View>
         </View>)
     }
@@ -995,9 +1031,10 @@ class PetitionScreen extends Component {
   
     startProgramm = () => {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.images.length == 0 && JSON.stringify(this.state.savedData[0]).valor==null) {
+      console.log(lastSaved)
+      if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.images.length == 0 && lastSaved==0) {
         return this.showMessage("Para comenzar debe adjuntar una imagen o pulsar el micrófono")
-      } else if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.savedData.length > 0 && lastSaved>-1) {
+      } else if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.savedData.length > 0 && lastSaved>0) {
         return this.showMessage("Existe un documento por voz no terminado")
       } else if (this.state.savedData.length > 0 && lastSaved==-1) {
         return this.showMessage("Existe documento por voz terminado")
