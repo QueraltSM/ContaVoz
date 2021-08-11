@@ -75,7 +75,7 @@ class PetitionHistoryScreen extends Component {
       if (item.images.length > 0) {
         imagesContent = "#56A494"
       }
-      if (lastSaved>-1) {
+      if (item.savedData.length > 0 && lastSaved==-1) {
         microContent = "#56A494"
       }
       return <View style={{ flexDirection: "row" }}><Icon name='image' type='font-awesome' color={imagesContent} size={25} style={{ paddingRight: 15 }} /><Icon name='check' type='font-awesome' color={microContent} size={25} /></View>

@@ -262,7 +262,6 @@ class ResumeViewScreen extends Component {
 
     setControlVoice(){
         var lastSaved = this.state.doc.findIndex(obj => obj.valor == null)
-        console.log(lastSaved)
         return(
           <View style={styles.resumeView}>
             <FlatList 

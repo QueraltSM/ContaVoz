@@ -37,7 +37,6 @@ class MainScreen extends Component {
         await AsyncStorage.getItem(type).then((value) => {
           config = JSON.parse(JSON.stringify(value))
         })
-        console.log("typeee:"+type)
         await AsyncStorage.setItem("config", JSON.parse(config))
         await AsyncStorage.setItem("type", type)
         this.props.navigation.push('PetitionList')

@@ -288,16 +288,17 @@ class PetitionScreen extends Component {
     }
 
     setTimer (e, t) {
-      if (t) {
+      /*if (t) {
         clearTimeout()
       } else {
         setTimeout(() => {
           if (!this.state.timer) {
             this.showAlert("Atención", "El tiempo de escucha se ha expirado")
             this._stopRecognition(e)
+            clearTimeout()
           }
         },10000);
-      }
+      }*/
     }
   
     async _stopRecognition(e) {
@@ -641,8 +642,8 @@ class PetitionScreen extends Component {
             <Text style={styles.showListen}>Escuchando {this.state.data[lastSaved].titulo.toLowerCase()}...</Text>
           </Animated.View>
         {this.state.data[lastSaved].tipoexp=="N" &&
-        <Text style={styles.showTitle}>Las cifras decimales debe decirlas con "punto", por ejemplo 144.99</Text>}
-        <Text style={styles.showTitle}>Siguiente dato: {this.state.data[lastSaved+1].titulo}</Text>
+        <Text style={styles.showSubTitle}>Los decimales deben decirse con "punto" o "con"</Text>}
+        {lastSaved+1 < this.state.savedData.length && <Text style={styles.showNextData}>Siguiente dato: {this.state.data[lastSaved+1].titulo}</Text>}
         {this.state.data[lastSaved].obligatorio=="N" &&
         (<View><TouchableOpacity onPress={() => this.skipData()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
@@ -957,6 +958,7 @@ class PetitionScreen extends Component {
       this.resetListening()
       this.setState({ savedData: array })
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
+      this.saveDocument()
     }
 
     async resetListening() {
@@ -1115,7 +1117,7 @@ class PetitionScreen extends Component {
         }
       })
       var index = list.findIndex(obj => JSON.stringify(obj.id) == this.state.petitionID)
-      list[index].saveData = this.state.savedData
+      list[index].savedData = this.state.savedData
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
     }
 
@@ -1126,7 +1128,6 @@ class PetitionScreen extends Component {
       } else if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.savedData.length > 0 && lastSaved>0) {
         return this.showMessage("Existe un documento por voz no terminado")
       } else if (this.state.savedData.length > 0 && lastSaved==-1) {
-        this.saveDocument()
         return this.showMessage("Existe documento por voz terminado")
       }
       return null
@@ -1327,12 +1328,21 @@ class PetitionScreen extends Component {
       },
       showSubTitle: {
         textAlign: 'center',
-        color: '#148F77',
+        color: 'black',
         fontWeight: 'bold',
         fontSize: 20,
         width: "90%",
-        paddingBottom: 20,
-        paddingTop: 20
+        paddingTop: 10
+      },
+      showNextData: {
+        textAlign: 'center',
+        color: 'black',
+        fontWeight: 'bold',
+        fontSize: 20,
+        width: "90%",
+        paddingTop: 10,
+        textDecorationLine: 'underline',
+        fontWeight: 'bold',
       },
       centeredView: {
         flex: 1,
