@@ -37,8 +37,9 @@ class MainScreen extends Component {
         await AsyncStorage.getItem(type).then((value) => {
           config = JSON.parse(JSON.stringify(value))
         })
+        console.log("typeee:"+type)
         await AsyncStorage.setItem("config", JSON.parse(config))
-        await AsyncStorage.setItem("type", type.substring(0, 1).toUpperCase())
+        await AsyncStorage.setItem("type", type)
         this.props.navigation.push('PetitionList')
       }
     }
@@ -50,7 +51,7 @@ class MainScreen extends Component {
     saveLogout =  async (state) => {
       if (!state) {
         await AsyncStorage.setItem("isUserLoggedIn", JSON.stringify(false));
-        await AsyncStorage.setItem("alias", "");
+        await AsyncStorage.setItem("company", "");
         await AsyncStorage.setItem("user", "");
         await AsyncStorage.setItem("password", "");
       }
@@ -95,11 +96,12 @@ class MainScreen extends Component {
           <Icon
             name='calculator'
             type='font-awesome'
-            color='#154360'
+            color='black'
             size={35}/>
           </View>
-          <Text style={styles.mainHeader}>Contabilidad</Text>
-          <Text style={styles.text}>Usuario {this.state.fullname}</Text>
+          <Text style={styles.mainHeader}>Contabilizando a</Text>
+          <Text style={styles.mainHeader}>{this.state.fullname}</Text>
+          <View style={{ flex:1, paddingTop: 10 }}>
           <View style={styles.twoColumnsInARow}>
           <View>
             <TouchableOpacity onPress={() => this.goScreen("compras")}>
@@ -165,12 +167,12 @@ class MainScreen extends Component {
             <TouchableOpacity onPress={this.goDictionary}>
               <View style={styles.mainIcon}>
                 <Icon
-                  name='book'
+                  name='users'
                   type='font-awesome'
                   color='#FFF'
                   size={35}/>
                 </View>
-              <Text style={styles.mainButton}>Diccionario</Text>
+              <Text style={styles.mainButton}>Entidades</Text>
             </TouchableOpacity>
             </View>
             <Icon
@@ -191,6 +193,8 @@ class MainScreen extends Component {
             </TouchableOpacity>
             </View>
           </View>
+          </View>
+          <View styles={{flex:3}}><Text style={styles.credits}>© Servicios Informáticos S.L.</Text></View>
         </View>);
     }
   }
@@ -207,8 +211,6 @@ class MainScreen extends Component {
       flexDirection: 'row',
       textAlign: "center",
       alignSelf: "center",
-      paddingTop: 50,
-      paddingBottom: 15
     },
     text: {
       fontSize: 17,
@@ -219,7 +221,6 @@ class MainScreen extends Component {
     },
     twoColumnsInARow: {
       paddingTop: 30,
-      paddingBottom: 20,
       flexDirection: 'row',
       alignSelf: "center",
     },
@@ -246,6 +247,15 @@ class MainScreen extends Component {
       textAlign: "center",
       fontWeight: "bold",
       color: "#000",
-      fontSize: 25,
+      fontSize: 25
     },
+    credits: {
+      paddingTop: 20,
+      alignItems: 'center',
+      textAlign: "center",
+      fontWeight: "bold",
+      color: "#1A5276",
+      fontSize: 15,
+      paddingBottom: 20
+    }
   });

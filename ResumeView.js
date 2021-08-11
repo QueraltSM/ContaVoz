@@ -13,7 +13,6 @@ class ResumeViewScreen extends Component {
         title: "",
         petitionID: "",
         petitionType: "",
-        petitionTime: "",
         interpreptedData1: "",
         interpreptedData2: "",
         flatlistPos: 0,
@@ -32,7 +31,6 @@ class ResumeViewScreen extends Component {
     async init() { 
       await AsyncStorage.getItem("petitionID").then((value) => {
         this.setState({ petitionID: JSON.parse(value).id })
-        this.setState({ petitionTime: JSON.parse(value).time })
       })
       await AsyncStorage.getItem("petitionType").then((value) => {
         this.setState({ petitionType: value })
@@ -77,7 +75,7 @@ class ResumeViewScreen extends Component {
     async deleteDoc() {
       var chargeDocs = []
       this.state.list.forEach((i) => {
-        if (i.time != this.state.petitionTime) {
+        if (i.id != this.state.petitionID) {
           chargeDocs.push(i)
         }
       })
@@ -164,15 +162,13 @@ class ResumeViewScreen extends Component {
         <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={25}
         /></Text>
         <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
+        <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
         </View>
       </View>)}  
       </View>)
     }
 
     setCobroData = (item, index) => {
-      console.log(JSON.stringify(this.state.doc[index].valor))
-      console.log( JSON.stringify(this.state.doc[index].valor) != null)
       if (JSON.stringify(this.state.doc[index].idcampo == JSON.stringify(this.state.cobroData[index].idcampo)) && JSON.stringify(this.state.doc[index].valor) != "null" && JSON.stringify(this.state.doc[index].valor) != "" ) {
         return (<View>
           {this.state.doc[index] != "" && (<View>

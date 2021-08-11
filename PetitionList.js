@@ -9,7 +9,8 @@ class PetitionListScreen extends Component {
       super(props);
       this.state = {
         config: "",
-        lists: []
+        lists: [],
+        type: ""
       }
       this.init()
     }
@@ -17,6 +18,9 @@ class PetitionListScreen extends Component {
     async init() {
       await AsyncStorage.getItem("config").then((value) => {
         this.setState({ config: JSON.parse(value) })
+      })
+      await AsyncStorage.getItem("type").then((value) => {
+        this.setState({ type: value })
       })
       var array = []
       for (let i = 0; i < this.state.config.length; i++) {
@@ -41,6 +45,7 @@ class PetitionListScreen extends Component {
     }
   
     openDocument = async (item, index) => {
+      console.log("petitiontype=>"+this.state.type+"."+index)
       await AsyncStorage.setItem("petitionType", this.state.type+"."+index)
       await AsyncStorage.setItem("data", JSON.stringify(item))
       await AsyncStorage.setItem("historial", item.titulo)
@@ -49,14 +54,14 @@ class PetitionListScreen extends Component {
 
     setData (item, index) {
       return (<TouchableOpacity onPress={() => this.openDocument(item, index)}>
-                <Text style={styles.registeredDocuments}>{item.titulo} ({this.state.lists[index]})</Text>
+                <Text style={styles.registeredDocuments}>{this.state.lists[index]>0 && <Text style={styles.documentsCount}> {this.state.lists[index]} </Text>} {item.titulo}</Text>
               </TouchableOpacity>)
     }
     render () {
       return (
         <View style={{flex: 1, backgroundColor:"#FFF" }}>
           <View style={styles.navBarBackHeader}>
-            <Text style={styles.navBarHeader}>Tipos de documentos</Text>
+            <Text style={styles.navBarHeader}>Seleccione tipo de documento</Text>
           </View>
           <ScrollView vertical style={{backgroundColor: "#FFF" }}>
           <View style={styles.sections}>
@@ -130,4 +135,9 @@ class PetitionListScreen extends Component {
         backgroundColor: "#FFF",
         paddingBottom: 100
       },
+      documentsCount: {
+        backgroundColor: "#1A5276",
+        borderRadius: 20,
+        color: "white"
+      }
 })

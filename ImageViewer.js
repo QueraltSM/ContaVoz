@@ -11,7 +11,8 @@ class ImageViewerScreen extends Component {
     constructor(props) {
       super(props);
       this.state = {
-        id: "",
+        petitionType: "",
+        petitionID: "",
         images: [],
         back: this.props.navigation.state.params.back,
         image: this.props.navigation.state.params.image
@@ -20,10 +21,13 @@ class ImageViewerScreen extends Component {
     }
 
     async init() {
-      await AsyncStorage.getItem("id").then((value) => {
-        this.setState({ id: value })
+      await AsyncStorage.getItem("petitionType").then((value) => {
+        this.setState({ petitionType: value })
       })
-      await AsyncStorage.getItem(this.state.id+".images").then((value) => {
+      await AsyncStorage.getItem("petitionID").then((value) => {
+        this.setState({ petitionID: JSON.parse(value).id })
+      })
+      await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
         if (value != null) {
           this.setState({ images: JSON.parse(value) })
         }
@@ -61,7 +65,7 @@ class ImageViewerScreen extends Component {
         }
       }
       this.setState({images: arrayImages})
-      await AsyncStorage.setItem(this.state.id+".images", JSON.stringify(arrayImages))
+      this.saveImages()
     }
   
     takePhoto = async() =>{
@@ -138,13 +142,26 @@ class ImageViewerScreen extends Component {
           })
         }
       }
-      await AsyncStorage.setItem(this.state.id+".images", JSON.stringify(arrayImages))
       this.setState({images: arrayImages})
+      this.saveImages()
       if (this.state.images.length == 0) {
         this.props.navigation.push("Petition", {id: this.state.id })
       } else {
         this.goBack()
       }
+    }
+
+    async saveImages() {
+      var list = []
+      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
+        if (value != null) {
+          list = JSON.parse(value) 
+        }
+      })
+      var index = list.findIndex(obj => obj.id == this.state.petitionID)
+      list[index].images = this.state.images
+      await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
+      await AsyncStorage.setItem(this.state.petitionID+".images", JSON.stringify(this.state.images))
     }
   
     _delete = async() => {

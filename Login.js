@@ -156,26 +156,10 @@ class LoginScreen extends Component {
             source={require('./assets/main.png')}
           />
           </View>
-          <TextInput  
-            style = { styles.textBox }
-            placeholder="Compañía"  
-            onChangeText={(company) => this.setState({company})}  
-            value={this.state.company}
-          /> 
-          <TextInput  
-            style = { styles.textBox }
-            placeholder="Usuario"  
-            onChangeText={(user) => this.setState({user})}  
-            value={this.state.user}
-          /> 
+          <TextInput  blurOnSubmit={true} style = { styles.textBox } placeholder="Compañía"  onChangeText={(company) => this.setState({company})}  value={this.state.company} /> 
+          <TextInput  blurOnSubmit={true} style = { styles.textBox } placeholder="Usuario" onChangeText={(user) => this.setState({user})}  value={this.state.user}/> 
           <View style = { styles.textBoxBtnHolder }>
-            <TextInput  
-              style = { styles.textBox }
-              placeholder="Contraseña"
-              secureTextEntry = { this.state.hidePassword }
-              onChangeText={(password) => this.setState({password})}  
-              value={this.state.password}
-            />  
+            <TextInput blurOnSubmit={true} style = { styles.textBox } placeholder="Contraseña" secureTextEntry = { this.state.hidePassword } onChangeText={(password) => this.setState({password})} value={this.state.password}/>  
             <TouchableOpacity activeOpacity = { 0.8 } style = { styles.visibilityBtn } onPress = { this.managePasswordVisibility }>
               {this.state.hidePassword &&
               (<Icon
