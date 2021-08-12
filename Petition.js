@@ -201,9 +201,12 @@ class PetitionScreen extends Component {
     }
 
     async setFixedNumber() {
+      if (this.state.listenedData.includes("con")) {
+        this.setState({ listenedData: this.state.listenedData.replace("con", ".")})
+      }
       var number = evaluate(this.state.listenedData);
       if (number==0) {
-        this.setState({ interpretedData: this.state.listenedData.split(' ').join("")  })
+        this.setState({ interpretedData: this.state.listenedData.split(' ').join("").replace("/",".")  })
       } else {
         this.setState({ listenedData: number + "" })
         this.setState({ interpretedData: number + "" })
@@ -263,6 +266,10 @@ class PetitionScreen extends Component {
       if (this.state.data[lastSaved].tipoexp != "E" && this.state.data[lastSaved].tipoexp != "F") {
         this.setState({listenedData:this.state.listenedData.split(' ').join("")})
       }
+      /*if (this.state.data[lastSaved].tipoexp == "N") {
+        this.setState({ listenedData: this.state.listenedData.replace("con", ",") })
+      }
+      console.log(this.state.listenedData)*/
       this.setState({getData: true})
       this.setListenedData()
     }
@@ -568,28 +575,44 @@ class PetitionScreen extends Component {
       return (
         <View style={styles.imagesSection}>
         <Text style={styles.transcript}></Text>
-        <Image source={require('./assets/no-photo.png')} resizeMode="contain" key="0" style={{ width: 130, height: 130 }} />
+        <Image source={require('./assets/no-photo.png')} resizeMode="contain" key="0" style={{ width: 180, height: 180 }} />
         </View>
       )
     }
   
     async setNullData(){
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+      var percentageIndexes = this.state.savedData.map((item, i) => item.idcampo.includes("porcentaje") ? i : null).filter(i => i !== null)
       var array = this.state.savedData
       array[lastSaved].valor = ""
+      if (array[lastSaved].idcampo.includes("porcentaje")) {
+        percentageIndexes.forEach((i) => {
+          array[i].valor = ""
+          array[i+1].valor = ""
+          array[i+2].valor = ""
+        })
+      }
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
       this.setState({ savedData: array })
+      console.log(JSON.stringify(this.state.savedData))
       this.setState({ listenedData: "" })
       this.setState({ interpretedData: "" })
       this.setState({ is_recording: JSON.parse(false) })
     }
 
-    async skipData () {
+
+    askSkip() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+      var message = "¿Está seguro de que desea omitir este dato?"
+      if (this.state.savedData[lastSaved].idcampo.includes("porcentaje")) {
+        message = "Si omite este dato no se podrán calcular la base y la cuota. ¿Está seguro de que desea omitir el porcentaje?"
+      }
+      return this.skipData("Omitir " + this.state.savedData[lastSaved].titulo.toLowerCase(), message)
+    }
+
+    async skipData(title, message) {
       const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "Omitir dato",
-          "¿Está seguro de que desea omitir " + this.state.savedData[lastSaved].titulo.toLowerCase() + "?",
+        Alert.alert(title, message,
           [
             {
               text: 'Sí',
@@ -634,7 +657,7 @@ class PetitionScreen extends Component {
       })
     };
 
-    setVoiceControlOthers() {
+    setVoiceControlView() {
       this.fadeIn()
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       return (<View style={styles.resumeView}>
@@ -645,11 +668,11 @@ class PetitionScreen extends Component {
         <Text style={styles.showSubTitle}>Los decimales deben decirse con "punto" o "con"</Text>}
         {lastSaved+1 < this.state.savedData.length && <Text style={styles.showNextData}>Siguiente dato: {this.state.data[lastSaved+1].titulo}</Text>}
         {this.state.data[lastSaved].obligatorio=="N" &&
-        (<View><TouchableOpacity onPress={() => this.skipData()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
+        (<View><TouchableOpacity onPress={() => this.askSkip()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
     }
 
-    setBase() {
+    /*setBase() {
         var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
         var importe = Number(this.state.importe)
         var porcentaje = this.state.savedData[lastSaved+1].valor
@@ -736,31 +759,6 @@ class PetitionScreen extends Component {
       await AsyncAlert();
     }
 
-    async skipPorcentaje() {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "Omitir porcentaje",
-          "Si omite este dato no se podrán calcular la base y la cuota. ¿Está seguro de que desea omitir el porcentaje?",
-          [
-            {
-              text: 'Sí',
-              onPress: () => {
-                resolve(this.setNullPorcentaje());
-              },
-            },
-            {
-              text: 'No',
-              onPress: () => {
-                resolve(this.setPorcentaje());
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-        await AsyncAlert();
-    }
-
     setPorcentaje() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       return (<View style={styles.resumeView}>
@@ -805,24 +803,8 @@ class PetitionScreen extends Component {
                 {this.state.data[lastSaved].obligatorio=="N" &&<TouchableOpacity onPress={() => this.skipData()}><Text style={styles.exitButton}>Omitir</Text></TouchableOpacity>}
                 </View>
         </View>)
-    }
+    }*/
 
-    setVoiceControlView() {
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      if (this.state.data[lastSaved].idcampo.includes("base")) {
-        if (this.state.data[lastSaved+1].xdefecto != "") {
-          this.storePorcentajeFromBase(this.state.data[lastSaved+1].xdefecto)
-        }
-        if (this.state.data[lastSaved+1].xdefecto != "" || this.state.savedData[lastSaved+1].valor != null) {
-          return this.setBase()
-        } else {
-          return this.setPorcentaje()
-        }
-      } else if ((this.state.data[lastSaved].idcampo.includes("porcentaje") && this.state.data[lastSaved].xdefecto != "") || (this.state.data[lastSaved].idcampo.includes("cuota"))) {
-        return this.setCuota()
-      }
-      return this.setVoiceControlOthers()
-    }
 
     setVoiceControl() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
@@ -894,7 +876,7 @@ class PetitionScreen extends Component {
         await AsyncAlert();
     }
 
-    async askNewDataSave () {
+    /*async askNewDataSave () {
       const AsyncAlert = () => new Promise((resolve) => {
         Alert.alert(
           "Guardar palabra",
@@ -917,7 +899,7 @@ class PetitionScreen extends Component {
         );
         });
         await AsyncAlert();
-    }
+    }*/
 
     async storeData () {
       var valor = this.state.interpretedData
@@ -930,7 +912,7 @@ class PetitionScreen extends Component {
       var array = this.state.savedData
       var idcampo = this.state.data[lastSaved].idcampo
       var xdefecto = this.state.data[lastSaved].xdefecto
-      if (idcampo.includes("base")) {
+      /*if (idcampo.includes("base")) {
         var importe = this.state.importe
         var x = 100 + Number(xdefecto)
         var base = (Number(importe) * 100) / x
@@ -942,7 +924,7 @@ class PetitionScreen extends Component {
         var cuota = base*porcentaje
         cuota = Math.round(cuota * 100) / 100
         valor = cuota
-      }
+      }*/
       if (idcampo.includes("importe")) {
         var number = evaluate(valor)
         if (number>0 || Number(valor)>0) {
@@ -973,11 +955,8 @@ class PetitionScreen extends Component {
     }
 
     saveData = async () => {
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (this.state.lastOptionalValue != this.state.optionalValue) {
         this.askSaveEnterprise()
-      } else if (this.state.data[lastSaved].tipoexp != "F" && this.state.interpretedData.toLowerCase().split(' ').join("") != this.state.listenedData.toLowerCase().split(' ').join("") ) {
-        this.askNewDataSave()
       } else {
         this.storeData()
       }
@@ -987,19 +966,6 @@ class PetitionScreen extends Component {
       this.setState({is_recording: false})
       this.setState({listenedData: ""})
       this.setState({interpretedData: ""})
-    }
-
-    setDataModal() {
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      var idcampo = this.state.data[lastSaved].idcampo
-      if (this.state.listenedData.length == 0 || this.state.interpretedData.length == 0) {
-        return null
-      }
-      if (idcampo.includes("base") && this.state.data[lastSaved+1].idcampo != "") {
-        return this.setDataModalPercentage()
-      } else {
-        return this.setDataModalOthers()
-      }
     }
 
     async storePorcentajeFromBase(porcentaje) {
@@ -1024,7 +990,7 @@ class PetitionScreen extends Component {
       this.resetListening()
     }
 
-    setDataModalPercentage(){
+    /*setDataModalPercentage(){
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       return(<Modal
         animationType = {"slide"}
@@ -1065,9 +1031,10 @@ class PetitionScreen extends Component {
         </View>
       </View>
     </Modal>)
-    }
+    }*/
 
-    setDataModalOthers(){
+    setDataModal(){
+      if (this.state.listenedData.length == 0 || this.state.interpretedData.length == 0) return null
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       return(<Modal
         animationType = {"slide"}
@@ -1124,11 +1091,11 @@ class PetitionScreen extends Component {
     startProgramm = () => {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.images.length == 0 && lastSaved==0) {
-        return this.showMessage("Para comenzar debe adjuntar una imagen o pulsar el micrófono")
+        return this.showMessage("Para comenzar adjunte una imagen o pulse el micrófono")
       } else if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.savedData.length > 0 && lastSaved>0) {
-        return this.showMessage("Existe un documento por voz no terminado")
+        return this.showMessage("Tiene un documento por voz sin acabar")
       } else if (this.state.savedData.length > 0 && lastSaved==-1) {
-        return this.showMessage("Existe documento por voz terminado")
+        return this.showMessage("Tiene un documento por voz terminado")
       }
       return null
     }
@@ -1175,7 +1142,7 @@ class PetitionScreen extends Component {
     }
 
     setMenu() {
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+        var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
         return (
         <View style={styles.navBarBackHeader}>
             <View style={{ width: 60,textAlign:'center' }}>
@@ -1208,7 +1175,7 @@ class PetitionScreen extends Component {
                 onPress={this.goGallery}
               />
               </View>
-            {(this.state.images.length > 0 || lastSaved==-1) &&
+            {(this.state.images.length > 0 || this.state.savedData.length>0 && lastSaved==-1) &&
             (<View style={{ width: 60,textAlign:'center' }}>
               <Icon
                 name='check-square'
@@ -1223,6 +1190,7 @@ class PetitionScreen extends Component {
     }
 
     render () {
+      if (this.state.savedData.length==0) return null // Wait loop
       return (
         <View style={{flex: 1, backgroundColor: "#fff" }}>
           <ScrollView
@@ -1350,11 +1318,10 @@ class PetitionScreen extends Component {
         alignItems: "center",
       },
       modalView: {
-        margin: 50,
+        margin: 20,
         backgroundColor: "white",
         borderRadius: 20,
-        padding: 50,
-        alignItems: "center",
+        padding: 20,
         shadowColor: "#000",
         shadowOffset: {
           width: 0,

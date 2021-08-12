@@ -271,10 +271,10 @@ class ResumeViewScreen extends Component {
               renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
             />
             <Text style={styles.transcript}></Text>
-            {this.state.doc.length > 0 && lastSaved>0 && this.state.title.toLocaleLowerCase().includes("compra") && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con pago</Text></TouchableOpacity></View>)}
-            {this.state.doc.length > 0  && lastSaved>0 && this.state.title.toLocaleLowerCase().includes("venta") && !this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askLinkCobro()}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)}
+            {this.state.doc.length > 0 && lastSaved==-1 && this.state.title.toLocaleLowerCase().includes("compra") && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con pago</Text></TouchableOpacity></View>)}
+            {this.state.doc.length > 0  && lastSaved==-1 && this.state.title.toLocaleLowerCase().includes("venta") && !this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askLinkCobro()}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)}
             {this.linkToCobro()}
-            {this.state.doc.length > 0  && lastSaved>0 && this.state.title.toLocaleLowerCase().includes("venta") && this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askUnlinkCobro()}><Text style={styles.deleteButton}>Desvincular con cobro</Text></TouchableOpacity></View>)}
+            {this.state.doc.length > 0  && lastSaved==-1 && this.state.title.toLocaleLowerCase().includes("venta") && this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askUnlinkCobro()}><Text style={styles.deleteButton}>Desvincular con cobro</Text></TouchableOpacity></View>)}
           </View>
         )
     }
@@ -352,23 +352,11 @@ class ResumeViewScreen extends Component {
           </View>
           </ScrollView>   
           <View style={styles.navBarBackHeader}>
-          <View style={{ width: 70,textAlign:'center' }}>
-              <Icon
-                name='trash'
-                type='font-awesome'
-                color='#FFF'
-                size={30}
-                onPress={this._delete}
-              />
+            <View style={{ width: 70,textAlign:'center' }}>
+              <Icon name='save' type='font-awesome' color='#FFF' size={30} onPress={this._save} />
             </View>
             <View style={{ width: 70,textAlign:'center' }}>
-              <Icon
-                name='save'
-                type='font-awesome'
-                color='#FFF'
-                size={30}
-                onPress={this._save}
-              />
+              <Icon name='trash' type='font-awesome' color='#FFF' size={30} onPress={this._delete} />
             </View>
           </View>
         </View>
