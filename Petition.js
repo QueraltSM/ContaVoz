@@ -36,7 +36,7 @@ class PetitionScreen extends Component {
         flatlistPos: 0,
         saved: false,
         fadeAnimation: new Animated.Value(0),
-        timer: false
+        timer: 0
       }
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
       Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
@@ -253,12 +253,15 @@ class PetitionScreen extends Component {
     }
   
     onSpeechResults(e) {
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       var res = e.value + ""
       var word = res.split(",")
+      if (word[0].length>0) {
+        this._stopRecognition(e)
+      }
       this.setState({
         listenedData: word[0],
       });
+      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (this.state.data[lastSaved].idcampo=="factura") {
         this.setState({listenedData:this.state.listenedData.toUpperCase()})
       }
@@ -285,33 +288,26 @@ class PetitionScreen extends Component {
           console.error(e);
         }
       }
-      this.setState({ timer: JSON.parse(false) })
-      this.setTimer(e, this.state.timer)
+      this.setTimer(e)
     }
 
-    setTimer (e, t) {
-      /*if (t) {
-        clearTimeout()
-      } else {
-        setTimeout(() => {
-          if (!this.state.timer) {
-            this.showAlert("Atención", "El tiempo de escucha se ha expirado")
-            this._stopRecognition(e)
-            clearTimeout()
-          }
-        },10000);
-      }*/
+    async setTimer (e) {
+      var timer = setTimeout(() => {
+        if (this.state.listenedData.length == 0) {
+          this.showAlert("Atención", "El tiempo de escucha ha expirado")
+        }
+        this._stopRecognition(e)
+        clearTimeout(this.state.timer)
+      },10000);
+      this.setState({ timer: timer })
     }
   
     async _stopRecognition(e) {
-      this.setState({is_recording: JSON.stringify(false)})
-      this.setState({ timer: JSON.parse(true) })
-      this.setTimer(e, this.state.timer)
+      await this.setState({ is_recording: JSON.stringify(false) })
+      clearTimeout(this.state.timer)
       try {
         await Voice.stop()
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) {}
     }
   
     noMoreAudio() {
@@ -589,7 +585,6 @@ class PetitionScreen extends Component {
       }
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
       this.setState({ savedData: array })
-      console.log(JSON.stringify(this.state.savedData))
       this.setState({ listenedData: "" })
       this.setState({ interpretedData: "" })
       this.setState({ is_recording: JSON.parse(false) })
@@ -669,7 +664,7 @@ class PetitionScreen extends Component {
         (<View><TouchableOpacity onPress={() => this.askSkip()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
     }
-    
+
     setVoiceControl() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (JSON.parse(this.state.is_recording) && lastSaved>-1) {
@@ -1081,7 +1076,7 @@ class PetitionScreen extends Component {
       },
       showListen:{
         textAlign: 'center',
-        color: '#229954',
+        color: '#B03A2E',
         fontWeight: 'bold',
         fontSize: 30,
         width: "90%",
