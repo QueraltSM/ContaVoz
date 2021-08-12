@@ -35,7 +35,6 @@ class PetitionScreen extends Component {
         userid: "",
         flatlistPos: 0,
         saved: false,
-        importe: 0,
         fadeAnimation: new Animated.Value(0),
         timer: false
       }
@@ -266,10 +265,6 @@ class PetitionScreen extends Component {
       if (this.state.data[lastSaved].tipoexp != "E" && this.state.data[lastSaved].tipoexp != "F") {
         this.setState({listenedData:this.state.listenedData.split(' ').join("")})
       }
-      /*if (this.state.data[lastSaved].tipoexp == "N") {
-        this.setState({ listenedData: this.state.listenedData.replace("con", ",") })
-      }
-      console.log(this.state.listenedData)*/
       this.setState({getData: true})
       this.setListenedData()
     }
@@ -658,8 +653,11 @@ class PetitionScreen extends Component {
     };
 
     setVoiceControlView() {
-      this.fadeIn()
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+      if (this.state.savedData[lastSaved].idcampo.includes("base") || this.state.savedData[lastSaved].idcampo.includes("cuota")) {
+        return this.setDisplayDataModal(lastSaved)
+      }
+      this.fadeIn()
       return (<View style={styles.resumeView}>
           <Animated.View style={[ { opacity: this.state.fadeAnimation }]}>
             <Text style={styles.showListen}>Escuchando {this.state.data[lastSaved].titulo.toLowerCase()}...</Text>
@@ -671,141 +669,7 @@ class PetitionScreen extends Component {
         (<View><TouchableOpacity onPress={() => this.askSkip()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
     }
-
-    /*setBase() {
-        var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-        var importe = Number(this.state.importe)
-        var porcentaje = this.state.savedData[lastSaved+1].valor
-        if (porcentaje == null) {
-          porcentaje =  this.state.data[lastSaved+1].xdefecto
-        }
-        var x = 100 + Number(porcentaje)
-        var base = ( importe * 100 ) / x
-        var finalBase = Math.round(base * 100) / 100
-        return (<View style={styles.resumeView}>
-          <Text style={styles.showTitle}>{this.state.data[lastSaved].titulo}: {finalBase}</Text>
-          {this.state.data[lastSaved].tipoexp=="N" &&
-          <Text style={styles.showTitle}>Ha obtenido una base de {finalBase} para un importe {importe} y un porcentaje de {porcentaje}%</Text>}
-            <Text style={styles.transcript}></Text>
-              <View style={styles.modalNavBarButtons}>
-                  <TouchableOpacity onPress={() => this.saveData()}>
-                      <Icon name='save' type='font-awesome' color='#509080' size={32} />
-                  </TouchableOpacity>
-                  <Icon
-                    name='window-close'
-                    type='font-awesome'
-                    color='#FFF'
-                    size={32}
-                  />
-                  <Icon
-                    name='window-close'
-                    type='font-awesome'
-                    color='#FFF'
-                    size={32}
-                  />
-                  {this.state.data[lastSaved].obligatorio=="N" &&<TouchableOpacity onPress={() => this.skipBase()}><Text style={styles.exitButton}>Omitir</Text></TouchableOpacity>}
-                </View>
-        </View>)
-    }
-
-    async setNullBase() {
-      var array = this.state.savedData
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      array[lastSaved].valor = ""
-      array[lastSaved+1].valor = ""
-      array[lastSaved+2].valor = ""
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
-      this.setState({ savedData: array })
-      this.setState({ listenedData: "" })
-      this.setState({ interpretedData: "" })  
-      this.setState({ is_recording: JSON.parse(false) })
-    }
-
-    async setNullPorcentaje() {
-      var array = this.state.savedData
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      array[lastSaved].valor = ""
-      array[lastSaved+1].valor = ""
-      array[lastSaved+2].valor = ""
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
-      this.setState({ savedData: array })
-      this.setState({ listenedData: "" })
-      this.setState({ interpretedData: "" })  
-      this.setState({ is_recording: JSON.parse(false) })
-    }
-
-    async skipBase() {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "Omitir base",
-          "Si omite este dato no se podrá calcular la cuota. ¿Está seguro de que desea omitir la base?",
-          [
-            {
-              text: 'Sí',
-              onPress: () => {
-                resolve(this.setNullBase());
-              },
-            },
-            {
-              text: 'No',
-              onPress: () => {
-                resolve(this.setPorcentaje());
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-      await AsyncAlert();
-    }
-
-    setPorcentaje() {
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      return (<View style={styles.resumeView}>
-        <Text style={styles.showTitle}>Escuchando {this.state.data[lastSaved+1].titulo.toLowerCase()}...</Text>
-        {this.state.data[lastSaved].tipoexp=="N" &&
-        <Text style={styles.showTitle}>Las cifras decimales debe decirlas con "punto", por ejemplo 144.99</Text>}
-        <Text style={styles.changeTranscript}></Text>
-        <Text style={styles.showTitle}>Pulse el micrófono cuando termine de hablar</Text>
-        {this.state.data[lastSaved].obligatorio=="N" &&
-        (<View><TouchableOpacity onPress={() => this.skipPorcentaje()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
-      </View>)
-    }
-
-    setCuota() {
-        var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-        var importe = Number(this.state.importe)
-        var base = Number(this.state.savedData[lastSaved-2].valor) 
-        var porcentaje = Number(this.state.savedData[lastSaved-1].valor) 
-        var cuota = base*porcentaje
-        cuota = Math.round(cuota * 100) / 100
-        return (<View style={styles.resumeView}>
-          <Text style={styles.showTitle}>{this.state.savedData[lastSaved].titulo}: {cuota}</Text>
-          {this.state.data[lastSaved].tipoexp=="N" &&
-          <Text style={styles.showTitle}>Ha obtenido una cuota de {cuota} para importe {importe} y porcentaje de {porcentaje}%</Text>}
-          <Text style={styles.transcript}></Text>
-              <View style={styles.modalNavBarButtons}>
-              <TouchableOpacity onPress={() => this.saveData()}>
-                      <Text style={styles.saveButton}>Guardar</Text>
-                  </TouchableOpacity>
-                  <Icon
-                    name='window-close'
-                    type='font-awesome'
-                    color='#FFF'
-                    size={32}
-                  />
-                  <Icon
-                    name='window-close'
-                    type='font-awesome'
-                    color='#FFF'
-                    size={32}
-                  />
-                {this.state.data[lastSaved].obligatorio=="N" &&<TouchableOpacity onPress={() => this.skipData()}><Text style={styles.exitButton}>Omitir</Text></TouchableOpacity>}
-                </View>
-        </View>)
-    }*/
-
-
+    
     setVoiceControl() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (JSON.parse(this.state.is_recording) && lastSaved>-1) {
@@ -816,25 +680,7 @@ class PetitionScreen extends Component {
       return null
     }
 
-    async storeDataInDicctionary() {
-      var arrayWords =  this.state.words
-      if (!this.state.words.some(item => item.key.toLowerCase() === this.state.listenedData.toLowerCase())) {
-        arrayWords.push({
-          key: this.state.listenedData,
-          value: this.state.interpretedData,
-          time: new Date().getTime(),
-          enterprise: false
-        })
-      } else {
-        var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.listenedData.toLowerCase());
-        arrayWords[i].value = this.state.interpretedData
-      }
-      this.setState({ words: arrayWords })
-      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(arrayWords))
-      this.storeData()
-    }
-
-    async storeEnterpriseInDicctionary() {
+    async saveEnterprise() {
       var arrayWords =  this.state.words
       if (!this.state.words.some(item => item.key.toLowerCase() === this.state.interpretedData.toLowerCase())) {
         arrayWords.push({
@@ -860,7 +706,7 @@ class PetitionScreen extends Component {
             {
               text: 'Sí',
               onPress: () => {
-                resolve(this.storeEnterpriseInDicctionary());
+                resolve(this.saveEnterprise());
               },
             },
             {
@@ -876,33 +722,7 @@ class PetitionScreen extends Component {
         await AsyncAlert();
     }
 
-    /*async askNewDataSave () {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "Guardar palabra",
-          "¿Desea registrar estos datos en el diccionario?",
-          [
-            {
-              text: 'Sí',
-              onPress: () => {
-                resolve(this.storeDataInDicctionary());
-              },
-            },
-            {
-              text: 'No',
-              onPress: () => {
-                resolve(this.storeData());
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-        await AsyncAlert();
-    }*/
-
     async storeData () {
-      var valor = this.state.interpretedData
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (this.state.data[lastSaved].tipoexp == "E") {
         this.setState({ optionalData: "" })
@@ -910,33 +730,7 @@ class PetitionScreen extends Component {
         this.setState({ lastOptionalValue: "" })
       }
       var array = this.state.savedData
-      var idcampo = this.state.data[lastSaved].idcampo
-      var xdefecto = this.state.data[lastSaved].xdefecto
-      /*if (idcampo.includes("base")) {
-        var importe = this.state.importe
-        var x = 100 + Number(xdefecto)
-        var base = (Number(importe) * 100) / x
-        var finalBase = Math.round(base * 100) / 100
-        valor = finalBase
-      } else if (idcampo.includes("cuota")) {
-        var base = Number(this.state.savedData[lastSaved-2].valor) 
-        var porcentaje = Number(this.state.savedData[lastSaved-1].valor)
-        var cuota = base*porcentaje
-        cuota = Math.round(cuota * 100) / 100
-        valor = cuota
-      }*/
-      if (idcampo.includes("importe")) {
-        var number = evaluate(valor)
-        if (number>0 || Number(valor)>0) {
-          array[lastSaved].valor = valor
-          await AsyncStorage.setItem(this.state.ipetitionIDd+".importe",  valor )
-          this.setState({importe:valor})
-        } else {
-          this.showAlert("Error", "Diga un número válido")
-        }
-      } else {
-        array[lastSaved].valor = valor
-      }
+      array[lastSaved].valor=this.state.interpretedData
       this.resetListening()
       this.setState({ savedData: array })
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
@@ -990,8 +784,22 @@ class PetitionScreen extends Component {
       this.resetListening()
     }
 
-    /*setDataModalPercentage(){
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+    setDisplayDataModal(lastSaved) {
+      var porcentaje = this.state.savedData[lastSaved-1].valor
+      var lastPercentage = this.state.savedData.findIndex(obj => obj.idcampo.includes("porcentaje"))
+      var importe = this.state.savedData[lastPercentage-1].valor
+      var result = ""
+      if (this.state.savedData[lastSaved].idcampo.includes("base")) {
+        var x = 100 + Number(porcentaje)
+        result = ( importe * 100 ) / x
+        result = Math.round(result * 100) / 100
+      } else {
+        var base = Number(this.state.savedData[lastSaved-1].valor) 
+        var porcentaje = Number(this.state.savedData[lastSaved-2].valor) 
+        result = base*porcentaje
+        result = Math.round(result * 100) / 100
+      }
+      this.state.interpretedData=result
       return(<Modal
         animationType = {"slide"}
         transparent={true}>
@@ -1000,38 +808,24 @@ class PetitionScreen extends Component {
           <ScrollView
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}>
-          <Text style={styles.listening}>{this.state.data[lastSaved+1].titulo}</Text>
+          <Text style={styles.listening}>{this.state.savedData[lastSaved].titulo}</Text>
           <View>
-            <Text style={styles.resumeText}>Texto escuchado</Text><Text multiline={true} style={styles.transcript}>{this.state.listenedData}</Text>
-            <Text style={styles.resumeText}>Texto interpretado <Icon name='pencil' type='font-awesome' color='#000' size={25}/></Text>
-            <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.interpretedData}</TextInput>
-            </View>
+            <Text style={styles.resumeText}>Resultado de los cálculos <Icon name='pencil' type='font-awesome' color='#000' size={25}/></Text>
+            <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.state.interpretedData=result}>{result}</TextInput>
+          </View>
             <Text style={styles.transcript}></Text>
             <View style={styles.modalNavBarButtons}>
-                <TouchableOpacity onPress={() => this.savePercentage()}>
-                    <Text style={styles.saveButton}>Guardar</Text>
-                </TouchableOpacity>
-                <Icon
-                  name='window-close'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={32}
-                />
-                <Icon
-                  name='window-close'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={32}
-                />
-                <TouchableOpacity onPress={this.cancelData}>
-                    <Text style={styles.exitButton}>Cancelar</Text>
-                </TouchableOpacity>
+              <TouchableOpacity onPress={() => this.saveData()} style={styles.saveButtomModal}><Icon name='save' type='font-awesome' color='white' size={32}/></TouchableOpacity>
+              <Icon name='times' type='font-awesome' color='white' size={32}/>
+              <TouchableOpacity onPress={() => this.cancelData()} style={styles.exitButtomModal}><Icon name='times' type='font-awesome' color='white' size={32}/></TouchableOpacity>
+              <Icon name='times' type='font-awesome' color='white' size={32}/>
+              <TouchableOpacity onPress={() => this.saveNextData()} style={styles.continueButtomModal}><Text><Icon name='save' type='font-awesome' color='white' size={32}/> <Icon name='arrow-right' type='font-awesome' color='white' size={32}/></Text></TouchableOpacity>
               </View>
           </ScrollView>
         </View>
       </View>
     </Modal>)
-    }*/
+    }
 
     setDataModal(){
       if (this.state.listenedData.length == 0 || this.state.interpretedData.length == 0) return null
