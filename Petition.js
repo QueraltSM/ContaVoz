@@ -276,7 +276,8 @@ class PetitionScreen extends Component {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       this.setState({is_recording: JSON.stringify(true)})
       var idcampo = this.state.data[lastSaved].idcampo
-      if (!idcampo.includes("base") || (idcampo.includes("base") && this.state.data[lastSaved+1].xdefecto == "")) {
+      if ((!idcampo.includes("base") && !idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto == "") || 
+      (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto != "")) {
         this.setState({
           recognized: '',
           started: '',
@@ -287,8 +288,10 @@ class PetitionScreen extends Component {
         } catch (e) {
           console.error(e);
         }
+        this.setTimer(e)
+      } else {
+        this.setState({ interpretedData : this.state.data[lastSaved].xdefecto })
       }
-      this.setTimer(e)
     }
 
     async setTimer (e) {
@@ -326,9 +329,10 @@ class PetitionScreen extends Component {
         />
       } else if (this.state.savedData.length>0) {
         var idcampo = this.state.data[lastSaved].idcampo
+        var xdefecto = this.state.data[lastSaved].xdefecto
         if ((idcampo.includes("base") && this.state.data[lastSaved+1].xdefecto != "")
         || (idcampo.includes("porcentaje") && this.state.data[lastSaved].xdefecto != "")
-        || (idcampo.includes("cuota"))) {
+        || (idcampo.includes("cuota")) || xdefecto != "") {
           return <Icon
           name='microphone'
           type='font-awesome'
@@ -652,6 +656,9 @@ class PetitionScreen extends Component {
       if (this.state.savedData[lastSaved].idcampo.includes("base") || this.state.savedData[lastSaved].idcampo.includes("cuota")) {
         return this.setDisplayDataModal(lastSaved)
       }
+      if (this.state.savedData[lastSaved].xdefecto != "") {
+        return this.setDefaultData(this.state.savedData[lastSaved])
+      }
       this.fadeIn()
       return (<View style={styles.resumeView}>
           <Animated.View style={[ { opacity: this.state.fadeAnimation }]}>
@@ -777,6 +784,35 @@ class PetitionScreen extends Component {
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
       this.setState({savedData: array})
       this.resetListening()
+    }
+
+    setDefaultData(data) {
+      var result = data.xdefecto
+      return(<Modal
+        animationType = {"slide"}
+        transparent={true}>
+          <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+          <ScrollView
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}>
+          <Text style={styles.listening}>{data.titulo}</Text>
+          <View>
+            <Text style={styles.resumeText}>Valor por defecto <Icon name='pencil' type='font-awesome' color='#000' size={25}/></Text>
+            <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.state.interpretedData=result}>{result}</TextInput>
+          </View>
+            <Text style={styles.transcript}></Text>
+            <View style={styles.modalNavBarButtons}>
+              <TouchableOpacity onPress={() => this.saveData()} style={styles.saveButtomModal}><Icon name='save' type='font-awesome' color='white' size={32}/></TouchableOpacity>
+              <Icon name='times' type='font-awesome' color='white' size={32}/>
+              <TouchableOpacity onPress={() => this.cancelData()} style={styles.exitButtomModal}><Icon name='times' type='font-awesome' color='white' size={32}/></TouchableOpacity>
+              <Icon name='times' type='font-awesome' color='white' size={32}/>
+              <TouchableOpacity onPress={() => this.saveNextData()} style={styles.continueButtomModal}><Text><Icon name='save' type='font-awesome' color='white' size={32}/> <Icon name='arrow-right' type='font-awesome' color='white' size={32}/></Text></TouchableOpacity>
+              </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>)
     }
 
     setDisplayDataModal(lastSaved) {

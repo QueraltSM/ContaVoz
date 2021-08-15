@@ -89,7 +89,7 @@ class LoginScreen extends Component {
     }
 
     async getConfig() {
-      var petition = ["ventas", "pagos", "cobros"]
+      var petition = ["compras", "ventas", "pagos", "cobros"]
       petition.forEach((i)=> {
         const requestOptions = {
           method: 'POST',
@@ -127,7 +127,6 @@ class LoginScreen extends Component {
           .then((response) => response.json())
           .then((responseJson) => {
             let error = JSON.stringify(responseJson.error_code)
-            console.log(JSON.stringify(responseJson))
             if (error == 0) {
               this.setState({fullname: JSON.parse(JSON.stringify(responseJson.fullName))})
               this.setState({token: JSON.parse(JSON.stringify(responseJson.token))})

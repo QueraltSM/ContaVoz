@@ -1,7 +1,8 @@
 import React, {Component} from 'react';
-import {StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollView } from 'react-native';
+import {StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollView, Alert } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import AsyncStorage from '@react-native-community/async-storage';
+import { Icon } from 'react-native-elements'
 
 class PetitionListScreen extends Component { 
 
@@ -43,6 +44,93 @@ class PetitionListScreen extends Component {
       this.props.navigation.push("Main")
       return true
     }
+
+    goView (view) {
+      this.props.navigation.push(view)
+    }
+
+    saveLogout =  async (state) => {
+      if (!state) {
+        await AsyncStorage.setItem("isUserLoggedIn", JSON.stringify(false));
+        await AsyncStorage.setItem("company", "");
+        await AsyncStorage.setItem("user", "");
+        await AsyncStorage.setItem("password", "");
+      }
+      this.goView("Login")
+    }
+  
+    logout = async () => {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "Procedo a desconectar",
+          "¿Debo mantener su identificación actual?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(this.saveLogout(true));
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve(this.saveLogout(false));
+              },
+            },
+            {
+              text: 'Cancelar',
+              onPress: () => {
+                resolve('Cancel');
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+      });
+      await AsyncAlert();
+    }
+    
+    setMenuButtons() {
+      return (
+        <View style={{ width: "100%", flexDirection:'row', justifyContent:"center", paddingTop: 30, paddingBottom: 10}}>
+            <TouchableOpacity onPress={() => this.goView("Main")}>
+              <Icon
+                name='home'
+                type='font-awesome'
+                color='black'
+                size={32}
+              />
+            </TouchableOpacity>
+            <Icon
+              name='search'
+              type='font-awesome'
+              color='white'
+              size={28}
+            />
+            <TouchableOpacity onPress={() => this.goView("DictionaryView")}>
+              <Icon
+                name='users'
+                type='font-awesome'
+                color='black'
+                size={28}
+              />
+            </TouchableOpacity>
+            <Icon
+              name='search'
+              type='font-awesome'
+              color='white'
+              size={28}
+            />
+            <TouchableOpacity onPress={() => this.logout()}>
+              <Icon
+                name='sign-out'
+                type='font-awesome'
+                color='black'
+                size={32}
+              />
+            </TouchableOpacity>
+        </View>)
+    }
   
     openDocument = async (item, index) => {
       await AsyncStorage.setItem("petitionType", this.state.type+"."+index)
@@ -64,6 +152,7 @@ class PetitionListScreen extends Component {
           </View>
           <ScrollView vertical style={{backgroundColor: "#FFF" }}>
           <View style={styles.sections}>
+          {this.setMenuButtons()}
             <View style={styles.voiceControlView}>
             <FlatList 
               vertical
@@ -88,7 +177,7 @@ class PetitionListScreen extends Component {
     voiceControlView: {
         flex: 1,
         backgroundColor: "#FFF",
-        paddingTop: 40,
+        paddingTop: 10,
         alignContent: "center",
         alignSelf: "center",
         width: "90%",
