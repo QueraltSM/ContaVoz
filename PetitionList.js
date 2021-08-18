@@ -44,93 +44,6 @@ class PetitionListScreen extends Component {
       this.props.navigation.push("Main")
       return true
     }
-
-    goView (view) {
-      this.props.navigation.push(view)
-    }
-
-    saveLogout =  async (state) => {
-      if (!state) {
-        await AsyncStorage.setItem("isUserLoggedIn", JSON.stringify(false));
-        await AsyncStorage.setItem("company", "");
-        await AsyncStorage.setItem("user", "");
-        await AsyncStorage.setItem("password", "");
-      }
-      this.goView("Login")
-    }
-  
-    logout = async () => {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "Procedo a desconectar",
-          "¿Debo mantener su identificación actual?",
-          [
-            {
-              text: 'Sí',
-              onPress: () => {
-                resolve(this.saveLogout(true));
-              },
-            },
-            {
-              text: 'No',
-              onPress: () => {
-                resolve(this.saveLogout(false));
-              },
-            },
-            {
-              text: 'Cancelar',
-              onPress: () => {
-                resolve('Cancel');
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-      });
-      await AsyncAlert();
-    }
-    
-    setMenuButtons() {
-      return (
-        <View style={{ width: "100%", flexDirection:'row', justifyContent:"center", paddingTop: 30, paddingBottom: 10}}>
-            <TouchableOpacity onPress={() => this.goView("Main")}>
-              <Icon
-                name='home'
-                type='font-awesome'
-                color='black'
-                size={32}
-              />
-            </TouchableOpacity>
-            <Icon
-              name='search'
-              type='font-awesome'
-              color='white'
-              size={28}
-            />
-            <TouchableOpacity onPress={() => this.goView("DictionaryView")}>
-              <Icon
-                name='users'
-                type='font-awesome'
-                color='black'
-                size={28}
-              />
-            </TouchableOpacity>
-            <Icon
-              name='search'
-              type='font-awesome'
-              color='white'
-              size={28}
-            />
-            <TouchableOpacity onPress={() => this.logout()}>
-              <Icon
-                name='sign-out'
-                type='font-awesome'
-                color='black'
-                size={32}
-              />
-            </TouchableOpacity>
-        </View>)
-    }
   
     openDocument = async (item, index) => {
       await AsyncStorage.setItem("petitionType", this.state.type+"."+index)
@@ -144,16 +57,16 @@ class PetitionListScreen extends Component {
                 <Text style={styles.registeredDocuments}>{this.state.lists[index]>0 && <Text style={styles.documentsCount}> {this.state.lists[index]} </Text>} {item.titulo}</Text>
               </TouchableOpacity>)
     }
+
     render () {
+      if (this.state.lists.length == 0) return null 
       return (
         <View style={{flex: 1, backgroundColor:"#FFF" }}>
           <View style={styles.navBarBackHeader}>
             <Text style={styles.navBarHeader}>Seleccione tipo de documento</Text>
           </View>
           <ScrollView vertical style={{backgroundColor: "#FFF" }}>
-          <View style={styles.sections}>
-          {this.setMenuButtons()}
-            <View style={styles.voiceControlView}>
+          <View style={styles.voiceControlView}>
             <FlatList 
               vertical
               showsVerticalScrollIndicator={false}
@@ -163,7 +76,6 @@ class PetitionListScreen extends Component {
                 {this.setData(item, index)}
               </View>))}
             />
-          </View>
           </View>
           </ScrollView>   
         </View>

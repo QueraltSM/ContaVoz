@@ -84,6 +84,7 @@ class MainScreen extends Component {
     }
   
     render () {
+      if (this.state.fullname.length == 0) return null
       return (
         <View style={styles.mainView}> 
           <View style={styles.accountingView}>
@@ -161,7 +162,7 @@ class MainScreen extends Component {
             <TouchableOpacity onPress={this.goDictionary}>
               <View style={styles.mainIcon}>
                 <Icon
-                  name='users'
+                  name='briefcase'
                   type='font-awesome'
                   color='#FFF'
                   size={35}/>

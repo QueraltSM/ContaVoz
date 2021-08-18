@@ -36,7 +36,8 @@ class PetitionScreen extends Component {
         flatlistPos: 0,
         saved: false,
         fadeAnimation: new Animated.Value(0),
-        timer: 0
+        timer: 0,
+        seconds: 10
       }
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
       Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
@@ -219,23 +220,22 @@ class PetitionScreen extends Component {
     }
 
     setFixedData() {
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       var listenedData = this.state.listenedData.toLowerCase()
-      var tipoexp = this.state.data[lastSaved].tipoexp
-      var str = this.state.listenedData
-      this.setOptionalData("Empresa no registrada", "")
-      for (let i = 0; i < this.state.words.length; i++) {
-        if (listenedData.includes(this.state.words[i].key.toLowerCase()) && tipoexp == "E" ) {
-            this.setOptionalData("NIF asociado", this.state.words[i].value)
-            str = this.state.words[i].key
-          } else if (listenedData.includes(this.state.words[i].value.toLowerCase()) && tipoexp == "E") {
-            this.setOptionalData("Entidad asociada", this.state.words[i].key)
-            str = this.state.words[i].value
+      var interpretedKey = this.state.words.findIndex(obj => obj.key.toLowerCase().includes(listenedData))
+      if (interpretedKey > -1) {
+        var interpretedData = this.state.words[interpretedKey].value.toLowerCase()
+        var dataValue = this.state.words.findIndex(obj => obj.key.toLowerCase().includes(interpretedData))
+        if (dataValue == -1) {
+          this.setState({ interpretedData: this.state.words[interpretedKey].key })
+          this.setOptionalData("NIF asociado", this.state.words[interpretedKey].value)
         } else {
-            str = str.toLocaleLowerCase().replace(this.state.words[i].key.toLocaleLowerCase(), this.state.words[i].value)
+          this.setState({ interpretedData: this.state.words[interpretedKey].value })
+          this.setOptionalData("NIF asociado", this.state.words[dataValue].value)
         }
+      } else {
+        this.setState({ interpretedData: this.state.listenedData })
+        this.setOptionalData("Empresa no encontrada", "")
       }
-      this.setState({ interpretedData: str })
     }
 
     async setListenedData() {
@@ -295,13 +295,19 @@ class PetitionScreen extends Component {
     }
 
     async setTimer (e) {
-      var timer = setTimeout(() => {
-        if (this.state.listenedData.length == 0) {
-          this.showAlert("Atención", "El tiempo de escucha ha expirado")
-        }
-        this._stopRecognition(e)
-        clearTimeout(this.state.timer)
-      },10000);
+      if (this.state.seconds > 0 ) {
+        var timer = setTimeout(() => {
+          this.setState({ seconds: this.state.seconds-1})
+          this.setTimer(e)
+        },1000);
+      } else {
+          if (this.state.listenedData.length == 0) {
+            this.showAlert("Atención", "El tiempo de escucha ha expirado")
+          }
+          this.setState({ seconds: 10 })
+          this._stopRecognition(e)
+          clearTimeout(this.state.timer)
+      }
       this.setState({ timer: timer })
     }
   
@@ -324,7 +330,7 @@ class PetitionScreen extends Component {
           name='microphone'
           type='font-awesome'
           color='#1A5276'
-          size={30}
+          size={35}
           onPress={() => this.noMoreAudio()}
         />
       } else if (this.state.savedData.length>0) {
@@ -337,7 +343,7 @@ class PetitionScreen extends Component {
           name='microphone'
           type='font-awesome'
           color='#1A5276'
-          size={30}
+          size={35}
           onPress={this._startRecognition.bind(this)}
         />
         } else if (JSON.parse(this.state.is_recording) && !JSON.parse(this.state.saved)) {
@@ -346,7 +352,7 @@ class PetitionScreen extends Component {
               name='microphone-slash'
               type='font-awesome'
               color='#B03A2E'
-              size={30}
+              size={35}
               onPress={this._stopRecognition.bind(this)}
           />
           </Animated.View>
@@ -355,7 +361,7 @@ class PetitionScreen extends Component {
           name='microphone'
           type='font-awesome'
           color='#1A5276'
-          size={30}
+          size={35}
           onPress={this._startRecognition.bind(this)}
         />
       }
@@ -660,13 +666,12 @@ class PetitionScreen extends Component {
         return this.setDefaultData(this.state.savedData[lastSaved])
       }
       this.fadeIn()
-      return (<View style={styles.resumeView}>
+      return (<View style={styles.titleView}>
           <Animated.View style={[ { opacity: this.state.fadeAnimation }]}>
-            <Text style={styles.showListen}>Escuchando {this.state.data[lastSaved].titulo.toLowerCase()}...</Text>
+            <Text style={styles.showListen}>Escuchando {this.state.data[lastSaved].titulo.toLowerCase()}</Text>
           </Animated.View>
-        {this.state.data[lastSaved].tipoexp=="N" &&
-        <Text style={styles.showSubTitle}>Los decimales deben decirse con "punto" o "con"</Text>}
-        {lastSaved+1 < this.state.savedData.length && <Text style={styles.showNextData}>Siguiente dato: {this.state.data[lastSaved+1].titulo}</Text>}
+          <Text style={styles.secondsLabel}>({this.state.seconds})</Text>
+        {lastSaved+1 < this.state.savedData.length && <Text style={styles.showNextData}>Siguiente dato {this.state.data[lastSaved+1].titulo}</Text>}
         {this.state.data[lastSaved].obligatorio=="N" &&
         (<View><TouchableOpacity onPress={() => this.askSkip()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
@@ -796,9 +801,9 @@ class PetitionScreen extends Component {
           <ScrollView
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}>
-          <Text style={styles.listening}>{data.titulo}</Text>
+          <Text style={styles.showTitle}>{data.titulo}</Text>
           <View>
-            <Text style={styles.resumeText}>Valor por defecto <Icon name='pencil' type='font-awesome' color='#000' size={25}/></Text>
+            <Text style={styles.resumeText}>Valor por defecto <Icon name='pencil' type='font-awesome' color='#000' size={20}/></Text>
             <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.state.interpretedData=result}>{result}</TextInput>
           </View>
             <Text style={styles.transcript}></Text>
@@ -839,9 +844,9 @@ class PetitionScreen extends Component {
           <ScrollView
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}>
-          <Text style={styles.listening}>{this.state.savedData[lastSaved].titulo}</Text>
+          <Text style={styles.showTitle}>{this.state.savedData[lastSaved].titulo}</Text>
           <View>
-            <Text style={styles.resumeText}>Resultado de los cálculos <Icon name='pencil' type='font-awesome' color='#000' size={25}/></Text>
+            <Text style={styles.resumeText}>Resultado <Icon name='pencil' type='font-awesome' color='#000' size={20}/></Text>
             <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.state.interpretedData=result}>{result}</TextInput>
           </View>
             <Text style={styles.transcript}></Text>
@@ -872,9 +877,9 @@ class PetitionScreen extends Component {
           <Text style={styles.listening}>{this.state.data[lastSaved].titulo}</Text>
           <View>
             <Text style={styles.resumeText}>Texto escuchado</Text><Text multiline={true} style={styles.transcript}>{this.state.listenedData}</Text>
-            <Text style={styles.resumeText}>Texto interpretado <Icon name='pencil' type='font-awesome' color='#000' size={25}/></Text>
+            <Text style={styles.resumeText}>Texto interpretado <Icon name='pencil' type='font-awesome' color='#000' size={20}/></Text>
             <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.interpretedData}</TextInput>
-            {this.state.optionalData.length > 0 &&
+            {this.state.data[lastSaved].tipoexp=="E" &&
             (<View><Text style={styles.resumeText}>{this.state.optionalData}</Text>
               <TextInput blurOnSubmit={true} multiline={true} placeholder="NIF no registrado" style={styles.changeTranscript} onChangeText={optionalValue => this.setState({optionalValue})}>{this.state.optionalValue}</TextInput>
             </View>)}
@@ -895,7 +900,7 @@ class PetitionScreen extends Component {
 
     showMessage = (message) => {
       return(
-        <View style={styles.resumeView}>
+        <View style={styles.titleView}>
           <Text style={styles.showTitle}>{message}</Text>
         </View>
       )
@@ -913,14 +918,16 @@ class PetitionScreen extends Component {
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
     }
 
-    startProgramm = () => {
+    documentState = () => {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.images.length == 0 && lastSaved==0) {
-        return this.showMessage("Para comenzar adjunte una imagen o pulse el micrófono")
-      } else if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.savedData.length > 0 && lastSaved>0) {
-        return this.showMessage("Tiene un documento por voz sin acabar")
+        return this.showMessage("Adjunte imágenes o pulse el micrófono de voz")
+      } else if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.images.length > 0 && lastSaved==0) {
+        return this.showMessage("Para empezar un documento de voz pulse el micrófono")
+      }  else if (this.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.savedData.length > 0 && lastSaved>0) {
+        return this.showMessage("Documento de voz no finalizado")
       } else if (this.state.savedData.length > 0 && lastSaved==-1) {
-        return this.showMessage("Tiene un documento por voz terminado")
+        return this.showMessage("Documento de voz terminado")
       }
       return null
     }
@@ -975,28 +982,28 @@ class PetitionScreen extends Component {
                 name='trash'
                 type='font-awesome'
                 color='#1A5276'
-                size={30}
+                size={35}
                 onPress={this.askDeleteDoc}
               />
             </View>
+            <View style={styles.iconsView}>
+                {this.setMicrophoneIcon()}
+              </View>
             <View style={{ width: 60,textAlign:'center' }}>
               <Icon
                 name='camera'
                 type='font-awesome'
                 color='#1A5276'
-                size={30}
+                size={35}
                 onPress={this.takePhoto}
               />
-              </View>
-              <View style={styles.iconsView}>
-                {this.setMicrophoneIcon()}
               </View>
               <View style={styles.iconsView}>
               <Icon
                 name='image'
                 type='font-awesome'
                 color='#1A5276'
-                size={30}
+                size={35}
                 onPress={this.goGallery}
               />
               </View>
@@ -1017,18 +1024,18 @@ class PetitionScreen extends Component {
     render () {
       if (this.state.savedData.length==0) return null // Wait loop
       return (
-        <View style={{flex: 1, backgroundColor: "#fff" }}>
-          <ScrollView
-            style={{backgroundColor: "#fff", paddingBottom: 100 }}>
-          <View style={{backgroundColor: "#1A5276"}}>
-            <Text style={styles.mainHeader}>{this.state.title}</Text>
-          </View>
-            <View style={styles.sections}>
-              {this.setImages()}
-              {this.startProgramm()}
-              {this.setVoiceControl()}
+        <View style={{flex: 1 }}>
+            <View style={{backgroundColor: "#1A5276"}}>
+              <Text style={styles.mainHeader}>{this.state.title}</Text>
             </View>
-          </ScrollView>
+            <ScrollView
+              style={{backgroundColor: "#fff" }}>
+              <View style={styles.sections}>
+                {this.setImages()}
+                {this.documentState()}
+                {this.setVoiceControl()}
+              </View>
+            </ScrollView>
           {this.setMenu()}
         </View>
       );
@@ -1107,15 +1114,15 @@ class PetitionScreen extends Component {
         color: '#154360',
         fontWeight: 'bold',
         fontSize: 25,
-        width: "90%",
-        paddingBottom: 20,
+        width: "100%",
+        paddingBottom: 10,
       },
       showListen:{
         textAlign: 'center',
         color: '#B03A2E',
         fontWeight: 'bold',
         fontSize: 30,
-        width: "90%",
+        width: "100%",
         paddingBottom: 20,
         paddingTop: 20
       },
@@ -1124,17 +1131,15 @@ class PetitionScreen extends Component {
         color: 'black',
         fontWeight: 'bold',
         fontSize: 20,
-        width: "90%",
+        width: "100%",
         paddingTop: 10
       },
       showNextData: {
         textAlign: 'center',
-        color: 'black',
-        fontWeight: 'bold',
+        color: '#56A494',
         fontSize: 20,
-        width: "90%",
-        paddingTop: 10,
-        textDecorationLine: 'underline',
+        width: "100%",
+        paddingTop: 20,
         fontWeight: 'bold',
       },
       centeredView: {
@@ -1154,8 +1159,11 @@ class PetitionScreen extends Component {
         },
         shadowOpacity: 0.25,
         shadowRadius: 4,
-        elevation: 5,
+        elevation: 10,
         width:"90%",
+        alignItems:"center",
+        alignContent: "center",
+        textAlign:"center"
       },
       footBar: {
         alignItems: 'center',
@@ -1186,20 +1194,27 @@ class PetitionScreen extends Component {
       transcript: {
         color: '#000',
         fontSize: 20,
-        width: "90%"
+        width: "100%",
+        textAlign: "center"
       },
       changeTranscript: {
         color: '#000',
         fontSize: 20,
-        fontStyle: 'italic',
-        width: "90%"
+        width: "100%",
+        textAlign:"center"
       },
       resumeText: {
         fontSize: 20,
-        textAlign: "justify",
+        textAlign: "center",
         paddingTop: 20,
         color: "#000",
         fontWeight: 'bold',
+      },
+      secondsLabel: {
+        fontWeight: 'bold',
+        color: "#B03A2E",
+        fontSize: 22,
+        textAlign: "center",
       },
       exitButton: {
         fontSize: 22,
@@ -1239,14 +1254,26 @@ class PetitionScreen extends Component {
         fontWeight: 'bold',
         fontSize: 22,
       },
+      titleView: {
+        paddingTop: 20,
+        paddingBottom: 20,
+        textAlign:"center",
+        width:"90%",
+        justifyContent: "center",
+        alignItems: "center"
+      },
       resumeView: {
-        paddingLeft: 40,
-        backgroundColor: "#FFF",
-        paddingBottom: 30
+        paddingBottom: 20,
+        textAlign:"center",
+        width:"100%",
+        justifyContent: "center"
       },
       sections: {
         flex: 1,
-        backgroundColor:"#FFF",
+        textAlign: "center",
+        justifyContent: "center",
+        width: "100%",
+        alignItems: "center"
       },
       mainHeader: {
         padding: 20,

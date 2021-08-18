@@ -78,7 +78,7 @@ class PetitionHistoryScreen extends Component {
       if (item.savedData.length > 0 && lastSaved==-1) {
         microContent = "#56A494"
       }
-      return <View style={{ flexDirection: "row" }}><Icon name='image' type='font-awesome' color={imagesContent} size={25} style={{ paddingRight: 15 }} /><Icon name='check' type='font-awesome' color={microContent} size={25} /></View>
+      return <View style={{ flexDirection: "row", alignItems:"center", justifyContent:"center" }}><Text style={styles.registeredDocuments}>{item.title} </Text><Icon name='image' type='font-awesome' color={imagesContent} size={25} style={{ paddingRight: 15 }} /><Icon name='check' type='font-awesome' color={microContent} size={25} /></View>
     }
 
     setList() {
@@ -90,17 +90,15 @@ class PetitionHistoryScreen extends Component {
               showsVerticalScrollIndicator={false}
               data={ this.state.list.sort((a,b) => a.id < b.id) } 
               renderItem={({ item }) => 
-              (<TouchableOpacity onPress={() => this.openDocument(item)}>
-                <Text style={styles.registeredDocuments}>{item.title} {this.setData(item)}
-              </Text></TouchableOpacity>)
-              }
-          />
-        </View>)
-      }
-      return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay registros</Text></View>)
+              (<TouchableOpacity onPress={() => this.openDocument(item)}>{this.setData(item)}</TouchableOpacity>)}
+            />
+          </View>)
+        }
+      return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No ha registrado documentos</Text></View>)
     }
   
     render () {
+      if (this.state.userid.length == 0) return null
       return (
         <View style={{flex: 1, backgroundColor:"#FFF" }}>
           <View style={styles.navBarBackHeader}>
@@ -136,13 +134,13 @@ class PetitionHistoryScreen extends Component {
   export default createAppContainer(PetitionHistoryScreen);
 
   const styles = StyleSheet.create({
-    voiceControlView: {
+      voiceControlView: {
         flex: 1,
         backgroundColor: "#FFF",
         paddingTop: 40,
         alignContent: "center",
         alignSelf: "center",
-        width: "90%",
+        width: "100%",
       },
       registeredDocuments: {
         fontSize: 22,
@@ -150,7 +148,7 @@ class PetitionHistoryScreen extends Component {
         paddingTop: 20,
         color: "#1A5276",
         fontWeight: 'bold',
-        paddingBottom: 15
+        paddingBottom: 15,
       },
       showTitle:{
         textAlign: 'center',
@@ -177,7 +175,7 @@ class PetitionHistoryScreen extends Component {
       },
       sections: {
         flex: 1,
-        backgroundColor:"#FFF",
+        backgroundColor:"#FFF"
       },
       resumeView: {
         paddingTop: 30,

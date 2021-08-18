@@ -162,7 +162,7 @@ class DictionaryViewScreen extends Component {
         <View style={{backgroundColor:"#FFF"}}>
           <View style={styles.accountingViewShow}>
           <Icon
-              name='users'
+              name='briefcase'
               type='font-awesome'
               color='#000'
               size={45}
@@ -216,7 +216,7 @@ class DictionaryViewScreen extends Component {
 
     setMenuButtons() {
       return (
-        <View style={{ width: "100%", flexDirection:'row', justifyContent:"center", paddingTop: 30, paddingBottom: 10}}>
+        <View style={{ width: "100%", flexDirection:'row', justifyContent:"center", paddingTop: 30, paddingBottom: 10 }}>
             {this.state.showForm && <TouchableOpacity onPress={() => this.formAction()}>
               <Icon
                 name='times'
@@ -318,7 +318,7 @@ class DictionaryViewScreen extends Component {
             <FlatList 
               vertical
               showsVerticalScrollIndicator={false}
-              data={ this.state.words.sort((a,b) => a.key > b.key) } 
+              data={ this.state.words.sort((a,b) => a.key .toLowerCase() > b.key.toLowerCase()) } 
               renderItem={({ item, index }) => (
               <View style={{paddingBottom: 20}}>
               <View style={styles.wordsBox}>
