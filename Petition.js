@@ -281,7 +281,7 @@ class PetitionScreen extends Component {
   
     async _startRecognition(e) {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      this.setState({is_recording: JSON.stringify(true)})
+      this.setState({is_recording: true })
       var idcampo = this.state.data[lastSaved].idcampo
       if ((!idcampo.includes("base") && !idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto == "") || 
       (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto != "")) {
@@ -318,7 +318,7 @@ class PetitionScreen extends Component {
     }
   
     async _stopRecognition(e) {
-      await this.setState({ is_recording: JSON.stringify(false) })
+      await this.setState({ is_recording: false })
       await this.setState({ seconds: 10 })
       clearTimeout(this.state.timer)
       try {
@@ -354,14 +354,12 @@ class PetitionScreen extends Component {
           onPress={this._startRecognition.bind(this)}
         />
         } else if (JSON.parse(this.state.is_recording) && !JSON.parse(this.state.saved)) {
-          return <Animated.View style={[ { opacity: this.state.fadeAnimation }]}>
             <Icon
               name='microphone-slash'
               type='font-awesome'
               color='#B03A2E'
               size={35}
           />
-          </Animated.View>
         }
         return <Icon
           name='microphone'
@@ -492,33 +490,6 @@ class PetitionScreen extends Component {
         );
       }
   
-    setMenuButtons() {
-      if (this.state.images.length > 0 || this.state.interpretedEntity.length>0) {
-        return(
-          <View style={styles.navBarButtons}>
-            <TouchableOpacity onPress={this._delete}>
-              <Text style={styles.exitText}>Borrar</Text>
-            </TouchableOpacity>
-          <Icon
-            name='window-close'
-            type='font-awesome'
-            color='#FFF'
-            size={32}
-          />
-          <Icon
-            name='window-close'
-            type='font-awesome'
-            color='#FFF'
-            size={32}
-          />
-          <TouchableOpacity onPress={this._finish}>
-            <Text style={styles.saveText}>Enviar</Text>
-          </TouchableOpacity>
-          </View>
-        )}
-      return null
-    }
-  
     setFlatlistPos(i) {
       this.setState({ flatlistPos: i })
     }
@@ -601,7 +572,7 @@ class PetitionScreen extends Component {
       this.setState({ savedData: array })
       this.setState({ listenedData: "" })
       this.setState({ interpretedData: "" })
-      this.setState({ is_recording: JSON.parse(false) })
+      this.setState({ is_recording: false })
       this.saveDocument()
     }
 
@@ -750,7 +721,7 @@ class PetitionScreen extends Component {
     }
 
     async resetListening() {
-      this.setState({ is_recording: JSON.stringify(false) })
+      this.setState({ is_recording: false })
       this.setState({ listenedData: "" })
       this.setState({ interpretedData: "" })
     }
@@ -957,6 +928,7 @@ class PetitionScreen extends Component {
     }
 
     setMenu() {
+        if (this.state.is_recording) return null 
         var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
         return (
         <View style={styles.navBarBackHeader}>
@@ -1259,7 +1231,7 @@ class PetitionScreen extends Component {
         alignItems: "center"
       },
       mainHeader: {
-        padding: 20,
+        padding: 10,
         alignItems: 'center',
         textAlign: "center",
         fontWeight: "bold",
