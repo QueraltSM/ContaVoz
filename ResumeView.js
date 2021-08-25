@@ -61,6 +61,7 @@ class ResumeViewScreen extends Component {
           this.setState({ words: JSON.parse(value) })
         }
       })
+      console.log(JSON.stringify(this.state.images))
     }
     
     componentDidMount(){
@@ -353,10 +354,10 @@ class ResumeViewScreen extends Component {
           </ScrollView>   
           <View style={styles.navBarBackHeader}>
             <View style={{ width: 70,textAlign:'center' }}>
-              <Icon name='save' type='font-awesome' color='#FFF' size={30} onPress={this._save} />
+              <Icon name='save' type='font-awesome' color='#FFF' size={35} onPress={this._save} />
             </View>
             <View style={{ width: 70,textAlign:'center' }}>
-              <Icon name='trash' type='font-awesome' color='#FFF' size={30} onPress={this._delete} />
+              <Icon name='trash' type='font-awesome' color='#FFF' size={35} onPress={this._delete} />
             </View>
           </View>
         </View>

@@ -77,7 +77,6 @@ class LoginScreen extends Component {
       this.showAlert(error);
     }
   
-  
     async saveUser() {
       await AsyncStorage.setItem('isUserLoggedIn', JSON.stringify(true));
       this.getConfig()
