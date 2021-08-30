@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Modal, Animated } from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
@@ -12,33 +12,33 @@ class PetitionScreen extends Component {
     
     constructor(props) {
       super(props);
-        this.state = {
-          title:"",
-          petitionType: "",
-          petitionID: "",
-          data: [],
-          recognized: '',
-          started: '',
-          results: [],
-          is_recording: false,
-          listenedData: "",
-          interpretedData: "",
-          optionalData: "",
-          optionalValue: "",
-          lastOptionalValue: "",
-          getData: false,
-          setData: false,
-          images: [],
-          words: [],
-          list: [],
-          savedData: [],
-          userid: "",
-          flatlistPos: 0,
-          saved: false,
-          fadeAnimation: new Animated.Value(0),
-          timer: 0,
-          seconds: 10
-        }
+      this.state = {
+        title:"",
+        petitionType: "",
+        petitionID: "",
+        data: [],
+        recognized: '',
+        started: '',
+        results: [],
+        is_recording: false,
+        listenedData: "",
+        interpretedData: "",
+        optionalData: "",
+        optionalValue: "",
+        lastOptionalValue: "",
+        getData: false,
+        setData: false,
+        images: [],
+        words: [],
+        list: [],
+        savedData: [],
+        userid: "",
+        flatlistPos: 0,
+        saved: false,
+        fadeAnimation: new Animated.Value(0),
+        timer: 0,
+        seconds: 10
+      }
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
       Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
       Voice.onSpeechResults = this.onSpeechResults.bind(this);
@@ -65,6 +65,7 @@ class PetitionScreen extends Component {
         this.setState({ title: JSON.parse(value).titulo }) 
         this.setState({ data: JSON.parse(value).campos })  
       })
+      console.log("data:"+JSON.stringify(this.state.data))
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
       })
@@ -280,26 +281,43 @@ class PetitionScreen extends Component {
     }
   
     async _startRecognition(e) {
-      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      this.setState({is_recording: true })
-      var idcampo = this.state.data[lastSaved].idcampo
-      if ((!idcampo.includes("base") && !idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto == "") || 
-      (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto != "")) {
-        this.setState({
-          recognized: '',
-          started: '',
-          results: [],
-        });
-        try {
-          await Voice.start('es');
-        } catch (e) {
-          console.error(e);
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: "ContaVoz",
+            message:"Necesitamos permisos para acceder a su micrófono",
+            buttonNegative: "Cancelar",
+            buttonPositive: "Aceptar"
+          }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+          if (lastSaved>-1) {
+            this.setState({is_recording: true })
+            var idcampo = this.state.data[lastSaved].idcampo
+            if ((!idcampo.includes("base") && !idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto == "") || 
+            (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto != "")) {
+              this.setState({
+                recognized: '',
+                started: '',
+                results: [],
+              });
+              try {
+                await Voice.start('es');
+              } catch (e) {
+                console.error(e);
+              }
+              this.setTimer(e)
+            } else {
+              this.setState({ interpretedData : this.state.data[lastSaved].xdefecto })
+            }
+          }
         }
-        this.setTimer(e)
-      } else {
-        this.setState({ interpretedData : this.state.data[lastSaved].xdefecto })
-      }
+      } catch (err) {
+      console.log(err);
     }
+  }
 
     async setTimer (e) {
       if (this.state.seconds > 0 ) {
@@ -727,6 +745,7 @@ class PetitionScreen extends Component {
     }
 
     saveNextData = async () => {
+      this.setState({ is_recording: false })
       this.saveData()
       this._startRecognition()
     }
@@ -980,7 +999,7 @@ class PetitionScreen extends Component {
       if (this.state.savedData.length==0) return null // Wait loop
       return (
         <View style={{flex: 1 }}>
-            <View style={{backgroundColor: "#1A5276"}}>
+            <View style={styles.navBarHeader}>
               <Text style={styles.mainHeader}>{this.state.title}</Text>
             </View>
             <ScrollView
@@ -1000,7 +1019,15 @@ class PetitionScreen extends Component {
   export default createAppContainer(PetitionScreen);
 
   const styles = StyleSheet.create({
-    navBarBackHeader: {
+      navBarHeader: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor:"#1A5276", 
+        flexDirection:'row', 
+        textAlignVertical: 'center',
+        height: 60
+      },
+      navBarBackHeader: {
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor:"white", 
@@ -1008,7 +1035,7 @@ class PetitionScreen extends Component {
         textAlignVertical: 'center',
         height: 60
       },
-    navBarButtons: {
+      navBarButtons: {
         flex:1,
         backgroundColor:"#FFF", 
         paddingBottom: 50,
@@ -1076,7 +1103,7 @@ class PetitionScreen extends Component {
         textAlign: 'center',
         color: '#B03A2E',
         fontWeight: 'bold',
-        fontSize: 30,
+        fontSize: 20,
         width: "100%",
         paddingBottom: 20,
         paddingTop: 20

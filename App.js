@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Image, Text } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { createStackNavigator } from 'react-navigation-stack';
 import AsyncStorage from '@react-native-community/async-storage';
@@ -25,6 +25,7 @@ class LaunchScreen extends Component {
   }
 
   async init() {
+    await new Promise(resolve => setTimeout(resolve, 2000));
     await AsyncStorage.getItem("idempresa").then((value) => {
       this.setState({ idempresa: JSON.parse(value) })
     })
@@ -43,8 +44,13 @@ class LaunchScreen extends Component {
     this.props.navigation.push(page)
   }
 
-  render() {return (<View style={ styles.container }></View>)}
-  
+  render() {
+    return(
+    <View style={styles.mainView}>
+      <Image source={require('./assets/main.png')} style={{ width: 80, height: 80, alignSelf: "center", marginBottom:20 }}/>
+      <Text style={styles.mainHeader}>ContaVoz</Text>
+    </View>)
+  }
 }
 
 export class DocImage {
@@ -133,8 +139,27 @@ export default createAppContainer(AppNavigator);
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor:"#1A5276",
+  },
+  mainHeader: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 25,
+    alignSelf: "center",
+    paddingBottom: 20
+  },
+  mainSubHeader: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 20,
+    alignSelf: "center"
+  },
+  mainView: {
+    backgroundColor:"#1A5276",
+    flex: 1,
+    justifyContent: 'center',
+    textAlign: "center"
   },
 });

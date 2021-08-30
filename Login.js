@@ -80,29 +80,29 @@ class LoginScreen extends Component {
     async saveUser() {
       await AsyncStorage.setItem('isUserLoggedIn', JSON.stringify(true));
       this.getConfig()
+    }
+
+    async saveConfig(config) {
+      await AsyncStorage.setItem("allConfigs", JSON.stringify(config))
       this.goHome()
     }
 
-    async saveConfig(i,config) {
-      await AsyncStorage.setItem(i, JSON.stringify(config))
-    }
-
     async getConfig() {
-      var petition = ["compras", "ventas", "pagos", "cobros"]
-      petition.forEach((i)=> {
-        const requestOptions = {
-          method: 'POST',
-          body: JSON.stringify({ idempresa:this.state.idempresa, id: this.state.userid, tipoconfig: i })
-        };
-        fetch('https://app.dicloud.es/pruebaqueralt.asp', requestOptions)
-        .then((response) => response.json())
-        .then((responseJson) => {
-          var error = JSON.parse(JSON.stringify(responseJson.error))
-          if (error == "false") {
-            this.saveConfig(i,JSON.stringify(responseJson.configuraciones))
-          }
-        }).catch((error) => {});
-      })
+      const requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({ company_padisoft:this.state.idempresa, idcliente: this.state.userid, tipopeticion: "seleccionar", tipo:"todo"})
+      };
+      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      .then((response) => response.json())
+      .then((responseJson) => {
+        var configs=JSON.stringify(responseJson.configuraciones)
+        var error = JSON.parse(JSON.stringify(JSON.parse(configs)[0].error))
+        if (error=="false") {
+          this.saveConfig(responseJson.configuraciones)
+        } else {
+          this.showAlert("Algo salió mal, disculpe las molestias")
+        }
+      }).catch((error) => {});
     }
   
     async goHome() {
@@ -236,5 +236,16 @@ const styles = StyleSheet.create({
       width: 150,
       margin: 20 
     },
+    footbar: {
+      flex:3
+    },
+    credits: {
+      paddingTop: 50,
+      alignItems: 'center',
+      textAlign: "center",
+      fontWeight: "bold",
+      color: "#728C69",
+      fontSize: 15,
+    }
 })
   

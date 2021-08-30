@@ -10,9 +10,13 @@ class ResumeViewScreen extends Component {
     constructor(props) {
       super(props)
       this.state = {
+        company_padisoft: "",
+        idcliente: "",
+        tipopeticion: "guardarx",
         title: "",
         petitionID: "",
         petitionType: "",
+        type:"",
         interpreptedData1: "",
         interpreptedData2: "",
         flatlistPos: 0,
@@ -32,8 +36,17 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem("petitionID").then((value) => {
         this.setState({ petitionID: JSON.parse(value).id })
       })
+      await AsyncStorage.getItem("idempresa").then((value) => {
+        this.setState({ company_padisoft: value })
+      })
+      await AsyncStorage.getItem("userid").then((value) => {
+        this.setState({ idcliente: value })
+      })
       await AsyncStorage.getItem("petitionType").then((value) => {
         this.setState({ petitionType: value })
+      })
+      await AsyncStorage.getItem("type").then((value) => {
+        this.setState({ type: value })
       })
       await AsyncStorage.getItem("data").then((value) => {
         this.setState({ title: JSON.parse(value).titulo }) 
@@ -61,7 +74,6 @@ class ResumeViewScreen extends Component {
           this.setState({ words: JSON.parse(value) })
         }
       })
-      console.log(JSON.stringify(this.state.images))
     }
     
     componentDidMount(){
@@ -152,9 +164,17 @@ class ResumeViewScreen extends Component {
       return null
     }
   
-    sendDocument = async () => {
-      alert("Accion desactivada por el momento")
-      // check when data is empty, because it will not be sent
+    async sendDocument() {
+      alert("Acción desactivada temporalmente")
+      /*const requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({company_padisoft: this.state.company_padisoft, idcliente: this.state.idcliente, tipopeticion: "guardarx", tipo: this.state.type, campos: this.state.doc})
+      };
+      fetch('https://app.dicloud.es/pruebaguardarx.asp', requestOptions)
+        .then((response) => response.json())
+        .then((responseJson) => {
+          console.log(JSON.stringify(responseJson))
+        }).catch(() => {});*/
     }
   
     setData = (item, index) => {
@@ -335,40 +355,34 @@ class ResumeViewScreen extends Component {
         await AsyncAlert();
       }
   
-  
-    _save = async () => {
-      alert("Esta acción está desactivada temporalmente")
-    }
-  
-    render () {
-      return (
-        <View style={{flex: 1, backgroundColor:"#FFF" }}>
-          <ScrollView style={{backgroundColor: "#FFF" }}>
-          <View style={{backgroundColor: "#1A5276"}}>
-            <Text style={styles.mainHeader}>{this.state.title}</Text>
-          </View>
-          <View style={styles.sections}>
-            {this.setImages()}
-            {this.setControlVoice()}
-          </View>
-          </ScrollView>   
-          <View style={styles.navBarBackHeader}>
-            <View style={{ width: 70,textAlign:'center' }}>
-              <Icon name='save' type='font-awesome' color='#FFF' size={35} onPress={this._save} />
+      render () {
+        return (
+          <View style={{flex: 1, backgroundColor:"#FFF" }}>
+            <ScrollView style={{backgroundColor: "#FFF" }}>
+            <View style={{backgroundColor: "#1A5276"}}>
+              <Text style={styles.mainHeader}>{this.state.title}</Text>
             </View>
-            <View style={{ width: 70,textAlign:'center' }}>
-              <Icon name='trash' type='font-awesome' color='#FFF' size={35} onPress={this._delete} />
+            <View style={styles.sections}>
+              {this.setImages()}
+              {this.setControlVoice()}
+            </View>
+            </ScrollView>   
+            <View style={styles.navBarBackHeader}>
+              <View style={{ width: 70,textAlign:'center' }}>
+                <Icon name='save' type='font-awesome' color='#FFF' size={35} onPress={() => this.sendDocument()} />
+              </View>
+              <View style={{ width: 70,textAlign:'center' }}>
+                <Icon name='trash' type='font-awesome' color='#FFF' size={35} onPress={this._delete} />
+              </View>
             </View>
           </View>
-        </View>
-      );
+        );
+      }
     }
-  }
 
   export default createAppContainer(ResumeViewScreen);
 
   const styles = StyleSheet.create({
-
     navBarBackHeader: {
         alignItems: 'center',
         justifyContent: 'center',

@@ -28,12 +28,20 @@ class MainScreen extends Component {
       })
     }
 
-    goScreen = async (type) => {
+    goScreen = async (type, icon) => {
       var config = ""
-      await AsyncStorage.getItem(type).then((value) => {
+      var allTypeConfigs = []
+      await AsyncStorage.getItem("allConfigs").then((value) => {
         config = JSON.parse(JSON.stringify(value))
       })
-      await AsyncStorage.setItem("config", JSON.parse(config))
+      var array = JSON.parse(config)
+      array.forEach(i => {
+        if (i.tipo == type) {
+          allTypeConfigs.push(i)
+        }
+      })
+      await AsyncStorage.setItem("icon", icon)
+      await AsyncStorage.setItem("config", JSON.stringify(allTypeConfigs))
       await AsyncStorage.setItem("type", type)
       this.props.navigation.push('PetitionList')
     }
@@ -99,7 +107,7 @@ class MainScreen extends Component {
           <View style={{ flex:1, paddingTop: 10 }}>
           <View style={styles.twoColumnsInARow}>
           <View>
-            <TouchableOpacity onPress={() => this.goScreen("compras")}>
+            <TouchableOpacity onPress={() => this.goScreen("compra", "shopping-cart")}>
               <View style={styles.mainIcon}>
                 <Icon
                   name='shopping-cart'
@@ -116,7 +124,7 @@ class MainScreen extends Component {
                 color='#FFF'
                 size={35}/>
               <View>
-              <TouchableOpacity onPress={() => this.goScreen("ventas")}>
+              <TouchableOpacity onPress={() => this.goScreen("venta", "tag")}>
                 <View style={styles.mainIcon}>
                   <Icon
                     name='tag'
@@ -130,7 +138,7 @@ class MainScreen extends Component {
             </View>
             <View style={styles.twoColumnsInARow}>
             <View>
-            <TouchableOpacity onPress={() => this.goScreen("cobros")}>
+            <TouchableOpacity onPress={() => this.goScreen("cobro", "shopping-basket")}>
                 <View style={styles.mainIcon}>
                   <Icon
                     name='shopping-basket'
@@ -146,7 +154,7 @@ class MainScreen extends Component {
                 type='font-awesome'
                 color='#FFF'
                 size={35}/>
-            <TouchableOpacity onPress={() => this.goScreen("pagos")}>
+            <TouchableOpacity onPress={() => this.goScreen("pago", "money")}>
               <View style={styles.mainIcon}>
                 <Icon
                   name='money'
@@ -189,7 +197,7 @@ class MainScreen extends Component {
             </View>
           </View>
           </View>
-          <View styles={{flex:3}}><Text style={styles.credits}>© Servicios Informáticos S.L.</Text></View>
+          <Text style={styles.mainSubHeader}>© Disoft Servicios Informáticos S.L.</Text>
         </View>);
     }
   }
@@ -201,6 +209,7 @@ class MainScreen extends Component {
       flex: 1,
       backgroundColor:"#FFF",
       paddingTop: 30,
+      alignContent:"center",
     },
     accountingView: {
       flexDirection: 'row',
@@ -215,7 +224,7 @@ class MainScreen extends Component {
       color: "#000",
     },
     twoColumnsInARow: {
-      paddingTop: 30,
+      paddingTop: 20,
       flexDirection: 'row',
       alignSelf: "center",
     },
@@ -244,13 +253,12 @@ class MainScreen extends Component {
       color: "#000",
       fontSize: 25
     },
-    credits: {
-      paddingTop: 20,
+    mainSubHeader: {
+      paddingBottom: 20,
       alignItems: 'center',
       textAlign: "center",
       fontWeight: "bold",
       color: "#1A5276",
-      fontSize: 15,
-      paddingBottom: 20
+      fontSize: 15
     }
   });

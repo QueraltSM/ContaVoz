@@ -14,7 +14,8 @@ class PetitionHistoryScreen extends Component {
         config: "",
         idempresa: "",
         userid: "",
-        list: []
+        list: [],
+        icon: ""
       }
       this.init()
     }
@@ -29,6 +30,9 @@ class PetitionHistoryScreen extends Component {
     }
   
     async init() {
+      await AsyncStorage.getItem("icon").then((value) => {
+        this.setState({ icon: value })
+      })
       await AsyncStorage.getItem("type").then((value) => {
         this.setState({ type: value })
       })
@@ -97,35 +101,105 @@ class PetitionHistoryScreen extends Component {
       return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No ha registrado documentos</Text></View>)
     }
   
+    setMenu() {
+      return(
+        <View style={{backgroundColor:"#FFF"}}>
+          <View style={styles.accountingViewShow}>
+          <Icon
+              name={this.state.icon}
+              type='font-awesome'
+              color='#000'
+              size={45}
+            />
+            </View>
+          <Text style={styles.mainHeader}>Documentos pendientes</Text>
+        </View>)
+    }
+
+    setFootbar() {
+      return (<View style={styles.navBarBackHeader}>
+        <View style={{ width: 60,textAlign:'center' }}>
+        <Icon
+          name='plus'
+          type='font-awesome'
+          color='#1A5276'
+          size={35}
+          onPress={() => this.addPetition()}
+        />
+        </View>
+      <View style={{ width: 60,textAlign:'center' }}>
+        <Icon
+          name='home'
+          type='font-awesome'
+          color='#1A5276'
+          size={35}
+          onPress={() => this.props.navigation.push("Main")}
+        />
+        </View>
+        <View style={{ width: 60,textAlign:'center' }}>
+        <Icon
+          name='sign-out'
+          type='font-awesome'
+          color='#1A5276'
+          size={35}
+          onPress={() => this.logout()}
+        />
+        </View>
+    </View>)
+    }
+
+    saveLogout =  async (state) => {
+      if (!state) {
+        await AsyncStorage.setItem("isUserLoggedIn", JSON.stringify(false));
+        await AsyncStorage.setItem("company", "");
+        await AsyncStorage.setItem("user", "");
+        await AsyncStorage.setItem("password", "");
+      }
+      this.props.navigation.push("Login")
+    }
+  
+    async logout () {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "Procedo a desconectar",
+          "¿Debo mantener su identificación actual?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(this.saveLogout(true));
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve(this.saveLogout(false));
+              },
+            },
+            {
+              text: 'Cancelar',
+              onPress: () => {
+                resolve('Cancel');
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+      });
+      await AsyncAlert();
+    }
+    
     render () {
       if (this.state.userid.length == 0) return null
       return (
         <View style={{flex: 1, backgroundColor:"#FFF" }}>
-          <View style={styles.navBarBackHeader}>
-          <View style={{ width: 70, textAlign:'center' }}>
-              <Icon
-                name='trash'
-                type='font-awesome'
-                color='#1A5276'
-                size={30}
-              />
-            </View>
-            <Text style={styles.navBarHeader}>Documentos pendientes</Text>
-            <View style={{ width: 70,textAlign:'center' }}>
-              <Icon
-                name='plus'
-                type='font-awesome'
-                color='#FFF'
-                size={30}
-                onPress={this.addPetition}
-              />
-            </View>
-          </View>
+          {this.setMenu()}
           <ScrollView style={{backgroundColor: "#FFF" }}>
           <View style={styles.sections}>
             {this.setList()}
           </View>
           </ScrollView>   
+          {this.setFootbar()}
         </View>
       );
     }
@@ -137,13 +211,12 @@ class PetitionHistoryScreen extends Component {
       voiceControlView: {
         flex: 1,
         backgroundColor: "#FFF",
-        paddingTop: 40,
         alignContent: "center",
         alignSelf: "center",
         width: "100%",
       },
       registeredDocuments: {
-        fontSize: 22,
+        fontSize: 20,
         textAlign: "center",
         paddingTop: 20,
         color: "#1A5276",
@@ -161,7 +234,7 @@ class PetitionHistoryScreen extends Component {
       navBarBackHeader: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor:"#1A5276", 
+        backgroundColor:"white", 
         flexDirection:'row', 
         textAlignVertical: 'center',
         padding: 10
@@ -182,5 +255,20 @@ class PetitionHistoryScreen extends Component {
         paddingLeft: 40,
         backgroundColor: "#FFF",
         paddingBottom: 100
+      },
+      accountingViewShow: {
+        flexDirection: 'row',
+        textAlign: "center",
+        alignSelf: "center",
+        paddingTop: 30,
+      },
+      mainHeader: {
+        paddingTop: 20,
+        alignItems: 'center',
+        textAlign: "center",
+        fontWeight: "bold",
+        color: "#000",
+        fontSize: 20,
+        paddingBottom: 20
       },
 })

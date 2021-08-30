@@ -10,12 +10,12 @@ class DictionaryViewScreen extends Component {
       this.state = {
         userid: "",
         words: [],
-        addListen: "",
-        addKey: "",
-        addValue: "",
-        updateListen: undefined,
-        updateKey: undefined,
-        updateValue: undefined,
+        addKeywords: "",
+        addEntity: "",
+        addCIF: "",
+        updateKeywords: undefined,
+        updateEntity: undefined,
+        updateCIF: undefined,
         showForm: false,
         showSeach: false,
         keyword: "",
@@ -43,6 +43,7 @@ class DictionaryViewScreen extends Component {
           this.setState({ words: JSON.parse(value).reverse() })
         }
       })
+      console.log(JSON.stringify(this.state.words))
       if (this.state.words != null) {
         this.setState({isSearching: false})
       }
@@ -64,68 +65,87 @@ class DictionaryViewScreen extends Component {
   
     async pushArrayWords() {
       var arrayWords =  this.state.words
-      if (!this.state.words.some(item => item.value.toLowerCase() === this.state.addValue.toLowerCase())) {
+      if (!this.state.words.some(item => item.cifValue.toLowerCase() === this.state.addCIF.toLowerCase())) {
         arrayWords.push({
-          listen: this.state.addListen,
-          key: this.state.addKey,
-          value: this.state.addValue,
+          keywords: this.state.addKeywords,
+          entity: this.state.addEntity,
+          cifValue: this.state.addCIF,
           time: new Date().getTime()
         })
+        this.setState({ words: arrayWords })
+        await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(arrayWords))
+        this.setState({ addKeywords: "" })
+        this.setState({ addEntity: "" })
+        this.setState({ addCIF: "" })
+        this.formAction()
       } else {
         this.showAlert("Error", "Ya existe una empresa registrada con este NIF")
       }
-      this.setState({ words: arrayWords })
-      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(arrayWords))
     }
   
     _searchWord = async () => {
-      var filteredWords = []
-      this.state.words.forEach(i => {
-        if (i.listen.toLowerCase().includes(this.state.keyword.toLowerCase()) || i.key.toLowerCase().includes(this.state.keyword.toLowerCase()) || i.value.toLowerCase().includes(this.state.keyword.toLowerCase())) {
-          filteredWords.push(i)
-        }
-      })
-      this.setState({ words: filteredWords })
-      this.setState({ keyword: "" })
-      this.setState({ showForm: false })
-      this.setState({ showSeach: false })
-      this.setState({ message: "No hay entidades coincidentes" })
-    }
-
-    async updateWord(item, index) {
-      var listen = this.state.updateListen
-      var key = this.state.updateKey
-      var value = this.state.updateValue
-      var array = this.state.words
-      if (listen == undefined) listen = array[index].listen
-      if (key == undefined) key = array[index].key
-      if (value == undefined) value = array[index].value
-      if (item.listen == listen && item.key == key && item.value == value) {
-        this.showAlert("Error", "No se ha modificado ningún dato")
-      } else if (listen == "" || key=="" || value == "") {
-        this.showAlert("Error", "Complete todos los campos")
+      if (this.state.keyword.length==0) {
+        this.showAll()
       } else {
-        array[index].key = key 
-        array[index].listen = listen 
-        array[index].value = value 
-        this.setState({ words: array })
-        await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(array))
-        this.showAlert("Proceso completado", "Se han guardado los datos")
-        this.setState({updateKey: undefined})
-        this.setState({updateListen: undefined})
-        this.setState({updateValue: undefined})
+        var filteredWords = []
+        this.state.words.forEach(i => {
+          if (i.keywords.toLowerCase().includes(this.state.keyword.toLowerCase()) || i.entity.toLowerCase().includes(this.state.keyword.toLowerCase()) || i.cifValue.toLowerCase().includes(this.state.keyword.toLowerCase())) {
+            filteredWords.push(i)
+          }
+        })
+        this.setState({ words: filteredWords })
+        this.setState({ keyword: "" })
+        this.setState({ showForm: false })
+        this.setState({ showSeach: false })
+        this.setState({ message: "No hay entidades coincidentes" })
       }
     }
 
+    async updateWord(item, index) {
+      var keywords = this.state.updateKeywords
+      var entity = this.state.updateEntity
+      var cifValue = this.state.updateCIF
+      var array = this.state.words
+      if (keywords == undefined) keywords = array[index].keywords
+      if (entity == undefined) entity = array[index].entity
+      if (cifValue == undefined) cifValue = array[index].cifValue
+      var equalNIF = this.state.words.findIndex(obj => obj.cifValue == cifValue)
+      var empty = this.state.words.findIndex(obj => obj.entity == undefined ||  obj.cifValue == undefined ||  obj.keywords == undefined)
+      if (empty>-1 && empty != index) { // Case: empty field, and try of update another one
+        this.showAlert("Error", "No se pueden actualizar los datos si hay campos sin completar")
+      } else {
+        if (equalNIF==index || equalNIF==-1) {
+          if (item.keywords == keywords && keywords!=undefined && item.entity == entity && entity!=undefined && item.cifValue == cifValue && cifValue != undefined) {
+            this.showAlert("Error", "No se ha modificado ningún dato") // Equal row
+          } else if (keywords == undefined ||entity==undefined ||cifValue == undefined ||keywords == "" ||entity=="" ||cifValue == "") {
+            this.showAlert("Error", "Complete todos los campos") // Case empty field of row
+          } else {
+            array[index].entity = entity 
+            array[index].keywords = keywords 
+            array[index].cifValue = cifValue 
+            this.setState({ words: array })
+            await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(array))
+            this.showAlert("Proceso completado", "Se han guardado los datos")
+            this.reset()
+            this.props.navigation.push("DictionaryView")
+          }
+        } else {
+          this.showAlert("Error", "Ya existe una empresa registrada con este NIF")
+        }
+      }
+    }
+
+    reset() {
+      this.setState({updateEntity: undefined})
+      this.setState({updateKeywords: undefined})
+      this.setState({updateCIF: undefined})
+    }
+
     _addWord = async () => {
-      if (this.state.addListen == "" || this.state.addKey == "" || this.state.addValue == "") {
+      if (this.state.addKeywords == "" || this.state.addEntity == "" || this.state.addCIF == "") {
         this.showAlert("Error", "Complete todos los campos")
       } else {
         await this.pushArrayWords()
-        this.setState({ addListen: "" })
-        this.setState({ addKey: "" })
-        this.setState({ addValue: "" })
-        this.formAction()
       }
     }
   
@@ -148,13 +168,13 @@ class DictionaryViewScreen extends Component {
         return (
           <View style={styles.dictionaryView}>
             <Text style={styles.resumeText}>Nombre jurídico de la entidad</Text>
-            <TextInput blurOnSubmit={true} value={this.state.addKey} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={addKey => this.setState({addKey})}></TextInput>
-            <View style={{flexDirection:"row", alignItems:"center"}}><Icon name='microphone' style={styles.resumeText} type='font-awesome' color='#000' size={20}/><Text style={styles.resumeText}> Denominación de la entidad</Text></View>
-            <TextInput blurOnSubmit={true} value={this.state.addListen} multiline={true} style={styles.changeTranscript} placeholder="Ej: Fifo" onChangeText={addListen => this.setState({addListen})}></TextInput>
-            <Text style={styles.resumeText}>NIF de la entidad</Text>
-            <TextInput blurOnSubmit={true} value={this.state.addValue} multiline={true} style={styles.changeTranscript} placeholder="Ej: B35222249" onChangeText={addValue => this.setState({addValue})}></TextInput>
+            <TextInput blurOnSubmit={true} value={this.state.addEntity} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={addEntity => this.setState({addEntity})}></TextInput>
+            <View style={{flexDirection:"row", alignItems:"center"}}><Text style={styles.resumeText}> Palabras clave</Text></View>
+            <TextInput blurOnSubmit={true} value={this.state.addKeywords} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft, Mi empresa, Fifo" onChangeText={addKeywords => this.setState({addKeywords})}></TextInput>
+            <Text style={styles.resumeText}>CIF de la entidad</Text>
+            <TextInput blurOnSubmit={true} value={this.state.addCIF} multiline={true} style={styles.changeTranscript} placeholder="Ej: B35222249" onChangeText={addCIF => this.setState({addCIF})}></TextInput>
             <Text style={styles.transcript}></Text>
-            <TouchableOpacity onPress={() => this._addWord()}><Text style={styles.saveNewValue}>Grabar</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => this._addWord()}><Text style={styles.saveNewValue}>Grabar datos</Text></TouchableOpacity>
             <Text style={styles.transcript}></Text>
           </View>)
       }
@@ -204,11 +224,11 @@ class DictionaryViewScreen extends Component {
     deleteWord = async (item) => {
       var arrayWords = []
       for (let i = 0; i < this.state.words.length; i++) {
-        if ( this.state.words[i].value != item.value) {
+        if ( this.state.words[i].cifValue != item.cifValue) {
           arrayWords.push({
-            listen: this.state.words[i].listen,
-            key: this.state.words[i].key,
-            value: this.state.words[i].value,
+            keywords: this.state.words[i].keywords,
+            entity: this.state.words[i].entity,
+            cifValue: this.state.words[i].cifValue,
             time: this.state.words[i].time
           })
         }
@@ -242,6 +262,20 @@ class DictionaryViewScreen extends Component {
               color='white'
               size={28}
             />
+          <TouchableOpacity onPress={() => this.props.navigation.push("Main")}>
+              <Icon
+                name='home'
+                type='font-awesome'
+                color='black'
+                size={28}
+              />
+            </TouchableOpacity>
+          <Icon
+              name='search'
+              type='font-awesome'
+              color='white'
+              size={28}
+            />
           {!this.state.showSeach && <TouchableOpacity onPress={() => this.searchAction()}>
             <Icon
               name='search'
@@ -258,34 +292,6 @@ class DictionaryViewScreen extends Component {
                 size={28}
               />
             </TouchableOpacity>}
-            <Icon
-              name='search'
-              type='font-awesome'
-              color='white'
-              size={28}
-            />
-            <TouchableOpacity onPress={() => this.showAll()}>
-              <Icon
-                name='list-alt'
-                type='font-awesome'
-                color='black'
-                size={28}
-              />
-            </TouchableOpacity>
-            <Icon
-              name='search'
-              type='font-awesome'
-              color='white'
-              size={28}
-            />
-            <TouchableOpacity onPress={() => this.goHome()}>
-              <Icon
-                name='home'
-                type='font-awesome'
-                color='black'
-                size={28}
-              />
-            </TouchableOpacity>
         </View>)
     }
 
@@ -293,10 +299,6 @@ class DictionaryViewScreen extends Component {
       this.setState({ showSeach: false })
       this.setState({ showForm: false })
       this.props.navigation.push("DictionaryView")
-    }
-
-    goHome() {
-      this.props.navigation.push("Main")
     }
 
     setSeachBox() {
@@ -313,55 +315,67 @@ class DictionaryViewScreen extends Component {
       }
     }
 
+    clear(unit, index) {
+      if (unit==0) {
+        this.state.words[index].entity = undefined
+      } else if (unit==1) {
+        this.state.words[index].cifValue = undefined
+      } else {
+        this.state.words[index].keywords = undefined
+      }
+      this.setState({ words: this.state.words })
+    }
+
+    setFlatList(){
+      return (<FlatList vertical showsVerticalScrollIndicator={false} data={ this.state.words.sort((a,b) => a.entity.toLowerCase() > b.entity.toLowerCase()) } renderItem={({ item, index }) => (
+        <View style={styles.wordsBox}>
+          <View style={styles.dictionaryValues}>
+          <Icon name='pencil' type='font-awesome' color='#000' size={20} onPress={() => this.clear(0, index)} />
+          <TextInput style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateEntity) => this.setState({updateEntity: updateEntity})}>{item.entity}</TextInput>
+          </View>
+          <View style={styles.dictionaryValues}>
+          <Icon name='pencil' type='font-awesome' color='#000' size={20} onPress={() => this.clear(1, index)}/>
+          <TextInput style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateCIF) => this.setState({updateCIF: updateCIF})}>{item.cifValue} </TextInput>
+          </View>
+          <View style={styles.dictionaryValues}>
+          <Icon name='pencil' type='font-awesome' color='#000' size={20} onPress={() => this.clear(2, index)} />
+          <TextInput style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateKeywords) => this.state.updateKeywords=updateKeywords}>{item.keywords}</TextInput>
+          </View>
+          <View style={styles.dictionaryValues}>
+          <TouchableOpacity onPress={() => this.updateWord(item, index)}>
+            <Icon
+              name='save'
+              type='font-awesome'
+              color="#148F77"
+              size={25}
+            />
+            </TouchableOpacity>
+            <Icon name='trash' type='font-awesome' color='white' size={15}/>
+            <TouchableOpacity onPress={() => this.askDelete(item)}>
+              <Icon
+                name='trash'
+                type='font-awesome'
+                color='#B03A2E'
+                size={25}
+              />
+            </TouchableOpacity>
+          </View>
+      </View>
+    )}/>)
+  }
+
     setWords() {
       if (!this.state.isSearching && this.state.words.length > 0 && !this.state.showSeach && !this.state.showForm) {
         return (
           <View style={styles.resumeView}>
             <Text style={styles.showTitle}>Entidades registradas</Text>
-            <Text style={styles.showSubTitle}>Si modifica datos pulse guardar</Text>
-            <FlatList 
-              vertical
-              showsVerticalScrollIndicator={false}
-              data={ this.state.words.sort((a,b) => a.key .toLowerCase() > b.key.toLowerCase()) } 
-              renderItem={({ item, index }) => (
-              <View style={{paddingBottom: 20}}>
-              <View style={styles.wordsBox}>
-              <Text style={styles.dictionaryKeys}>Nombre jurídico <Icon name='pencil' type='font-awesome' color='#000' size={20}/></Text> 
-              <TextInput blurOnSubmit={true} multiline={true} style={styles.dictionaryValues} onChangeText={(updateKey) => this.setState({updateKey: updateKey})}>{item.key}</TextInput> 
-              <Text style={styles.dictionaryKeys}>Denominación <Icon name='pencil' type='font-awesome' color='#000' size={20}/></Text> 
-              <TextInput blurOnSubmit={true} multiline={true} style={styles.dictionaryValues} onChangeText={(updateListen) => this.state.updateListen=updateListen}>{item.listen}</TextInput> 
-              <Text style={styles.dictionaryKeys}>NIF <Icon name='pencil' type='font-awesome' color='#000' size={20}/></Text> 
-              <TextInput blurOnSubmit={true} multiline={true} style={styles.dictionaryValues} onChangeText={(updateValue) => this.setState({updateValue: updateValue})}>{item.value}</TextInput>    
-              <View style={styles.delIcon}>
-              <TouchableOpacity onPress={() => this.updateWord(item, index)}>
-                <Icon
-                  name='save'
-                  type='font-awesome'
-                  color="#148F77"
-                  size={25}
-                />
-                </TouchableOpacity>
-                <TouchableOpacity>
-                  <Icon
-                    name='trash'
-                    type='font-awesome'
-                    color='white'
-                    size={25}
-                  />
-                </TouchableOpacity>          
-                <TouchableOpacity onPress={() => this.askDelete(item)}>
-                  <Icon
-                    name='trash'
-                    type='font-awesome'
-                    color='#B03A2E'
-                    size={25}
-                  />
-                </TouchableOpacity>
-              </View>
-              </View>
+            <View style={styles.wordsBox}>
+              <Text style={styles.dictionaryKeys}>Nombre</Text> 
+              <Text style={styles.dictionaryKeys}>NIF</Text> 
+              <Text style={styles.dictionaryKeys}>Palabras clave</Text> 
+              <Text style={styles.dictionaryKeys}>Acción</Text> 
             </View>
-          )}
-        />
+            {this.setFlatList()}
         </View>
         )
       } else if (!this.state.isSearching && !this.state.showSeach && !this.state.showForm) {
@@ -377,7 +391,7 @@ class DictionaryViewScreen extends Component {
         <View style={{flex: 1}}>
           <ScrollView style={{backgroundColor: "#fff"}}>
           {this.setMenu()}
-          <View style={{paddingBottom: 50}}>
+          <View>
             {this.setMenuButtons()}
             {this.setAddWordBox()}
             {this.setSeachBox()}
@@ -393,27 +407,21 @@ class DictionaryViewScreen extends Component {
 
   const styles = StyleSheet.create({
     resumeView: {
-        paddingTop: 30,
-        paddingLeft: 40,
-        backgroundColor: "#FFF",
-        paddingBottom: 100,
-        width:"100%"
+      paddingTop: 30,
+      paddingLeft:20,
+      paddingBottom: 30,
+      paddingRight: 10,
+      backgroundColor: "#FFF",
+      width:"100%",
     },
     showTitle:{
-        textAlign: 'center',
-        color: '#154360',
-        fontWeight: 'bold',
-        fontSize: 20,
-        width: "90%",
-        paddingBottom: 20,
-      },
-      showSubTitle: {
-        color: '#CD5C5C',
-        fontWeight: 'bold',
-        fontSize: 17,
-        width: "90%",
-        paddingBottom: 20,
-        textAlign: 'center',
+      textAlign: 'center',
+      color: '#154360',
+      fontWeight: 'bold',
+      fontSize: 20,
+      width: "100%",
+      paddingBottom: 20,
+      alignItems: "center"
       },
       resumeText: {
         fontSize: 20,
@@ -426,9 +434,8 @@ class DictionaryViewScreen extends Component {
       changeTranscript: {
         color: '#000',
         fontSize: 20,
-        fontStyle: 'italic',
         width: "90%",
-        borderWidth: 1,
+        borderWidth: 0.5,
         borderColor: "#ECECEC",
         borderRadius: 20,
         paddingLeft: 10,
@@ -453,30 +460,27 @@ class DictionaryViewScreen extends Component {
         width:"100%",
       },
       dictionaryKeys: {
-        fontSize: 20,
-        textAlign: "justify",
-        paddingTop: 15,
+        padding: 10,
+        fontSize: 15,
+        textAlign: "center",
         color: "#000",
-        width:"90%",
         fontWeight: 'bold',
+        width:"24%",
       },
       dictionaryValues: {
-        fontSize: 20,
-        textAlign: "justify",
-        paddingTop: 15,
+        fontSize: 15,
+        textAlign: "center",
+        padding: 10,
         color: "#000",
-        width:"90%",
+        width:"24%",
+        alignItems:"center",
       },
       wordsBox: {
-        borderWidth: 0.5,
-        borderTopColor:"white",
-        borderLeftColor:"white",
-        borderRightColor:"white",
-        borderBottomColor:"lightgray",
-        width: "90%",
-        paddingBottom: 10,
-        paddingRight: 10,
-        paddingLeft: 10,
+        flexDirection:"row",
+        width: "100%",
+        textAlign:"center",
+        borderBottomWidth:1,
+        borderColor: "black"
       },
       delIcon: {
         paddingLeft: 10,
@@ -492,7 +496,7 @@ class DictionaryViewScreen extends Component {
         paddingTop: 30,
       },
       saveNewValue: {
-        fontSize: 17,
+        fontSize: 20,
         textAlign: "left",
         color: "#2E8B57",
         fontWeight: 'bold',
@@ -503,7 +507,7 @@ class DictionaryViewScreen extends Component {
         color:"#1A5276",
         fontWeight: 'bold'
       },
-      searchBox:{
+      searchBox: {
         width: "90%", 
         flexDirection:'row', 
         textAlign: 'center',
@@ -513,5 +517,9 @@ class DictionaryViewScreen extends Component {
         width: "90%", 
         flexDirection:'row', 
         justifyContent: 'flex-end',
+      },
+      text: {
+        width:"100%",
+        textAlign:"center"
       }
   })
