@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, Image, TextInput } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Image, TextInput, BackHandler } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
@@ -37,6 +37,14 @@ class LoginScreen extends Component {
           this.setState({ password: value })
         }
       })
+    }
+
+    componentDidMount() {
+      BackHandler.addEventListener('hardwareBackPress', this.goBack);
+    }
+  
+    goBack = () => {
+      return true
     }
   
     showAlert = (message) => {

@@ -192,7 +192,7 @@ class MainScreen extends Component {
                   color='#FFF'
                   size={35}/>
                 </View>
-              <Text style={styles.mainButton}>Salir</Text>
+              <Text style={styles.mainButton}>Desconectar</Text>
             </TouchableOpacity>
             </View>
           </View>

@@ -127,22 +127,24 @@ class PetitionListScreen extends Component {
     setFootbar() {
       return (<View style={styles.navBarBackHeader}>
       <View style={{ width: 60,textAlign:'center' }}>
+      <TouchableOpacity onPress={() => this.props.navigation.push("Main")}>
         <Icon
           name='home'
           type='font-awesome'
           color='#1A5276'
           size={35}
-          onPress={() => this.props.navigation.push("Main")}
         />
+        </TouchableOpacity>
         </View>
         <View style={{ width: 60,textAlign:'center' }}>
+        <TouchableOpacity onPress={() => this.logout()}>
         <Icon
           name='sign-out'
           type='font-awesome'
           color='#1A5276'
           size={35}
-          onPress={() => this.logout()}
         />
+        </TouchableOpacity>
         </View>
     </View>)
     }

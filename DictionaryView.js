@@ -43,7 +43,6 @@ class DictionaryViewScreen extends Component {
           this.setState({ words: JSON.parse(value).reverse() })
         }
       })
-      console.log(JSON.stringify(this.state.words))
       if (this.state.words != null) {
         this.setState({isSearching: false})
       }
@@ -245,7 +244,7 @@ class DictionaryViewScreen extends Component {
                 name='times'
                 type='font-awesome'
                 color='#B03A2E'
-                size={28}
+                size={35}
               />
             </TouchableOpacity>}
             {!this.state.showForm && <TouchableOpacity onPress={() => this.formAction()}>
@@ -253,35 +252,35 @@ class DictionaryViewScreen extends Component {
               name='plus'
               type='font-awesome'
               color='black'
-              size={28}
+              size={35}
             />
           </TouchableOpacity>}
           <Icon
               name='search'
               type='font-awesome'
               color='white'
-              size={28}
+              size={35}
             />
           <TouchableOpacity onPress={() => this.props.navigation.push("Main")}>
               <Icon
                 name='home'
                 type='font-awesome'
                 color='black'
-                size={28}
+                size={35}
               />
             </TouchableOpacity>
           <Icon
               name='search'
               type='font-awesome'
               color='white'
-              size={28}
+              size={35}
             />
           {!this.state.showSeach && <TouchableOpacity onPress={() => this.searchAction()}>
             <Icon
               name='search'
               type='font-awesome'
               color='black'
-              size={27}
+              size={35}
             />
           </TouchableOpacity>}
           {this.state.showSeach && <TouchableOpacity onPress={() => this.searchAction()}>
@@ -289,7 +288,7 @@ class DictionaryViewScreen extends Component {
                 name='times'
                 type='font-awesome'
                 color='#B03A2E'
-                size={28}
+                size={35}
               />
             </TouchableOpacity>}
         </View>)
