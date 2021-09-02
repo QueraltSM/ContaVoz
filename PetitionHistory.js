@@ -219,7 +219,7 @@ class PetitionHistoryScreen extends Component {
         width: "100%",
       },
       registeredDocuments: {
-        fontSize: 20,
+        fontSize: 15,
         textAlign: "center",
         paddingTop: 20,
         color: "#1A5276",
@@ -230,7 +230,7 @@ class PetitionHistoryScreen extends Component {
         textAlign: 'center',
         color: '#154360',
         fontWeight: 'bold',
-        fontSize: 18,
+        fontSize: 20,
         width: "90%",
         paddingBottom: 20,
       },
@@ -272,6 +272,6 @@ class PetitionHistoryScreen extends Component {
         fontWeight: "bold",
         color: "#000",
         fontSize: 20,
-        paddingBottom: 20
+        paddingBottom: 20,
       },
 })

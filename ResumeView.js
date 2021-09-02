@@ -176,12 +176,17 @@ class ResumeViewScreen extends Component {
           console.log(JSON.stringify(responseJson))
         }).catch(() => {});*/
     }
-  
+    
+    clear(index) {
+      this.state.doc[index].valor = ""
+      this.setState({ doc: this.state.doc })
+    } 
+
     setData = (item, index) => {
       return (<View>
-        {this.state.doc.length > 0 && this.state.doc[index].valor != null && this.state.doc[index].valor != "" &&  (<View>
+        {this.state.doc.length > 0 && this.state.doc[index].valor != null &&  (<View>
         <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={20}
-        /></Text>
+        onPress={() => this.clear(index)} /></Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
         </View>
@@ -437,6 +442,7 @@ class ResumeViewScreen extends Component {
       sections: {
         flex: 1,
         backgroundColor:"#FFF",
+        width:"100%"
       },
       resumeView: {
         paddingTop: 30,
@@ -445,7 +451,7 @@ class ResumeViewScreen extends Component {
         paddingBottom: 100
       },
       resumeText: {
-        fontSize: 20,
+        fontSize: 15,
         textAlign: "justify",
         paddingTop: 20,
         color: "#000",
@@ -453,12 +459,12 @@ class ResumeViewScreen extends Component {
       },
       changeTranscript: {
         color: '#000',
-        fontSize: 20,
+        fontSize: 15,
         fontStyle: 'italic',
         width: "90%"
       },
       mainHeader: {
-        padding: 20,
+        padding: 10,
         alignItems: 'center',
         textAlign: "center",
         fontWeight: "bold",

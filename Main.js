@@ -229,7 +229,7 @@ class MainScreen extends Component {
       alignSelf: "center",
     },
     mainButton: {
-      fontSize: 17,
+      fontSize: 15,
       textAlign: "center",
       color: "#000",
       paddingTop: 10,
@@ -251,7 +251,7 @@ class MainScreen extends Component {
       textAlign: "center",
       fontWeight: "bold",
       color: "#000",
-      fontSize: 25
+      fontSize: 20
     },
     mainSubHeader: {
       paddingBottom: 20,
@@ -259,6 +259,6 @@ class MainScreen extends Component {
       textAlign: "center",
       fontWeight: "bold",
       color: "#1A5276",
-      fontSize: 15
+      fontSize: 10
     }
   });

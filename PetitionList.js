@@ -193,7 +193,7 @@ class PetitionListScreen extends Component {
         width: "90%",
       },
       registeredDocuments: {
-        fontSize: 19,
+        fontSize: 15,
         textAlign: "center",
         paddingTop: 20,
         color: "#1A5276",
@@ -204,7 +204,7 @@ class PetitionListScreen extends Component {
         textAlign: 'center',
         color: '#154360',
         fontWeight: 'bold',
-        fontSize: 20,
+        fontSize: 15,
         width: "100%",
         alignSelf:"center",
         paddingBottom: 20,
@@ -241,6 +241,7 @@ class PetitionListScreen extends Component {
         textAlign: "center",
         alignSelf: "center",
         paddingTop: 30,
+        alignContent:"center"
       },
       mainHeader: {
         paddingTop: 20,
@@ -249,6 +250,7 @@ class PetitionListScreen extends Component {
         fontWeight: "bold",
         color: "#000",
         fontSize: 20,
-        paddingBottom: 20
+        paddingBottom: 20,
+        width:"95%"
       },
 })

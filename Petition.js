@@ -39,11 +39,13 @@ class PetitionScreen extends Component {
         timer: 0,
         seconds: 10
       }
+      this.init()
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
       Voice.onSpeechRecognized = this.onSpeechRecognized.bind(this);
       Voice.onSpeechResults = this.onSpeechResults.bind(this);
-      this.init()
     }
+
+    
   
     componentDidMount() {
       BackHandler.addEventListener('hardwareBackPress', this.goBack);
@@ -65,7 +67,6 @@ class PetitionScreen extends Component {
         this.setState({ title: JSON.parse(value).titulo }) 
         this.setState({ data: JSON.parse(value).campos })  
       })
-      console.log("data:"+JSON.stringify(this.state.data))
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
       })
@@ -281,43 +282,28 @@ class PetitionScreen extends Component {
     }
   
     async _startRecognition(e) {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-          {
-            title: "ContaVoz",
-            message:"Necesitamos permisos para acceder a su micrófono",
-            buttonNegative: "Cancelar",
-            buttonPositive: "Aceptar"
+      this.setState({
+        recognized: '',
+        started: '',
+        results: [],
+      });
+      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+      if (lastSaved>-1) {
+        this.setState({is_recording: true })
+        var idcampo = this.state.data[lastSaved].idcampo
+        if ((!idcampo.includes("base") && !idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto == "") || 
+        (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto != "")) {
+          try {
+            await Voice.start('es');
+            this.setTimer(e)
+          } catch (e) {
+            console.error(e);
           }
-        );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-          if (lastSaved>-1) {
-            this.setState({is_recording: true })
-            var idcampo = this.state.data[lastSaved].idcampo
-            if ((!idcampo.includes("base") && !idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto == "") || 
-            (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[lastSaved].xdefecto != "")) {
-              this.setState({
-                recognized: '',
-                started: '',
-                results: [],
-              });
-              try {
-                await Voice.start('es');
-              } catch (e) {
-                console.error(e);
-              }
-              this.setTimer(e)
-            } else {
-              this.setState({ interpretedData : this.state.data[lastSaved].xdefecto })
-            }
-          }
+        } else {
+          this.setState({ interpretedData : this.state.data[lastSaved].xdefecto })
         }
-      } catch (err) {
-      console.log(err);
+      }
     }
-  }
 
     async setTimer (e) {
       if (this.state.seconds > 0 ) {
@@ -661,7 +647,7 @@ class PetitionScreen extends Component {
       }
       this.fadeIn()
       return (<View style={styles.titleView}>
-          <Animated.View style={[ { opacity: this.state.fadeAnimation }]}>
+          <Animated.View style={[ { opacity: this.state.fadeAnimation, width:"90%" }]}>
             <Text style={styles.showListen}>Escuchando {this.state.data[lastSaved].titulo.toLowerCase()}</Text>
           </Animated.View>
           <Text style={styles.secondsLabel}>({this.state.seconds})</Text>
@@ -836,8 +822,12 @@ class PetitionScreen extends Component {
     </Modal>)
     }
 
+    clear() {
+      this.setState({interpretedData: ""})
+    }
+
     setDataModal(){
-      if (this.state.listenedData.length == 0 || this.state.interpretedData.length == 0) return null
+      if (this.state.listenedData.length == 0) return null
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       return(<Modal
         animationType = {"slide"}
@@ -850,7 +840,7 @@ class PetitionScreen extends Component {
           <Text style={styles.listening}>{this.state.data[lastSaved].titulo}</Text>
           <View>
             <Text style={styles.resumeText}>Texto escuchado</Text><Text multiline={true} style={styles.transcript}>{this.state.listenedData}</Text>
-            <Text style={styles.resumeText}>Texto interpretado <Icon name='pencil' type='font-awesome' color='#000' size={20}/></Text>
+            <Text style={styles.resumeText}>Texto interpretado <Icon name='pencil' type='font-awesome' color='#000' size={20} onPress={() => this.clear()} /></Text>
             <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.interpretedData}</TextInput>
             {this.state.data[lastSaved].tipoexp=="E" &&
             (<View><Text style={styles.resumeText}>{this.state.optionalData}</Text>
@@ -1073,10 +1063,10 @@ class PetitionScreen extends Component {
         paddingRight: 20,
         borderRadius: 10,
       },
-      roundButtonsView:{
+      roundButtonsView: {
         paddingLeft:7,
         paddingRight:7,
-        paddingBottom: 5
+        paddingBottom: 5,
       },
       flatlistView: {
         paddingTop:20, 
@@ -1095,7 +1085,7 @@ class PetitionScreen extends Component {
         textAlign: 'center',
         color: '#154360',
         fontWeight: 'bold',
-        fontSize: 25,
+        fontSize: 15,
         width: "100%",
         paddingBottom: 10,
       },
@@ -1106,7 +1096,7 @@ class PetitionScreen extends Component {
         fontSize: 20,
         width: "100%",
         paddingBottom: 20,
-        paddingTop: 20
+        paddingTop: 20,
       },
       showSubTitle: {
         textAlign: 'center',
@@ -1119,7 +1109,7 @@ class PetitionScreen extends Component {
       showNextData: {
         textAlign: 'center',
         color: '#56A494',
-        fontSize: 20,
+        fontSize: 15,
         width: "100%",
         paddingTop: 20,
         fontWeight: 'bold',
@@ -1175,18 +1165,18 @@ class PetitionScreen extends Component {
       },
       transcript: {
         color: '#000',
-        fontSize: 20,
+        fontSize: 15,
         width: "100%",
         textAlign: "center"
       },
       changeTranscript: {
         color: '#000',
-        fontSize: 20,
+        fontSize: 15,
         width: "100%",
         textAlign:"center"
       },
       resumeText: {
-        fontSize: 20,
+        fontSize: 15,
         textAlign: "center",
         paddingTop: 20,
         color: "#000",
@@ -1195,11 +1185,11 @@ class PetitionScreen extends Component {
       secondsLabel: {
         fontWeight: 'bold',
         color: "#B03A2E",
-        fontSize: 22,
+        fontSize: 20,
         textAlign: "center",
       },
       exitButton: {
-        fontSize: 22,
+        fontSize: 20,
         textAlign: "center",
         fontWeight: 'bold',
         color: "#B03A2E",
@@ -1207,7 +1197,7 @@ class PetitionScreen extends Component {
       },
       skipButton: {
         width: "100%",
-        fontSize: 22,
+        fontSize: 20,
         paddingTop: 20,
         textAlign: "center",
         fontWeight: 'bold',
@@ -1216,33 +1206,31 @@ class PetitionScreen extends Component {
         fontStyle: 'italic',
       },
       saveNewValue: {
-        fontSize: 17,
+        fontSize: 20,
         textAlign: "left",
         color: "#2E8B57",
         fontWeight: 'bold',
       },
       saveButton: {
-        fontSize: 17,
+        fontSize: 20,
         textAlign: "center",
         fontWeight: 'bold',
         color: "#2E8B57",
         fontWeight: 'bold',
-        fontSize: 22,
       },
       exitNewValue: {
-        fontSize: 17,
+        fontSize: 20,
         textAlign: "left",
         color: "#B03A2E",
         fontWeight: 'bold',
-        fontSize: 22,
       },
       titleView: {
         paddingTop: 20,
         paddingBottom: 20,
         textAlign:"center",
-        width:"90%",
+        width:"80%",
         justifyContent: "center",
-        alignItems: "center"
+        alignItems: "center",
       },
       resumeView: {
         paddingBottom: 20,
@@ -1292,7 +1280,7 @@ class PetitionScreen extends Component {
         backgroundColor: "lightseagreen"
       },
       fadingText: {
-        fontSize: 28,
+        fontSize: 20,
         textAlign: "center",
         margin: 10,
         color : "#fff"
