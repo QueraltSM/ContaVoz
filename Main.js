@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Linking } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
+import { RFPercentage } from "react-native-responsive-fontsize";
 
 class MainScreen extends Component {
 
@@ -90,10 +91,98 @@ class MainScreen extends Component {
       });
       await AsyncAlert();
     }
+
+    setOptions() {
+      return (<View style={{ flex:1, paddingTop: 10 }}>
+        <View style={styles.twoColumnsInARow}>
+        <View style={styles.oneRow}>
+          <TouchableOpacity onPress={() => this.goScreen("compra", "shopping-cart")}>
+            <View style={styles.mainIcon}>
+              <Icon
+                name='shopping-cart'
+                type='font-awesome'
+                color='#FFF'
+                size={35}/>
+              </View>
+            <Text style={styles.mainButton}>Compras</Text>
+          </TouchableOpacity>
+          </View>
+          <View style={styles.oneRow}>
+            <TouchableOpacity onPress={() => this.goScreen("venta", "tag")}>
+              <View style={styles.mainIcon}>
+                <Icon
+                  name='tag'
+                  type='font-awesome'
+                  color='#FFF'
+                  size={35}/>
+                </View>
+              <Text style={styles.mainButton}>Ventas</Text>
+            </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.twoColumnsInARow}>
+          <View style={styles.oneRow}>
+          <TouchableOpacity onPress={() => this.goScreen("cobro", "shopping-basket")}>
+              <View style={styles.mainIcon}>
+                <Icon
+                  name='shopping-basket'
+                  type='font-awesome'
+                  color='#FFF'
+                  size={35}/>
+                </View>
+              <Text style={styles.mainButton}>Cobros</Text>
+            </TouchableOpacity>
+            </View>
+          <View style={styles.oneRow}>
+          <TouchableOpacity onPress={() => this.goScreen("pago", "money")}>
+            <View style={styles.mainIcon}>
+              <Icon
+                name='money'
+                type='font-awesome'
+                color='#FFF'
+                size={35}/>
+              </View>
+            <Text style={styles.mainButton}>Pagos</Text>
+          </TouchableOpacity>
+        </View>
+        </View>
+        <View style={styles.twoColumnsInARow}>
+        <View style={styles.oneRow}>
+          <TouchableOpacity onPress={this.goDictionary}>
+            <View style={styles.mainIcon}>
+              <Icon
+                name='list'
+                type='font-awesome'
+                color='#FFF'
+                size={35}/>
+              </View>
+            <Text style={styles.mainButton}>Entidades</Text>
+          </TouchableOpacity>
+          </View>
+          <View style={styles.oneRow}>
+          <TouchableOpacity onPress={this.logout}>
+            <View style={styles.mainIcon}>
+              <Icon
+                name='sign-out'
+                type='font-awesome'
+                color='#FFF'
+                size={35}/>
+              </View>
+            <Text style={styles.mainButton}>Salir</Text>
+          </TouchableOpacity>
+          </View>
+        </View>
+        </View>)
+    }
   
+    async openDisoftWeb() {
+      await Linking.openURL("https://disoft.es")
+    }
+
     render () {
       if (this.state.fullname.length == 0) return null
       return (
+        <View style={styles.container}>
         <View style={styles.mainView}> 
           <View style={styles.accountingView}>
           <Icon
@@ -104,111 +193,27 @@ class MainScreen extends Component {
           </View>
           <Text style={styles.mainHeader}>Contabilizando a</Text>
           <Text style={styles.mainHeader}>{this.state.fullname}</Text>
-          <View style={{ flex:1, paddingTop: 10 }}>
-          <View style={styles.twoColumnsInARow}>
-          <View>
-            <TouchableOpacity onPress={() => this.goScreen("compra", "shopping-cart")}>
-              <View style={styles.mainIcon}>
-                <Icon
-                  name='shopping-cart'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={35}/>
-                </View>
-              <Text style={styles.mainButton}>Compras</Text>
-            </TouchableOpacity>
-            </View>
-              <Icon
-                name='shopping-cart'
-                type='font-awesome'
-                color='#FFF'
-                size={35}/>
-              <View>
-              <TouchableOpacity onPress={() => this.goScreen("venta", "tag")}>
-                <View style={styles.mainIcon}>
-                  <Icon
-                    name='tag'
-                    type='font-awesome'
-                    color='#FFF'
-                    size={35}/>
-                  </View>
-                <Text style={styles.mainButton}>Ventas</Text>
-              </TouchableOpacity>
-              </View>
-            </View>
-            <View style={styles.twoColumnsInARow}>
-            <View>
-            <TouchableOpacity onPress={() => this.goScreen("cobro", "shopping-basket")}>
-                <View style={styles.mainIcon}>
-                  <Icon
-                    name='shopping-basket'
-                    type='font-awesome'
-                    color='#FFF'
-                    size={35}/>
-                  </View>
-                <Text style={styles.mainButton}>Cobros</Text>
-              </TouchableOpacity>
-              </View>
-              <Icon
-                name='shopping-cart'
-                type='font-awesome'
-                color='#FFF'
-                size={35}/>
-            <TouchableOpacity onPress={() => this.goScreen("pago", "money")}>
-              <View style={styles.mainIcon}>
-                <Icon
-                  name='money'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={35}/>
-                </View>
-              <Text style={styles.mainButton}>Pagos</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.twoColumnsInARow}>
-          <View>
-            <TouchableOpacity onPress={this.goDictionary}>
-              <View style={styles.mainIcon}>
-                <Icon
-                  name='briefcase'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={35}/>
-                </View>
-              <Text style={styles.mainButton}>Entidades</Text>
-            </TouchableOpacity>
-            </View>
-            <Icon
-                name='shopping-cart'
-                type='font-awesome'
-                color='#FFF'
-                size={35}/>
-            <View>
-            <TouchableOpacity onPress={this.logout}>
-              <View style={styles.mainIcon}>
-                <Icon
-                  name='sign-out'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={35}/>
-                </View>
-              <Text style={styles.mainButton}>Desconectar</Text>
-            </TouchableOpacity>
-            </View>
-          </View>
-          </View>
-          <Text style={styles.mainSubHeader}>© Disoft Servicios Informáticos S.L.</Text>
-        </View>);
+          {this.setOptions()}
+          <TouchableOpacity onPress={() => this.openDisoftWeb()}>
+            <Text style={styles.mainSubHeader}>© Disoft Servicios Informáticos S.L.</Text>
+          </TouchableOpacity>
+        </View></View>);
     }
   }
 
   export default createAppContainer(MainScreen);
   
   const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingTop:"15%",
+      backgroundColor: '#fff',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     mainView: {
       flex: 1,
       backgroundColor:"#FFF",
-      paddingTop: 30,
       alignContent:"center",
     },
     accountingView: {
@@ -216,20 +221,16 @@ class MainScreen extends Component {
       textAlign: "center",
       alignSelf: "center",
     },
-    text: {
-      fontSize: 17,
-      textAlign: "center",
-      paddingTop: 20,
-      paddingBottom: 20,
-      color: "#000",
-    },
     twoColumnsInARow: {
       paddingTop: 20,
       flexDirection: 'row',
       alignSelf: "center",
     },
+    oneRow: {
+      width:"40%"
+    },
     mainButton: {
-      fontSize: 15,
+      fontSize: RFPercentage(3),
       textAlign: "center",
       color: "#000",
       paddingTop: 10,
@@ -246,12 +247,12 @@ class MainScreen extends Component {
       borderRadius: 10
     },
     mainHeader: {
-      paddingTop: 20,
+      paddingTop: 10,
       alignItems: 'center',
       textAlign: "center",
       fontWeight: "bold",
       color: "#000",
-      fontSize: 20
+      fontSize: RFPercentage(4),
     },
     mainSubHeader: {
       paddingBottom: 20,
@@ -259,6 +260,6 @@ class MainScreen extends Component {
       textAlign: "center",
       fontWeight: "bold",
       color: "#1A5276",
-      fontSize: 10
+      fontSize: RFPercentage(2)
     }
   });

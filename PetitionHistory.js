@@ -1,8 +1,9 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollView, Alert } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
+import { RFPercentage } from "react-native-responsive-fontsize";
 
 class PetitionHistoryScreen extends Component { 
 
@@ -98,53 +99,46 @@ class PetitionHistoryScreen extends Component {
             />
           </View>)
         }
-      return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No ha registrado documentos</Text></View>)
+      return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay documentos pendientes</Text></View>)
     }
-  
+
     setMenu() {
-      return(
-        <View style={{backgroundColor:"#FFF"}}>
-          <View style={styles.accountingViewShow}>
-          <Icon
-              name={this.state.icon}
-              type='font-awesome'
-              color='#000'
-              size={45}
-            />
-            </View>
-          <Text style={styles.mainHeader}>Documentos pendientes</Text>
-        </View>)
+      return(<View style={styles.navBarHeader}>
+        <Text style={styles.mainHeader}>Documentos pendientes</Text>
+        <Icon name={this.state.icon} type='font-awesome' color='white' size={30} />
+      </View>
+      )
     }
 
     setFootbar() {
       return (<View style={styles.navBarBackHeader}>
-        <View style={{ width: 60,textAlign:'center' }}>
+        <View style={{ width: 100,textAlign:'center' }}>
         <TouchableOpacity onPress={() => this.addPetition()}>
         <Icon
           name='plus'
           type='font-awesome'
           color='#1A5276'
-          size={35}
+          size={40}
         />
         </TouchableOpacity>
         </View>
-      <View style={{ width: 60,textAlign:'center' }}>
+      <View style={{ width: 100,textAlign:'center' }}>
       <TouchableOpacity onPress={() => this.props.navigation.push("Main")}>
         <Icon
           name='home'
           type='font-awesome'
           color='#1A5276'
-          size={35}
+          size={40}
         />
         </TouchableOpacity>
         </View>
-        <View style={{ width: 60,textAlign:'center' }}>
+        <View style={{ width: 100,textAlign:'center' }}>
         <TouchableOpacity onPress={() => this.logout()}>
         <Icon
           name='sign-out'
           type='font-awesome'
           color='#1A5276'
-          size={35}
+          size={40}
         />
         </TouchableOpacity>
         </View>
@@ -195,10 +189,10 @@ class PetitionHistoryScreen extends Component {
     render () {
       if (this.state.userid.length == 0) return null
       return (
-        <View style={{flex: 1, backgroundColor:"#FFF" }}>
+        <View style={styles.container}>
           {this.setMenu()}
           <ScrollView style={{backgroundColor: "#FFF" }}>
-          <View style={styles.sections}>
+          <View style={styles.voiceControlView}>
             {this.setList()}
           </View>
           </ScrollView>   
@@ -211,28 +205,34 @@ class PetitionHistoryScreen extends Component {
   export default createAppContainer(PetitionHistoryScreen);
 
   const styles = StyleSheet.create({
+      container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      navBarHeader: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor:"#1A5276", 
+        flexDirection:'row', 
+        textAlignVertical: 'center',
+        width:"100%"
+      },
       voiceControlView: {
         flex: 1,
         backgroundColor: "#FFF",
+        paddingTop: 10,
         alignContent: "center",
         alignSelf: "center",
-        width: "100%",
       },
       registeredDocuments: {
-        fontSize: 15,
+        fontSize: RFPercentage(2.5),
         textAlign: "center",
         paddingTop: 20,
         color: "#1A5276",
         fontWeight: 'bold',
-        paddingBottom: 15,
-      },
-      showTitle:{
-        textAlign: 'center',
-        color: '#154360',
-        fontWeight: 'bold',
-        fontSize: 20,
-        width: "90%",
-        paddingBottom: 20,
+        paddingBottom: 15
       },
       navBarBackHeader: {
         alignItems: 'center',
@@ -240,38 +240,23 @@ class PetitionHistoryScreen extends Component {
         backgroundColor:"white", 
         flexDirection:'row', 
         textAlignVertical: 'center',
-        padding: 10
-      },
-      navBarHeader: {
-        flex: 1,
-        color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 20,
-        textAlign: 'center',
+        height: 65
       },
       sections: {
         flex: 1,
         backgroundColor:"#FFF"
       },
-      resumeView: {
-        paddingTop: 30,
-        paddingLeft: 40,
-        backgroundColor: "#FFF",
-        paddingBottom: 100
-      },
       accountingViewShow: {
         flexDirection: 'row',
         textAlign: "center",
         alignSelf: "center",
-        paddingTop: 30,
       },
       mainHeader: {
-        paddingTop: 20,
+        padding: 10,
         alignItems: 'center',
         textAlign: "center",
         fontWeight: "bold",
-        color: "#000",
+        color: "#FFF",
         fontSize: 20,
-        paddingBottom: 20,
       },
 })

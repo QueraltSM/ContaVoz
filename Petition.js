@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Modal, Animated } from 'react-native';
+import { StyleSheet, Platform, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Modal, Animated } from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-community/async-storage';
 import * as ImagePicker from 'react-native-image-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
 import evaluate from 'words-to-numbers-es';
+import { RFPercentage } from "react-native-responsive-fontsize";
 
 class PetitionScreen extends Component {
     
@@ -35,9 +36,11 @@ class PetitionScreen extends Component {
         userid: "",
         flatlistPos: 0,
         saved: false,
+        flag: 0,
         fadeAnimation: new Animated.Value(0),
         timer: 0,
-        seconds: 10
+        seconds: 10,
+        hasStarted: false
       }
       this.init()
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -45,13 +48,12 @@ class PetitionScreen extends Component {
       Voice.onSpeechResults = this.onSpeechResults.bind(this);
     }
 
-    
-  
     componentDidMount() {
       BackHandler.addEventListener('hardwareBackPress', this.goBack);
     }
   
     goBack = () => {
+      this._stopRecognition(this)
       this.props.navigation.push('PetitionHistory')
       return true
     }
@@ -206,8 +208,10 @@ class PetitionScreen extends Component {
       if (this.state.listenedData.includes("con")) this.setState({ listenedData: this.state.listenedData.replace("con", ".")})
       var number = evaluate(this.state.listenedData);
       if (number==0) {
-        if (isNaN(this.state.listenedData)) this.showAlert("Error", "El dato aportado no es numérico")
-        else this.setState({ interpretedData: this.state.listenedData.split(' ').join("").replace("/",".") })
+        if (isNaN(this.state.listenedData)) {
+          this.showAlert("Error", "El dato aportado no es numérico")
+          this.setState({ getData: false })
+        } else this.setState({ interpretedData: this.state.listenedData.split(' ').join("").replace("/",".") })
       } else {
         this.setState({ listenedData: number + "" })
         this.setState({ interpretedData: number + "" })
@@ -222,28 +226,14 @@ class PetitionScreen extends Component {
 
     setFixedData() {
       var listenedData = this.state.listenedData.toLowerCase()
-      var interpretedKey = this.state.words.findIndex(obj => obj.key.toLowerCase().includes(listenedData))
-      var interpretedValue = this.state.words.findIndex(obj => obj.value.toLowerCase().includes(listenedData))
-      if (interpretedKey > -1) {
-        var interpretedData = this.state.words[interpretedKey].value.toLowerCase()
-        var dataValue = this.state.words.findIndex(obj => obj.key.toLowerCase().includes(interpretedData))
-        if (dataValue == -1) {
-          this.setState({ interpretedData: this.state.words[interpretedKey].key })
-          this.setOptionalData("NIF asociado", this.state.words[interpretedKey].value)
-        } else {
-          this.setState({ interpretedData: this.state.words[interpretedKey].value })
-          this.setOptionalData("NIF asociado", this.state.words[dataValue].value)
-        }
-      } else if (interpretedValue > -1) {
-        var interpretedData = this.state.words[interpretedValue].value.toLowerCase()
-        var dataValue = this.state.words.findIndex(obj => obj.value.toLowerCase().includes(interpretedData))
-        if (dataValue == -1) {
-          this.setState({ interpretedData: this.state.words[interpretedValue].key })
-          this.setOptionalData("Entidad asociada", this.state.words[interpretedValue].key)
-        } else {
-          this.setState({ interpretedData: this.state.words[interpretedValue].value })
-          this.setOptionalData("Entidad asociada", this.state.words[dataValue].key)
-        }
+      var sameKeywords = this.state.words.findIndex(obj => obj.keywords.toLowerCase().includes(listenedData))
+      var sameEntity = this.state.words.findIndex(obj => obj.entity.toLowerCase().includes(listenedData))
+      if (sameKeywords > -1) {
+        this.setState({ interpretedData: this.state.words[sameKeywords].entity })
+        this.setOptionalData("CIF asociado", this.state.words[sameKeywords].cifValue)
+      } else if (sameEntity > -1) {
+        this.setState({ interpretedData: this.state.words[sameEntity].entity })
+        this.setOptionalData("CIF asociado", this.state.words[sameEntity].cifValue)
       } else {
         this.setState({ interpretedData: this.state.listenedData })
         this.setOptionalData("Empresa no encontrada", "")
@@ -270,11 +260,12 @@ class PetitionScreen extends Component {
       this.setState({
         listenedData: word[0],
       });
+      if (this.state.listenedData.includes("espacio")) this.setState({ listenedData: this.state.listenedData.replace("espacio", " ")})
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (this.state.data[lastSaved].idcampo=="factura") {
         this.setState({listenedData:this.state.listenedData.toUpperCase()})
       }
-      if (this.state.data[lastSaved].tipoexp != "E" && this.state.data[lastSaved].tipoexp != "F") {
+      if (this.state.data[lastSaved].tipoexp != "1" && this.state.data[lastSaved].tipoexp != "E" && this.state.data[lastSaved].tipoexp != "F") {
         this.setState({listenedData:this.state.listenedData.split(' ').join("")})
       }
       this.setState({getData: true})
@@ -288,6 +279,7 @@ class PetitionScreen extends Component {
         results: [],
       });
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+      var percentage = this.state.savedData.findIndex(obj => obj.idcampo.includes("porcentaje"))
       if (lastSaved>-1) {
         this.setState({is_recording: true })
         var idcampo = this.state.data[lastSaved].idcampo
@@ -300,7 +292,11 @@ class PetitionScreen extends Component {
             console.error(e);
           }
         } else {
-          this.setState({ interpretedData : this.state.data[lastSaved].xdefecto })
+          if (idcampo.includes("base") || idcampo.includes("cuota") && this.state.savedData[percentage].valor != "") {
+            this.calculateResult()
+          } else {
+            this.setState({ interpretedData : this.state.data[lastSaved].xdefecto })
+          }
         }
       }
     }
@@ -337,61 +333,58 @@ class PetitionScreen extends Component {
     setMicrophoneIcon() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
       if (this.state.savedData.length>0 && lastSaved==-1) {
-        return <Icon
-          name='microphone'
-          type='font-awesome'
-          color='#1A5276'
-          size={35}
-          onPress={() => this.noMoreAudio()}
-        />
+        return (<View style={{ width: 70,textAlign:'center' }}><TouchableOpacity onPress={() => this.noMoreAudio()}><Icon name='microphone' type='font-awesome' color='#1A5276' size={40}/></TouchableOpacity></View>)
       } else if (this.state.savedData.length>0) {
         var idcampo = this.state.data[lastSaved].idcampo
         var xdefecto = this.state.data[lastSaved].xdefecto
         if ((idcampo.includes("base") && this.state.data[lastSaved+1].xdefecto != "")
         || (idcampo.includes("porcentaje") && this.state.data[lastSaved].xdefecto != "")
-        || (idcampo.includes("cuota")) || xdefecto != "") {
-          return <Icon
-          name='microphone'
-          type='font-awesome'
-          color='#1A5276'
-          size={35}
-          onPress={this._startRecognition.bind(this)}
-        />
+        || (idcampo.includes("cuota")) && this.state.data[lastSaved].xdefecto != "" || xdefecto != "") {
+          return (<View style={{ width: 70,textAlign:'center' }}><TouchableOpacity onPress={() => this._startRecognition.bind(this)}><Icon name='microphone' type='font-awesome' color='#1A5276' size={40} /></TouchableOpacity></View>)
         } else if (JSON.parse(this.state.is_recording) && !JSON.parse(this.state.saved)) {
-            <Icon
-              name='microphone-slash'
-              type='font-awesome'
-              color='#B03A2E'
-              size={35}
-          />
+          <Icon name='microphone-slash' type='font-awesome'color='#B03A2E' size={40} />
         }
-        return <Icon
-          name='microphone'
-          type='font-awesome'
-          color='#1A5276'
-          size={35}
-          onPress={this._startRecognition.bind(this)}
-        />
+        return (<View style={{ width: 70,textAlign:'center' }}><TouchableOpacity onPress={this._startRecognition.bind(this)}><Icon name='microphone' type='font-awesome' color='#1A5276' size={40} /></TouchableOpacity></View>)
       }
     }
 
      takePhoto = async() =>{
+       /* //Probar con el iPhone
+       if (Platform.OS == "ios") {
+        console.log("soy ios")
+        let options = {
+          title: 'Hacer una foto',
+          customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
+          storageOptions: {
+            skipBackup: true,
+            path: 'images',
+            privateDirectory: true,
+          },
+        };
+        ImagePicker.launchCamera(options, (response) => {
+          if (response.didCancel || response.error || response.customButton) {
+            console.log(JSON.stringify(response));
+          } else {
+            var arrayImages = this.state.images
+            var newID = this.state.petitionID+"_"+(this.state.images.length+1)
+            var uri = JSON.stringify(response.assets[0]["uri"])
+            arrayImages.push({
+              id: newID,
+              uri: uri
+            })
+            this.setState({images: arrayImages})
+            this.saveImages()
+          }
+        })
+       } else {*/
         try {
           const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.CAMERA,
-            {
-              title: "ContaVoz",
-              message:"Necesitamos permisos para acceder a su cámara",
-              buttonNegative: "Cancelar",
-              buttonPositive: "Aceptar"
-            }
+            PermissionsAndroid.PERMISSIONS.CAMERA, { title: "ContaVoz", message:"Necesitamos permisos para acceder a su cámara", buttonNegative: "Cancelar", buttonPositive: "Aceptar" }
           );
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
             let options = {
               title: 'Hacer una foto',
-              customButtons: [
-                { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
-              ],
+              customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
               storageOptions: {
                 skipBackup: true,
                 path: 'images',
@@ -419,8 +412,9 @@ class PetitionScreen extends Component {
             }
           }
         } catch (err) {
-        console.log(err);
-      }
+          console.log(err);
+        }
+      //}
     }
   
     async saveImages() {
@@ -493,18 +487,22 @@ class PetitionScreen extends Component {
           { cancelable: false }
         );
       }
-  
-    setFlatlistPos(i) {
-      this.setState({ flatlistPos: i })
+
+    async setFlag(i) {
+      this.setState({flag: i })
     }
   
-    setFlatlistButtons(pos) {
+    setAllFlags() {
       var result = []
       for (let i = 0; i < this.state.images.length; i++) {
-        if (pos == i) {
-          result.push(<View style={styles.roundButtonsView}><Text style={styles.roundButton}></Text></View>)
-        } else {
+        if (this.state.flag == i) {
           result.push(<View style={styles.roundButtonsView}><Text style={styles.focusRoundButton}></Text></View>)
+        } else {
+          result.push(<View style={styles.roundButtonsView}>
+            <TouchableOpacity onPress={() => this.setFlag(i)}>
+              <Text style={styles.roundButton}></Text>
+            </TouchableOpacity>
+            </View>)
         }
       }
       return (<View style={styles.flatlistView}>{result}</View>)
@@ -514,41 +512,31 @@ class PetitionScreen extends Component {
       this.props.navigation.push('ImageViewer', {image: image,back: "Petition"})
     }
   
-    setImageZoom(item) {
+    setImageZoom() {
       return (<ImageZoom
           cropWidth={Dimensions.get('window').width}
           cropHeight={Dimensions.get('window').height/2}
           imageWidth={Dimensions.get('window').width}
           imageHeight={Dimensions.get('window').height/2}>
-            <TouchableOpacity onPress={() => this.seeImage(item)}>
+            <TouchableOpacity onPress={() => this.seeImage(this.state.images[this.state.flag])}>
             <Image
               source={{
-                uri: item.uri.replace(/['"]+/g, ''),
+                uri: this.state.images[this.state.flag].uri.replace(/['"]+/g, ''),
               }}
               resizeMode="cover"
-              key={item}
+              key={this.state.flag}
               style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2, aspectRatio: 1 }}
             />
             </TouchableOpacity>
         </ImageZoom>)
-    }
+    }            
   
     setImages() {
       if (this.state.images.length > 0) {
         return (
           <View style={styles.imagesSection}>
             <View style={styles.selectedImageView}>
-            <FlatList 
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={this.state.images}
-              renderItem={({ item, index }) => (
-                (<View>
-                 {this.setImageZoom(item)}
-                {this.state.images.length > 1 && this.setFlatlistButtons(index)}
-                </View>) 
-              )}
-            />
+            {this.setImageZoom()}
           </View>
           </View>
         )}
@@ -651,7 +639,7 @@ class PetitionScreen extends Component {
             <Text style={styles.showListen}>Escuchando {this.state.data[lastSaved].titulo.toLowerCase()}</Text>
           </Animated.View>
           <Text style={styles.secondsLabel}>({this.state.seconds})</Text>
-        {lastSaved+1 < this.state.savedData.length && <Text style={styles.showNextData}>Siguiente dato: {this.state.data[lastSaved+1].titulo}</Text>}
+        {lastSaved>-1 && lastSaved <= this.state.savedData.length-1 && <Text style={styles.showNextData}>Siguiente dato: {this.state.data[lastSaved+1].titulo}</Text>}
         {this.state.data[lastSaved].obligatorio=="N" &&
         (<View><TouchableOpacity onPress={() => this.askSkip()}><Text style={styles.skipButton}>Omitir</Text></TouchableOpacity></View>)}
       </View>)
@@ -669,15 +657,16 @@ class PetitionScreen extends Component {
 
     async saveEnterprise() {
       var arrayWords =  this.state.words
-      if (!this.state.words.some(item => item.key.toLowerCase() === this.state.interpretedData.toLowerCase())) {
+      if (!this.state.words.some(item => item.entity.toLowerCase() === this.state.interpretedData.toLowerCase())) {
         arrayWords.push({
-          key: this.state.interpretedData,
-          value: this.state.optionalValue,
-          time: new Date().getTime(),
+          keywords: this.state.listenedData,
+          entity: this.state.interpretedData,
+          cifValue: this.state.optionalValue,
+          time: new Date().getTime()
         })
       } else {
-        var i = arrayWords.findIndex(obj => obj.key.toLowerCase() === this.state.interpretedData.toLowerCase());
-        arrayWords[i].value = this.state.optionalValue
+        var i = arrayWords.findIndex(obj => obj.entity.toLowerCase() === this.state.interpretedData.toLowerCase());
+        arrayWords[i].cifValue = this.state.optionalValue
       }
       this.setState({ words: arrayWords })
       await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(arrayWords))
@@ -737,10 +726,15 @@ class PetitionScreen extends Component {
     }
 
     saveData = async () => {
-      if (this.state.lastOptionalValue != this.state.optionalValue) {
-        this.askSaveEnterprise()
+      if (this.state.interpretedData != "") {
+        this.setState({ hasStarted: true })
+        if (this.state.lastOptionalValue != this.state.optionalValue) {
+          this.askSaveEnterprise()
+        } else {
+          this.storeData()
+        }
       } else {
-        this.storeData()
+        this.showAlert("Error", "El texto interpretado no puede estar vacío")
       }
     }
 
@@ -762,7 +756,7 @@ class PetitionScreen extends Component {
           showsHorizontalScrollIndicator={false}>
           <Text style={styles.showTitle}>{data.titulo}</Text>
           <View>
-            <Text style={styles.resumeText}>Valor por defecto <Icon name='pencil' type='font-awesome' color='#000' size={20}/></Text>
+            <Text style={styles.resumeText}>Valor por defecto</Text>
             <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.state.interpretedData=result}>{result}</TextInput>
           </View>
             <Text style={styles.transcript}></Text>
@@ -779,10 +773,10 @@ class PetitionScreen extends Component {
     </Modal>)
     }
 
-    setDisplayDataModal(lastSaved) {
-      var porcentaje = this.state.savedData[lastSaved-1].valor
-      var lastPercentage = this.state.savedData.findIndex(obj => obj.idcampo.includes("porcentaje"))
-      var importe = this.state.savedData[lastPercentage-1].valor
+    async calculateResult() {
+      var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+      var porcentaje = this.state.savedData.findIndex(obj => obj.idcampo.includes("porcentaje"))
+      var importe = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
       var result = ""
       if (this.state.savedData[lastSaved].idcampo.includes("base")) {
         var x = 100 + Number(porcentaje)
@@ -794,7 +788,12 @@ class PetitionScreen extends Component {
         result = base*porcentaje
         result = Math.round(result * 100) / 100
       }
-      this.state.interpretedData=result
+      await this.setState({interpretedData: result})
+      console.log(this.state.interpretedData)
+    }
+
+    setDisplayDataModal(lastSaved) {
+      console.log(this.state.interpretedData+"jejej")
       return(<Modal
         animationType = {"slide"}
         transparent={true}>
@@ -805,8 +804,8 @@ class PetitionScreen extends Component {
           showsHorizontalScrollIndicator={false}>
           <Text style={styles.showTitle}>{this.state.savedData[lastSaved].titulo}</Text>
           <View>
-            <Text style={styles.resumeText}>Resultado <Icon name='pencil' type='font-awesome' color='#000' size={20}/></Text>
-            <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.state.interpretedData=result}>{result}</TextInput>
+            <Text style={styles.resumeText}>Resultado</Text>
+            <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData:result })}>{this.state.interpretedData}</TextInput>
           </View>
             <Text style={styles.transcript}></Text>
             <View style={styles.modalNavBarButtons}>
@@ -820,10 +819,6 @@ class PetitionScreen extends Component {
         </View>
       </View>
     </Modal>)
-    }
-
-    clear() {
-      this.setState({interpretedData: ""})
     }
 
     setDataModal(){
@@ -838,13 +833,13 @@ class PetitionScreen extends Component {
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}>
           <Text style={styles.listening}>{this.state.data[lastSaved].titulo}</Text>
-          <View>
+          <View style={styles.modalResult}>
             <Text style={styles.resumeText}>Texto escuchado</Text><Text multiline={true} style={styles.transcript}>{this.state.listenedData}</Text>
-            <Text style={styles.resumeText}>Texto interpretado <Icon name='pencil' type='font-awesome' color='#000' size={20} onPress={() => this.clear()} /></Text>
+            <Text style={styles.resumeText}>Texto interpretado</Text>
             <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.interpretedData}</TextInput>
             {this.state.data[lastSaved].tipoexp=="E" &&
             (<View><Text style={styles.resumeText}>{this.state.optionalData}</Text>
-              <TextInput blurOnSubmit={true} multiline={true} placeholder="NIF no registrado" style={styles.changeTranscript} onChangeText={optionalValue => this.setState({optionalValue})}>{this.state.optionalValue}</TextInput>
+              <TextInput blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={optionalValue => this.setState({optionalValue})}>{this.state.optionalValue}</TextInput>
             </View>)}
             </View>
             <Text style={styles.transcript}></Text>
@@ -938,52 +933,57 @@ class PetitionScreen extends Component {
 
     setMenu() {
         if (this.state.is_recording) return null 
-        var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
+        var lastSaved = this.state.savedData.findIndex(obj => obj.valor != null)
+        if (lastSaved==0) lastSaved=-1 
         return (
         <View style={styles.navBarBackHeader}>
-            <View style={{ width: 60,textAlign:'center' }}>
+            <View style={{ width: 70,textAlign:'center' }}>
+              <TouchableOpacity onPress={() => this.askDeleteDoc()}>
               <Icon
                 name='trash'
                 type='font-awesome'
                 color='#1A5276'
-                size={35}
-                onPress={this.askDeleteDoc}
+                size={40}
               />
+              </TouchableOpacity>
             </View>
-            <View style={styles.iconsView}>
-                {this.setMicrophoneIcon()}
-              </View>
-            <View style={{ width: 60,textAlign:'center' }}>
+            <View style={{ width: 70,textAlign:'center' }}>
+            <TouchableOpacity onPress={() => this.takePhoto()}>
               <Icon
                 name='camera'
                 type='font-awesome'
                 color='#1A5276'
-                size={35}
-                onPress={this.takePhoto}
+                size={40}
               />
+              </TouchableOpacity>
               </View>
-              <View style={styles.iconsView}>
+              {this.setMicrophoneIcon()}
+              <View style={{ width: 70,textAlign:'center' }}>
+              <TouchableOpacity onPress={() => this.goGallery()}>
               <Icon
                 name='image'
                 type='font-awesome'
                 color='#1A5276'
-                size={35}
-                onPress={this.goGallery}
+                size={40}
               />
+              </TouchableOpacity>
               </View>
-            {(this.state.images.length > 0 || this.state.savedData.length>0 && lastSaved==-1) &&
-            (<View style={{ width: 60,textAlign:'center' }}>
+            {(this.state.images.length > 0 || (this.state.savedData.length > 0 && lastSaved>-1)) &&
+            (<View style={{ width: 70,textAlign:'center' }}>
+              <TouchableOpacity onPress={() => this.seeDocument()}>
               <Icon
                 name='check-square'
                 type='font-awesome'
-                color='#1A5276'
-                size={35}
-                onPress={this.seeDocument}
+                color='#5C9E7B'
+                size={40}
               />
+              </TouchableOpacity>
             </View>)}
           </View>
         )
     }
+
+    //his.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.savedData.length > 0 && lastSaved>0
 
     render () {
       if (this.state.savedData.length==0) return null // Wait loop
@@ -996,6 +996,7 @@ class PetitionScreen extends Component {
               style={{backgroundColor: "#fff" }}>
               <View style={styles.sections}>
                 {this.setImages()}
+                {this.state.images.length > 1 && this.setAllFlags()}
                 {this.documentState()}
                 {this.setVoiceControl()}
               </View>
@@ -1015,7 +1016,6 @@ class PetitionScreen extends Component {
         backgroundColor:"#1A5276", 
         flexDirection:'row', 
         textAlignVertical: 'center',
-        height: 60
       },
       navBarBackHeader: {
         alignItems: 'center',
@@ -1023,7 +1023,7 @@ class PetitionScreen extends Component {
         backgroundColor:"white", 
         flexDirection:'row', 
         textAlignVertical: 'center',
-        height: 60
+        height: 65
       },
       navBarButtons: {
         flex:1,
@@ -1078,14 +1078,14 @@ class PetitionScreen extends Component {
         textAlign: 'center',
         color: '#1B5E8B',
         fontWeight: 'bold',
-        fontSize: 20
+        fontSize: RFPercentage(4),
       },
       showTitle:{
         paddingTop: 20,
         textAlign: 'center',
         color: '#154360',
         fontWeight: 'bold',
-        fontSize: 15,
+        fontSize: RFPercentage(3),
         width: "100%",
         paddingBottom: 10,
       },
@@ -1093,7 +1093,7 @@ class PetitionScreen extends Component {
         textAlign: 'center',
         color: '#B03A2E',
         fontWeight: 'bold',
-        fontSize: 20,
+        fontSize: RFPercentage(4),
         width: "100%",
         paddingBottom: 20,
         paddingTop: 20,
@@ -1102,14 +1102,14 @@ class PetitionScreen extends Component {
         textAlign: 'center',
         color: 'black',
         fontWeight: 'bold',
-        fontSize: 20,
+        fontSize: RFPercentage(3),
         width: "100%",
         paddingTop: 10
       },
       showNextData: {
         textAlign: 'center',
         color: '#56A494',
-        fontSize: 15,
+        fontSize: RFPercentage(3),
         width: "100%",
         paddingTop: 20,
         fontWeight: 'bold',
@@ -1118,6 +1118,9 @@ class PetitionScreen extends Component {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
+      },
+      modalResult: {
+        width:"100%"
       },
       modalView: {
         margin: 20,
@@ -1156,6 +1159,7 @@ class PetitionScreen extends Component {
         flex: 1,
         alignItems: 'center',
         textAlign: "center",
+        width:"100%",
       },
       selectedImageView: {
         flex: 1,
@@ -1165,22 +1169,27 @@ class PetitionScreen extends Component {
       },
       transcript: {
         color: '#000',
-        fontSize: 15,
-        width: "100%",
-        textAlign: "center"
+        fontSize: RFPercentage(2.5),
+        textAlign: "center",
+        width:"90%"
       },
       changeTranscript: {
         color: '#000',
-        fontSize: 15,
-        width: "100%",
-        textAlign:"center"
+        fontSize: RFPercentage(2.5),
+        textAlign:"center",
+        width:"90%",
+        borderWidth: 0.5,
+        borderColor: "lightgray",
+        borderRadius: 20
       },
       resumeText: {
-        fontSize: 15,
+        fontSize: RFPercentage(3),
         textAlign: "center",
-        paddingTop: 20,
+        paddingTop: 10,
+        paddingBottom: 10,
         color: "#000",
         fontWeight: 'bold',
+        width:"100%"
       },
       secondsLabel: {
         fontWeight: 'bold',
@@ -1254,23 +1263,23 @@ class PetitionScreen extends Component {
         fontSize: 20,
       },
       roundButton: {
-        width: 5,
-        height: 5,
+        width: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 6,
+        borderRadius: 50,
+        borderWidth:2,
+        borderColor: '#1A5276',
+      },
+      focusRoundButton: {
+        width: 20,
+        height: 20,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 6,
         borderRadius: 50,
         backgroundColor: '#1A5276',
-        borderWidth:2,
-        borderColor: '#1A5276',
-      },
-      focusRoundButton: {
-        width: 5,
-        height: 5,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 6,
-        borderRadius: 50,
         borderWidth:2,
         borderColor: '#1A5276',
       },
@@ -1300,5 +1309,14 @@ class PetitionScreen extends Component {
         borderRadius: 10,
         padding: 10,
         flexDirection: "row"
+      },
+      clickImage: {
+        padding: 10,
+        backgroundColor: "white",
+      },
+      imagesCount: {
+        fontWeight: "bold",
+        fontSize: RFPercentage(3),
+        color: "#154360"
       }
   })

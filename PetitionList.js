@@ -3,6 +3,7 @@ import {StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollV
 import { createAppContainer } from 'react-navigation';
 import AsyncStorage from '@react-native-community/async-storage';
 import { Icon } from 'react-native-elements'
+import { RFPercentage } from "react-native-responsive-fontsize";
 
 class PetitionListScreen extends Component { 
 
@@ -68,18 +69,10 @@ class PetitionListScreen extends Component {
     }
 
     setMenu() {
-      return(
-        <View style={{backgroundColor:"#FFF"}}>
-          <View style={styles.accountingViewShow}>
-          <Icon
-              name={this.state.icon}
-              type='font-awesome'
-              color='#000'
-              size={45}
-            />
-            </View>
-          <Text style={styles.mainHeader}>Seleccione tipo de documento</Text>
-        </View>
+      return(<View style={styles.navBarHeader}>
+        <Text style={styles.mainHeader}>Seleccione tipo de documento</Text>
+        <Icon name={this.state.icon} type='font-awesome' color='white' size={30} />
+      </View>
       )
     }
 
@@ -126,23 +119,23 @@ class PetitionListScreen extends Component {
 
     setFootbar() {
       return (<View style={styles.navBarBackHeader}>
-      <View style={{ width: 60,textAlign:'center' }}>
+      <View style={{ width: 100,textAlign:'center' }}>
       <TouchableOpacity onPress={() => this.props.navigation.push("Main")}>
         <Icon
           name='home'
           type='font-awesome'
           color='#1A5276'
-          size={35}
+          size={40}
         />
         </TouchableOpacity>
         </View>
-        <View style={{ width: 60,textAlign:'center' }}>
+        <View style={{ width: 100,textAlign:'center' }}>
         <TouchableOpacity onPress={() => this.logout()}>
         <Icon
           name='sign-out'
           type='font-awesome'
           color='#1A5276'
-          size={35}
+          size={40}
         />
         </TouchableOpacity>
         </View>
@@ -160,7 +153,7 @@ class PetitionListScreen extends Component {
         </View>) 
       }
       return (
-        <View style={{flex: 1, backgroundColor:"#FFF" }}>
+        <View style={styles.container}>
           {this.setMenu()}
           <ScrollView vertical style={{backgroundColor: "#FFF" }}>
           <View style={styles.voiceControlView}>
@@ -184,16 +177,29 @@ class PetitionListScreen extends Component {
   export default createAppContainer(PetitionListScreen);
 
   const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#fff',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    navBarHeader: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor:"#1A5276", 
+      flexDirection:'row', 
+      textAlignVertical: 'center',
+      width:"100%"
+    },
     voiceControlView: {
         flex: 1,
         backgroundColor: "#FFF",
         paddingTop: 10,
         alignContent: "center",
         alignSelf: "center",
-        width: "90%",
       },
       registeredDocuments: {
-        fontSize: 15,
+        fontSize: RFPercentage(2.5),
         textAlign: "center",
         paddingTop: 20,
         color: "#1A5276",
@@ -204,7 +210,7 @@ class PetitionListScreen extends Component {
         textAlign: 'center',
         color: '#154360',
         fontWeight: 'bold',
-        fontSize: 15,
+        fontSize: RFPercentage(3),
         width: "100%",
         alignSelf:"center",
         paddingBottom: 20,
@@ -215,14 +221,7 @@ class PetitionListScreen extends Component {
         backgroundColor:"white", 
         flexDirection:'row', 
         textAlignVertical: 'center',
-        height: 60
-      },
-      navBarHeader: {
-        flex: 1,
-        color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 20,
-        textAlign: 'center'
+        height: 65
       },
       sections: {
         flex: 1,
@@ -240,17 +239,13 @@ class PetitionListScreen extends Component {
         flexDirection: 'row',
         textAlign: "center",
         alignSelf: "center",
-        paddingTop: 30,
-        alignContent:"center"
       },
       mainHeader: {
-        paddingTop: 20,
+        padding: 10,
         alignItems: 'center',
         textAlign: "center",
         fontWeight: "bold",
-        color: "#000",
+        color: "#FFF",
         fontSize: 20,
-        paddingBottom: 20,
-        width:"95%"
       },
 })

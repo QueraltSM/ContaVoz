@@ -4,6 +4,7 @@ import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import ImageZoom from 'react-native-image-pan-zoom';
+import { RFPercentage } from "react-native-responsive-fontsize";
 
 class ResumeViewScreen extends Component {
   
@@ -27,7 +28,9 @@ class ResumeViewScreen extends Component {
         userid: "",
         cobroData: [],
         isChargeLinked: false,
-        isPayLinked: false
+        isPayLinked: false,
+        flag: 0,
+        allDocsPerType: []
       }
       this.init()
     }
@@ -45,6 +48,11 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem("petitionType").then((value) => {
         this.setState({ petitionType: value })
       })
+      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
+        if (value != null) {
+          this.setState({ allDocsPerType: JSON.parse(value) })
+        }
+      })
       await AsyncStorage.getItem("type").then((value) => {
         this.setState({ type: value })
       })
@@ -56,14 +64,14 @@ class ResumeViewScreen extends Component {
           this.setState({ doc: JSON.parse(value) })
         }
       })
-      await AsyncStorage.getItem("cobros").then((value) => {
+      /*await AsyncStorage.getItem("cobros").then((value) => {
         this.setState({ cobroData: JSON.parse(JSON.parse(value))[0].campos })
       })
       await AsyncStorage.getItem(this.state.petitionID+".isChargeLinked").then((value) => {
         if (value != null) {
           this.setState({ isChargeLinked: JSON.parse(value) })
         }
-      })
+      })*/
       await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
         if (value != null) {
           this.setState({ images: JSON.parse(value) })
@@ -96,79 +104,92 @@ class ResumeViewScreen extends Component {
       this.props.navigation.push("PetitionList")
     }
   
-    seeImage (image) {
-      this.props.navigation.push('ImageViewer',{image: image, back:"ResumeView"})
+    async setFlag(i) {
+      this.setState({flag: i })
     }
   
-    setFlatlistPos(i) {
-      this.setState({ flatlistPos: i })
-    }
-  
-    setFlatlistButtons(pos) {
-      var result = []
-      for (let i = 0; i < this.state.images.length; i++) {
-        if (pos == i) {
-          this.setImageZoom(this.state.images[pos])
-          result.push(<View style={styles.roundButtonsView}><Text
-            style={styles.roundButton}>
-          </Text></View>)
-        } else {
-          this.setImageZoom(this.state.images[i])
-          result.push(<View style={styles.roundButtonsView}><Text
-            style={styles.focusRoundButton}>
-          </Text></View>)
-        }
-      }
-      return (<View style={styles.flatlistView}>{result}</View>)
-    }
-    
-    setImageZoom(item) {
-      return (
-        <ImageZoom
-          cropWidth={Dimensions.get('window').width}
-          cropHeight={Dimensions.get('window').height/2}
-          imageWidth={Dimensions.get('window').width}
-          imageHeight={Dimensions.get('window').height/2}>
-            <TouchableOpacity onPress={() => this.seeImage(item)}>
-            <Image
-              source={{
-                uri: item.uri.replace(/['"]+/g, ''),
-              }}
-              resizeMode="cover"
-              key={item}
-              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2, aspectRatio: 1 }}
-            />
-            </TouchableOpacity>
-        </ImageZoom>)
-    }
-  
-    setImages() {
-      if (this.state.images.length > 0) {
-        return (
-          <View style={styles.imagesSection}>
-            <View style={styles.selectedImageView}>
-              <FlatList 
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={this.state.images}
-                renderItem={({ item, index }) => (
-                (<View>
-                  {this.setImageZoom(item)}
-                  { this.state.images.length > 1 && this.setFlatlistButtons(index)}
-                </View>) 
-              )}
-            />
-          </View>
-        </View>)
+    setAllFlags() {
+      var lastSaved = this.state.doc.findIndex(obj => obj.valor != null)
+        if (lastSaved == -1) {
+          var result = []
+          if (this.state.images.length > 1) {
+            for (let i = 0; i < this.state.images.length; i++) {
+              if (this.state.flag == i) {
+                result.push(<View style={styles.roundButtonsView}><Text style={styles.focusRoundButton}></Text></View>)
+              } else {
+                result.push(<View style={styles.roundButtonsView}>
+                  <TouchableOpacity onPress={() => this.setFlag(i)}>
+                    <Text style={styles.roundButton}></Text>
+                  </TouchableOpacity>
+                  </View>)
+              }
+            }
+            return (<View style={styles.flatlistView}>{result}</View>)
+          }
       }
       return null
     }
   
-    async sendDocument() {
-      alert("Acción desactivada temporalmente")
+    seeImage (image) {
+      this.props.navigation.push('ImageViewer', {image: image,back: "Petition"})
+    }
+    
+    setImageZoom() {
+      return (<ImageZoom
+          cropWidth={Dimensions.get('window').width}
+          cropHeight={Dimensions.get('window').height/2}
+          imageWidth={Dimensions.get('window').width}
+          imageHeight={Dimensions.get('window').height/2}>
+            <TouchableOpacity onPress={() => this.seeImage(this.state.images[this.state.flag])}>
+            <Image
+              source={{
+                uri: this.state.images[this.state.flag].uri.replace(/['"]+/g, ''),
+              }}
+              resizeMode="cover"
+              key={this.state.flag}
+              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2, aspectRatio: 1 }}
+            />
+            </TouchableOpacity>
+        </ImageZoom>)
+    } 
+  
+    setUploadedImages () {
+      var lastSaved = this.state.doc.findIndex(obj => obj.valor != null)
+      if (lastSaved > -1 && this.state.images.length > 0) {
+          var denom = "imagen"
+          var uplodaded = "adjuntada"
+          if (this.state.images.length > 1) { 
+            denom = "imágenes"
+            uplodaded="adjuntadas"
+          }
+          return (
+            <View style={styles.imagesSection}>
+              <Text style={styles.imagesUploaded}>+ {this.state.images.length} {denom} {uplodaded}</Text>
+          </View>)
+      }
+      return null
+    }
+
+    setImages() {
+      var lastSaved = this.state.doc.findIndex(obj => obj.valor != null)
+        if (lastSaved == -1 && this.state.images.length > 0) {
+            return (
+            <View style={styles.selectedImageView}>
+              {this.setImageZoom(this.state.images[this.state.flag])}
+          </View>)
+        }
+      return null
+    }
+  
+    async proceedSent() {
+      var newDocs = this.state.allDocsPerType.filter(obj => obj.id != this.state.petitionID)
+      await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(newDocs))
+      this.props.navigation.push("PetitionHistory")
+      //this.state.allDocsPerType[]
+      //await AsyncStorage.setItem("petitionType", JSON.stringify(false))
       /*const requestOptions = {
         method: 'POST',
-        body: JSON.stringify({company_padisoft: this.state.company_padisoft, idcliente: this.state.idcliente, tipopeticion: "guardarx", tipo: this.state.type, campos: this.state.doc})
+        body: JSON.stringify({company_padisoft: this.state.company_padisoft, idcliente: this.state.idcliente, tipopeticion: "guardar", tipo: this.state.type, campos: this.state.doc, importe:"100.0", fecha:"01-01-2001"})
       };
       fetch('https://app.dicloud.es/pruebaguardarx.asp', requestOptions)
         .then((response) => response.json())
@@ -176,17 +197,56 @@ class ResumeViewScreen extends Component {
           console.log(JSON.stringify(responseJson))
         }).catch(() => {});*/
     }
+
+    showAlert = (title, message) => {
+      Alert.alert(
+        title,
+        message,
+        [
+          {
+            text: "Ok",
+            style: "cancel"
+          },
+        ],
+        { cancelable: false }
+      );
+    }
+
+    async sendDocument() {
+      var lastSaved = this.state.doc.findIndex(obj => obj.valor != null)
+      if (lastSaved > -1) {
+        this.showAlert("Error", "El documento de voz está incompleto")
+      } else {
+        const AsyncAlert = () => new Promise((resolve) => {
+          Alert.alert(
+            "Subir documento contable",
+            "¿Está seguro que desea enviar este documento finalmente?",
+            [
+              {
+                text: 'Sí',
+                onPress: () => {
+                  resolve(this.proceedSent());
+                },
+              },
+              {
+                text: 'No',
+                onPress: () => {
+                  resolve();
+                },
+              },
+            ],
+            { cancelable: false },
+          );
+          });
+          await AsyncAlert();
+      }
+    }
     
-    clear(index) {
-      this.state.doc[index].valor = ""
-      this.setState({ doc: this.state.doc })
-    } 
 
     setData = (item, index) => {
       return (<View>
-        {this.state.doc.length > 0 && this.state.doc[index].valor != null &&  (<View>
-        <Text style={styles.resumeText}>{item.titulo} <Icon name='pencil' type='font-awesome' color='#000' size={20}
-        onPress={() => this.clear(index)} /></Text>
+        {this.state.doc.length > 0 && this.state.doc[index].valor != null && (<View>
+        <Text style={styles.resumeText}>{item.titulo} </Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
         </View>
@@ -287,7 +347,6 @@ class ResumeViewScreen extends Component {
     }
 
     setControlVoice(){
-        var lastSaved = this.state.doc.findIndex(obj => obj.valor == null)
         return(
           <View style={styles.resumeView}>
             <FlatList 
@@ -365,11 +424,13 @@ class ResumeViewScreen extends Component {
           <View style={{flex: 1, backgroundColor:"#FFF" }}>
             <ScrollView style={{backgroundColor: "#FFF" }}>
             <View style={{backgroundColor: "#1A5276"}}>
-              <Text style={styles.mainHeader}>{this.state.title}</Text>
+              <Text style={styles.mainHeader}>{this.state.title} finalizado</Text>
             </View>
             <View style={styles.sections}>
               {this.setImages()}
+              {this.setAllFlags()}
               {this.setControlVoice()}
+              {this.setUploadedImages()}
             </View>
             </ScrollView>   
             <View style={styles.navBarBackHeader}>
@@ -396,9 +457,24 @@ class ResumeViewScreen extends Component {
         textAlignVertical: 'center',
         height: 60
       },
+      roundButtonsView: {
+        paddingLeft:7,
+        paddingRight:7,
+        paddingBottom: 5,
+      },
       roundButton: {
-        width: 5,
-        height: 5,
+        width: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 6,
+        borderRadius: 50,
+        borderWidth:2,
+        borderColor: '#1A5276',
+      },
+      focusRoundButton: {
+        width: 20,
+        height: 20,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 6,
@@ -407,25 +483,19 @@ class ResumeViewScreen extends Component {
         borderWidth:2,
         borderColor: '#1A5276',
       },
-      roundButtonsView:{
-        paddingLeft:7,
-        paddingRight:7,
-        paddingBottom: 5
-      },
-      focusRoundButton: {
-        width: 5,
-        height: 5,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 6,
-        borderRadius: 50,
-        borderWidth:2,
-        borderColor: '#1A5276',
-      },
       imagesSection: {
         flex: 1,
-        alignItems: 'center',
+        paddingLeft: 20,
         textAlign: "center",
+        alignSelf: "flex-start",
+        paddingBottom: 100
+      },
+      imagesUploaded: {
+        fontSize: RFPercentage(2.5),
+        padding: 10,
+        color: "#267A4E",
+        fontWeight:"bold",
+        borderRadius: 20
       },
       flatlistView: {
         paddingTop:20, 
@@ -447,11 +517,10 @@ class ResumeViewScreen extends Component {
       resumeView: {
         paddingTop: 30,
         paddingLeft: 40,
-        backgroundColor: "#FFF",
-        paddingBottom: 100
+        backgroundColor: "#FFF"
       },
       resumeText: {
-        fontSize: 15,
+        fontSize: RFPercentage(3),
         textAlign: "justify",
         paddingTop: 20,
         color: "#000",
@@ -459,9 +528,13 @@ class ResumeViewScreen extends Component {
       },
       changeTranscript: {
         color: '#000',
-        fontSize: 15,
-        fontStyle: 'italic',
-        width: "90%"
+        fontSize: RFPercentage(2.5),
+        textAlign:"left",
+        width:"90%",
+        borderWidth: 0.5,
+        borderColor: "lightgray",
+        borderRadius: 20,
+        padding: 10
       },
       mainHeader: {
         padding: 10,

@@ -104,6 +104,7 @@ class LoginScreen extends Component {
       .then((response) => response.json())
       .then((responseJson) => {
         var configs=JSON.stringify(responseJson.configuraciones)
+        console.log("configs:"+configs)
         var error = JSON.parse(JSON.stringify(JSON.parse(configs)[0].error))
         if (error=="false") {
           this.saveConfig(responseJson.configuraciones)
@@ -162,10 +163,10 @@ class LoginScreen extends Component {
             source={require('./assets/main.png')}
           />
           </View>
-          <TextInput  blurOnSubmit={true} style = { styles.textBox } placeholder="Compañía"  onChangeText={(company) => this.setState({company})}  value={this.state.company} /> 
-          <TextInput  blurOnSubmit={true} style = { styles.textBox } placeholder="Usuario" onChangeText={(user) => this.setState({user})}  value={this.state.user}/> 
+          <TextInput placeholderTextColor="lightgray" blurOnSubmit={true} style = { styles.textBox } placeholder="Compañía"  onChangeText={(company) => this.setState({company})}  value={this.state.company} /> 
+          <TextInput placeholderTextColor="lightgray" blurOnSubmit={true} style = { styles.textBox } placeholder="Usuario" onChangeText={(user) => this.setState({user})}  value={this.state.user}/> 
           <View style = { styles.textBoxBtnHolder }>
-            <TextInput blurOnSubmit={true} style = { styles.textBox } placeholder="Contraseña" secureTextEntry = { this.state.hidePassword } onChangeText={(password) => this.setState({password})} value={this.state.password}/>  
+            <TextInput placeholderTextColor="lightgray" blurOnSubmit={true} style = { styles.textBox } placeholder="Contraseña" secureTextEntry = { this.state.hidePassword } onChangeText={(password) => this.setState({password})} value={this.state.password}/>  
             <TouchableOpacity activeOpacity = { 0.8 } style = { styles.visibilityBtn } onPress = { this.managePasswordVisibility }>
               {this.state.hidePassword &&
               (<Icon

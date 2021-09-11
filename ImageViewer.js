@@ -272,7 +272,6 @@ class ImageViewerScreen extends Component {
     imageView: {
         flex: 1,
         backgroundColor:"#000",
-        paddingTop: 30,
       },
       selectedImageView: {
         flex: 1,
