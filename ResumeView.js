@@ -242,13 +242,43 @@ class ResumeViewScreen extends Component {
       }
     }
     
+    async calculateData(index, porcentaje) {
+      var importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
+      importe = this.state.doc[importe].valor
+      var x = 100 + Number(porcentaje)
+      var result = ( importe * 100 ) / x
+      var base = Math.round(result * 100) / 100
+      var cuota = base*porcentaje
+      cuota = Math.round(cuota* 100) / 100
+      this.state.doc[index].valor = porcentaje
+      this.state.doc[index+1].valor = base
+      this.state.doc[index+2].valor = cuota
+    }
+
+    async onSubmitText(index) {
+      var idcampo = this.state.doc[index].idcampo
+      if (idcampo.includes("importe")) {
+        this.state.doc[index].valor = this.state.interpreptedData
+        this.state.doc.filter(obj => obj.idcampo.includes("porcentaje")).forEach(i => {
+          var item = this.state.doc.findIndex(obj => obj == i)
+          this.setState({ doc: this.state.doc})
+          this.calculateData(item, this.state.doc[item].valor)
+        })
+      } else if (idcampo.includes("porcentaje")) {
+        this.calculateData(index, this.state.interpreptedData)
+      } else {
+        this.state.doc[index].valor = this.state.interpreptedData
+      }
+      this.setState({ doc: this.state.doc})
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+    }
 
     setData = (item, index) => {
       return (<View>
         {this.state.doc.length > 0 && this.state.doc[index].valor != null && (<View>
         <Text style={styles.resumeText}>{item.titulo} </Text>
         <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
+        <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
         </View>
       </View>)}  
       </View>)

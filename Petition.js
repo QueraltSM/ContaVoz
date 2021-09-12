@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Platform, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Modal, Animated } from 'react-native';
+import { StyleSheet, Platform, Text, View, TouchableOpacity, Alert, TextInput, Image, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Modal, Animated } from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
@@ -751,11 +751,8 @@ class PetitionScreen extends Component {
         transparent={true}>
           <View style={styles.centeredView}>
           <View style={styles.modalView}>
-          <ScrollView
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}>
           <Text style={styles.showTitle}>{data.titulo}</Text>
-          <View>
+          <View style={styles.modalResult}>
             <Text style={styles.resumeText}>Valor por defecto</Text>
             <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.state.interpretedData=result}>{result}</TextInput>
           </View>
@@ -767,7 +764,6 @@ class PetitionScreen extends Component {
               <Icon name='times' type='font-awesome' color='white' size={32}/>
               <TouchableOpacity onPress={() => this.saveNextData()} style={styles.continueButtomModal}><Text><Icon name='save' type='font-awesome' color='white' size={32}/> <Icon name='arrow-right' type='font-awesome' color='white' size={32}/></Text></TouchableOpacity>
               </View>
-          </ScrollView>
         </View>
       </View>
     </Modal>)
@@ -775,8 +771,9 @@ class PetitionScreen extends Component {
 
     async calculateResult() {
       var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
-      var porcentaje = this.state.savedData.findIndex(obj => obj.idcampo.includes("porcentaje"))
+      var porcentaje =  this.state.savedData[lastSaved-1].valor
       var importe = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
+      importe = this.state.savedData[importe].valor
       var result = ""
       if (this.state.savedData[lastSaved].idcampo.includes("base")) {
         var x = 100 + Number(porcentaje)
@@ -789,21 +786,16 @@ class PetitionScreen extends Component {
         result = Math.round(result * 100) / 100
       }
       await this.setState({interpretedData: result})
-      console.log(this.state.interpretedData)
     }
 
     setDisplayDataModal(lastSaved) {
-      console.log(this.state.interpretedData+"jejej")
       return(<Modal
         animationType = {"slide"}
         transparent={true}>
           <View style={styles.centeredView}>
           <View style={styles.modalView}>
-          <ScrollView
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}>
           <Text style={styles.showTitle}>{this.state.savedData[lastSaved].titulo}</Text>
-          <View>
+          <View style={styles.modalResult}>
             <Text style={styles.resumeText}>Resultado</Text>
             <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData:result })}>{this.state.interpretedData}</TextInput>
           </View>
@@ -815,7 +807,6 @@ class PetitionScreen extends Component {
               <Icon name='times' type='font-awesome' color='white' size={32}/>
               <TouchableOpacity onPress={() => this.saveNextData()} style={styles.continueButtomModal}><Text><Icon name='save' type='font-awesome' color='white' size={32}/> <Icon name='arrow-right' type='font-awesome' color='white' size={32}/></Text></TouchableOpacity>
               </View>
-          </ScrollView>
         </View>
       </View>
     </Modal>)
@@ -829,9 +820,6 @@ class PetitionScreen extends Component {
         transparent={true}>
           <View style={styles.centeredView}>
           <View style={styles.modalView}>
-          <ScrollView
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}>
           <Text style={styles.listening}>{this.state.data[lastSaved].titulo}</Text>
           <View style={styles.modalResult}>
             <Text style={styles.resumeText}>Texto escuchado</Text><Text multiline={true} style={styles.transcript}>{this.state.listenedData}</Text>
@@ -850,7 +838,6 @@ class PetitionScreen extends Component {
               <Icon name='times' type='font-awesome' color='white' size={32}/>
               <TouchableOpacity onPress={() => this.saveNextData()} style={styles.continueButtomModal}><Text><Icon name='save' type='font-awesome' color='white' size={32}/> <Icon name='arrow-right' type='font-awesome' color='white' size={32}/></Text></TouchableOpacity>
               </View>
-          </ScrollView>
         </View>
       </View>
     </Modal>)
@@ -933,8 +920,7 @@ class PetitionScreen extends Component {
 
     setMenu() {
         if (this.state.is_recording) return null 
-        var lastSaved = this.state.savedData.findIndex(obj => obj.valor != null)
-        if (lastSaved==0) lastSaved=-1 
+        var lastSaved = this.state.savedData.findIndex(obj => obj.valor == null)
         return (
         <View style={styles.navBarBackHeader}>
             <View style={{ width: 70,textAlign:'center' }}>
@@ -968,7 +954,7 @@ class PetitionScreen extends Component {
               />
               </TouchableOpacity>
               </View>
-            {(this.state.images.length > 0 || (this.state.savedData.length > 0 && lastSaved>-1)) &&
+            {(this.state.images.length > 0 || (this.state.savedData.length > 0 && lastSaved==-1)) &&
             (<View style={{ width: 70,textAlign:'center' }}>
               <TouchableOpacity onPress={() => this.seeDocument()}>
               <Icon
@@ -982,8 +968,6 @@ class PetitionScreen extends Component {
           </View>
         )
     }
-
-    //his.state.savedData.length > 0 && !JSON.parse(this.state.is_recording) && this.state.savedData.length > 0 && lastSaved>0
 
     render () {
       if (this.state.savedData.length==0) return null // Wait loop
@@ -1177,7 +1161,7 @@ class PetitionScreen extends Component {
         color: '#000',
         fontSize: RFPercentage(2.5),
         textAlign:"center",
-        width:"90%",
+        width:"100%",
         borderWidth: 0.5,
         borderColor: "lightgray",
         borderRadius: 20
