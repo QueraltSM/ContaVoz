@@ -190,8 +190,6 @@ class ResumeViewScreen extends Component {
       fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
-        console.log("Hola")
-        console.log("respuesta="+JSON.stringify(responseJson))
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") {
           this.showAlert("Error", "Hubo un error al subir el documento")
@@ -248,6 +246,9 @@ class ResumeViewScreen extends Component {
     async calculateData(index, porcentaje) {
       var importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
+      if (importe.includes(",")) {
+        importe = importe.replace(",",".")
+      }
       var x = 100 + Number(porcentaje)
       var result = ( importe * 100 ) / x
       var base = Math.round(result * 100) / 100
@@ -287,7 +288,7 @@ class ResumeViewScreen extends Component {
 
     setData = (item, index) => {
       return (<View>
-        {this.state.doc.length > 0 && this.state.doc[index].valor != null && (<View>
+        {this.state.doc.length > 0 && (<View>
         <Text style={styles.resumeText}>{item.titulo} </Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
@@ -511,6 +512,7 @@ class ResumeViewScreen extends Component {
       resumeView: {
         paddingTop: 30,
         paddingLeft: 40,
+        paddingBottom: 30,
         backgroundColor: "#FFF"
       },
       resumeText: {

@@ -155,7 +155,13 @@ class PetitionListScreen extends Component {
       return (
         <View style={styles.container}>
           {this.setMenu()}
-          <ScrollView vertical style={{backgroundColor: "#FFF" }}>
+          <ScrollView 
+          vertical 
+          showsVerticalScrollIndicator ={false}
+          showsHorizontalScrollIndicator={false}
+          persistentScrollbar={false}
+          style={{backgroundColor: "#FFF" }}
+          >
           <View style={styles.voiceControlView}>
             <FlatList 
               vertical

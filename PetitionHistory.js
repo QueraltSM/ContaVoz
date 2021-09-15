@@ -191,7 +191,11 @@ class PetitionHistoryScreen extends Component {
       return (
         <View style={styles.container}>
           {this.setMenu()}
-          <ScrollView style={{backgroundColor: "#FFF" }}>
+          <ScrollView
+            showsVerticalScrollIndicator ={false}
+            showsHorizontalScrollIndicator={false}
+            persistentScrollbar={false}
+            style={{backgroundColor: "#FFF" }}>
           <View style={styles.voiceControlView}>
             {this.setList()}
           </View>
