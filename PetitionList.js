@@ -71,7 +71,7 @@ class PetitionListScreen extends Component {
     setMenu() {
       return(<View style={styles.navBarHeader}>
         <Text style={styles.mainHeader}>Seleccione tipo de documento</Text>
-        <Icon name={this.state.icon} type='font-awesome' color='white' size={30} />
+        <Icon name={this.state.icon} type='font-awesome' color='white' size={20} />
       </View>
       )
     }

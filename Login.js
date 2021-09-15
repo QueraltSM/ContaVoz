@@ -104,12 +104,15 @@ class LoginScreen extends Component {
       .then((response) => response.json())
       .then((responseJson) => {
         var configs=JSON.stringify(responseJson.configuraciones)
-        console.log("configs:"+configs)
-        var error = JSON.parse(JSON.stringify(JSON.parse(configs)[0].error))
-        if (error=="false") {
+        if (configs == "null") {
           this.saveConfig(responseJson.configuraciones)
         } else {
-          this.showAlert("Algo salió mal, disculpe las molestias")
+          var error = JSON.parse(JSON.stringify(JSON.parse(configs)[0].error))
+          if (error=="false") {
+            this.saveConfig(responseJson.configuraciones)
+          } else {
+            this.showAlert("Algo salió mal, disculpe las molestias")
+          }
         }
       }).catch((error) => {});
     }

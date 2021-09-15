@@ -35,20 +35,46 @@ class MainScreen extends Component {
       await AsyncStorage.getItem("allConfigs").then((value) => {
         config = JSON.parse(JSON.stringify(value))
       })
-      var array = JSON.parse(config)
-      array.forEach(i => {
-        if (i.tipo == type) {
-          allTypeConfigs.push(i)
-        }
-      })
+      if (config != "null") {
+        var array = JSON.parse(config)
+        array.forEach(i => {
+          if (i.tipo == type) {
+            allTypeConfigs.push(i)
+          }
+        })
+      } else {
+        allTypeConfigs = []
+      }
       await AsyncStorage.setItem("icon", icon)
       await AsyncStorage.setItem("config", JSON.stringify(allTypeConfigs))
       await AsyncStorage.setItem("type", type)
       this.props.navigation.push('PetitionList')
     }
+
+      
+    showAlert = (title, message) => {
+      Alert.alert(
+        title,
+        message,
+        [
+          {
+            text: "Ok",
+            style: "cancel"
+          },
+        ],
+        { cancelable: false }
+      );
+    }
   
-    goDictionary = () => {
-      this.props.navigation.push('DictionaryView')
+    async goDictionary() {
+      await AsyncStorage.getItem("allConfigs").then((value) => {
+        config = JSON.parse(JSON.stringify(value))
+      })
+      if (config == "null") {
+        this.showAlert("Error", "Contacte con el departamento contable para que crearle una configuración y vuelva a iniciar sesión")
+      } else {
+        this.props.navigation.push('DictionaryView')
+      }
     }
   
     saveLogout =  async (state) => {
@@ -148,7 +174,7 @@ class MainScreen extends Component {
         </View>
         <View style={styles.twoColumnsInARow}>
         <View style={styles.oneRow}>
-          <TouchableOpacity onPress={this.goDictionary}>
+          <TouchableOpacity onPress={() => this.goDictionary()}>
             <View style={styles.mainIcon}>
               <Icon
                 name='list'

@@ -13,13 +13,10 @@ class ResumeViewScreen extends Component {
       this.state = {
         company_padisoft: "",
         idcliente: "",
-        tipopeticion: "guardarx",
         title: "",
         petitionID: "",
         petitionType: "",
         type:"",
-        interpreptedData1: "",
-        interpreptedData2: "",
         flatlistPos: 0,
         images: [],
         words: [],
@@ -30,7 +27,8 @@ class ResumeViewScreen extends Component {
         isChargeLinked: false,
         isPayLinked: false,
         flag: 0,
-        allDocsPerType: []
+        allDocsPerType: [],
+        interpretedData: null,
       }
       this.init()
     }
@@ -64,14 +62,6 @@ class ResumeViewScreen extends Component {
           this.setState({ doc: JSON.parse(value) })
         }
       })
-      /*await AsyncStorage.getItem("cobros").then((value) => {
-        this.setState({ cobroData: JSON.parse(JSON.parse(value))[0].campos })
-      })
-      await AsyncStorage.getItem(this.state.petitionID+".isChargeLinked").then((value) => {
-        if (value != null) {
-          this.setState({ isChargeLinked: JSON.parse(value) })
-        }
-      })*/
       await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
         if (value != null) {
           this.setState({ images: JSON.parse(value) })
@@ -181,21 +171,34 @@ class ResumeViewScreen extends Component {
       return null
     }
   
-    async proceedSent() {
+    async uploadSucceeded() {
+      await this.showAlert("Éxito", "El documento se ha enviado correctamente")
       var newDocs = this.state.allDocsPerType.filter(obj => obj.id != this.state.petitionID)
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(newDocs))
       this.props.navigation.push("PetitionHistory")
-      //this.state.allDocsPerType[]
-      //await AsyncStorage.setItem("petitionType", JSON.stringify(false))
-      /*const requestOptions = {
+    }
+
+    async proceedSent() {
+      var importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
+      var fecha = this.state.doc.findIndex(obj => obj.idcampo.includes("fecha"))
+      importe = this.state.doc[importe].valor
+      fecha = this.state.doc[fecha].valor
+      const requestOptions = {
         method: 'POST',
-        body: JSON.stringify({company_padisoft: this.state.company_padisoft, idcliente: this.state.idcliente, tipopeticion: "guardar", tipo: this.state.type, campos: this.state.doc, importe:"100.0", fecha:"01-01-2001"})
+        body: JSON.stringify({ company_padisoft:this.state.company_padisoft, idcliente: this.state.idcliente, titulo: this.state.title, tipopeticion: "guardar", tipo:this.state.type, importe:importe, fecha:fecha, campos: this.state.doc})
       };
-      fetch('https://app.dicloud.es/pruebaguardarx.asp', requestOptions)
-        .then((response) => response.json())
-        .then((responseJson) => {
-          console.log(JSON.stringify(responseJson))
-        }).catch(() => {});*/
+      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      .then((response) => response.json())
+      .then((responseJson) => {
+        console.log("Hola")
+        console.log("respuesta="+JSON.stringify(responseJson))
+        var error = JSON.parse(JSON.stringify(responseJson)).error
+        if (error=="true") {
+          this.showAlert("Error", "Hubo un error al subir el documento")
+        } else {
+          this.uploadSucceeded()
+        }
+      }).catch((error) => {});
     }
 
     showAlert = (title, message) => {
@@ -213,7 +216,7 @@ class ResumeViewScreen extends Component {
     }
 
     async sendDocument() {
-      var lastSaved = this.state.doc.findIndex(obj => obj.valor != null)
+      var lastSaved = this.state.doc.findIndex(obj => obj.valor == null)
       if (lastSaved > -1) {
         this.showAlert("Error", "El documento de voz está incompleto")
       } else {
@@ -256,21 +259,30 @@ class ResumeViewScreen extends Component {
     }
 
     async onSubmitText(index) {
-      var idcampo = this.state.doc[index].idcampo
-      if (idcampo.includes("importe")) {
-        this.state.doc[index].valor = this.state.interpreptedData
-        this.state.doc.filter(obj => obj.idcampo.includes("porcentaje")).forEach(i => {
-          var item = this.state.doc.findIndex(obj => obj == i)
+      if (this.state.interpretedData != null) {
+        if (this.state.doc[index].obligatorio == "S" && this.state.interpretedData.length==0) {
+          this.showAlert("Error", "Este campo es obligatorio, no puede estar vacío")
+        } else {
+          var idcampo = this.state.doc[index].idcampo
+          if (idcampo.includes("importe")) {
+            if (!this.state.interpretedData.includes(",") && !this.state.interpretedData.includes(".")) {
+              await this.setState({interpretedData: this.state.interpretedData + ",00" })
+            }
+            this.state.doc[index].valor = this.state.interpretedData
+            this.state.doc.filter(obj => obj.idcampo.includes("porcentaje")).forEach(i => {
+              var item = this.state.doc.findIndex(obj => obj == i)
+              this.setState({ doc: this.state.doc})
+              this.calculateData(item, this.state.doc[item].valor)
+            })
+          } else if (idcampo.includes("porcentaje")) {
+            this.calculateData(index, this.state.interpretedData)
+          } else {
+            this.state.doc[index].valor = this.state.interpretedData
+          }
           this.setState({ doc: this.state.doc})
-          this.calculateData(item, this.state.doc[item].valor)
-        })
-      } else if (idcampo.includes("porcentaje")) {
-        this.calculateData(index, this.state.interpreptedData)
-      } else {
-        this.state.doc[index].valor = this.state.interpreptedData
+          await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+        }
       }
-      this.setState({ doc: this.state.doc})
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
     }
 
     setData = (item, index) => {
@@ -278,52 +290,10 @@ class ResumeViewScreen extends Component {
         {this.state.doc.length > 0 && this.state.doc[index].valor != null && (<View>
         <Text style={styles.resumeText}>{item.titulo} </Text>
         <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
+        <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
         </View>
       </View>)}  
       </View>)
-    }
-
-    setCobroData = (item, index) => {
-      if (JSON.stringify(this.state.doc[index].idcampo == JSON.stringify(this.state.cobroData[index].idcampo)) && JSON.stringify(this.state.doc[index].valor) != "null" && JSON.stringify(this.state.doc[index].valor) != "" ) {
-        return (<View>
-          {this.state.doc[index] != "" && (<View>
-          <Text style={styles.resumeText}>{item.titulo}</Text>
-          <View style={{flexDirection:'row', width:"90%"}}>
-          <TextInput multiline={true} style={styles.changeTranscript} onChangeText={interpreptedData => this.setState({interpreptedData})}>{this.state.doc[index].valor}</TextInput>
-          </View>
-        </View>)}  
-        </View>)
-      }
-      return null
-    }
-
-    linkToCobro = () => {
-      if (this.state.isChargeLinked) {
-        return(
-          <View>
-            <Text style={styles.showTitle}>Documento de cobro asociado</Text>
-            <FlatList 
-              vertical
-              showsVerticalScrollIndicator={false}
-              data={this.state.cobroData}
-              renderItem={({ item, index }) => (<View>{this.setCobroData(item, index)}</View>)}
-            />
-            <Text style={styles.transcript}></Text>
-          </View>
-        )
-      }
-      return null
-    }
-
-    deleteCobro = async () => {
-      await AsyncStorage.setItem(this.state.petitionID+".isChargeLinked", JSON.stringify(false))
-      this.setState({ isChargeLinked: false })
-    }
-
-     saveCobro = async () => {
-      await AsyncStorage.setItem(this.state.petitionID+".isChargeLinked", JSON.stringify(true))
-      this.setState({ isChargeLinked: true })
     }
 
     async askUnlinkCobro() {
@@ -384,13 +354,7 @@ class ResumeViewScreen extends Component {
               showsVerticalScrollIndicator={false}
               data={this.state.doc}
               renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
-            />
-            <Text style={styles.transcript}></Text>
-            {/*this.state.doc.length > 0 && lastSaved==-1 && this.state.title.toLocaleLowerCase().includes("compra") && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={this.skipData}><Text style={styles.saveButton}>Vincular con pago</Text></TouchableOpacity></View>)*/}
-            {/*this.state.doc.length > 0  && lastSaved==-1 && this.state.title.toLocaleLowerCase().includes("venta") && !this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askLinkCobro()}><Text style={styles.saveButton}>Vincular con cobro</Text></TouchableOpacity></View>)*/}
-            {/*this.linkToCobro()*/}
-            {/*this.state.doc.length > 0  && lastSaved==-1 && this.state.title.toLocaleLowerCase().includes("venta") && this.state.isChargeLinked && (<View style={{flexDirection:'row', width:"90%"}}><TouchableOpacity onPress={() => this.askUnlinkCobro()}><Text style={styles.deleteButton}>Desvincular con cobro</Text></TouchableOpacity></View>)*/}
-          </View>
+            /></View>
         )
     }
   
