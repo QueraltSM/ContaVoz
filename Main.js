@@ -67,6 +67,7 @@ class MainScreen extends Component {
     }
   
     async goDictionary() {
+      var config="null"
       await AsyncStorage.getItem("allConfigs").then((value) => {
         config = JSON.parse(JSON.stringify(value))
       })
@@ -256,7 +257,7 @@ class MainScreen extends Component {
       width:"40%"
     },
     mainButton: {
-      fontSize: RFPercentage(3),
+      fontSize: RFPercentage(2.5),
       textAlign: "center",
       color: "#000",
       paddingTop: 10,

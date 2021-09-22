@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@react-native-community/async-storage": "^1.12.1",
+    "@react-native-google-signin/google-signin": "^7.0.0-alpha.3",
     "expo": "~41.0.1",
     "expo-splash-screen": "~0.10.2",
     "expo-status-bar": "~1.0.4",
@@ -15,8 +16,11 @@
     "react": "16.13.1",
     "react-dom": "16.13.1",
     "react-native": "~0.63.4",
+    "react-native-base64": "^0.2.1",
     "react-native-elements": "^3.4.2",
+    "react-native-fs": "^2.18.0",
     "react-native-gesture-handler": "~1.10.2",
+    "react-native-google-drive-api-wrapper": "^1.4.0",
     "react-native-image-pan-zoom": "^2.1.12",
     "react-native-image-picker": "^4.0.3",
     "react-native-reanimated": "~2.1.0",
@@ -29,6 +33,7 @@
     "react-native-web": "~0.13.12",
     "react-navigation": "^4.4.4",
     "react-navigation-stack": "^2.10.4",
+    "utf8": "^3.0.0",
     "words-to-numbers": "^1.5.1",
     "words-to-numbers-es": "^0.1.0",
     "written-number": "^0.11.1"

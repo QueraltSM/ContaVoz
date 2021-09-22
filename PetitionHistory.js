@@ -74,13 +74,13 @@ class PetitionHistoryScreen extends Component {
     }
 
     setData (item) {
-      var lastSaved = item.savedData.findIndex(obj => obj.valor == null)
+      var firstEmpty = item.savedData.findIndex(obj => obj.escuchado == "" && obj.valor == null)
       var imagesContent ="lightgray"
       var microContent ="lightgray"
       if (item.images.length > 0) {
         imagesContent = "#56A494"
       }
-      if (item.savedData.length > 0 && lastSaved==-1) {
+      if (item.savedData.length > 0 && firstEmpty==-1) {
         microContent = "#56A494"
       }
       return <View style={{ flexDirection: "row", alignItems:"center", justifyContent:"center" }}><Text style={styles.registeredDocuments}>{item.title} </Text><Icon name='image' type='font-awesome' color={imagesContent} size={25} style={{ paddingRight: 15 }} /><Icon name='check' type='font-awesome' color={microContent} size={25} /></View>

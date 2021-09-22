@@ -313,17 +313,18 @@ class DictionaryViewScreen extends Component {
         <View style={styles.wordsBox}>
           <View style={styles.dictionaryValues}>
             <View style={styles.dictionaryContent}>
-              <Text style={styles.boldText}>Entidad:</Text><TextInput onSubmitEditing={() => { this.updateWord(index, 0); }} style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateEntity) => this.setState({updateEntity: updateEntity})}>{item.entity}</TextInput>
+              <TextInput onSubmitEditing={() => { this.updateWord(index, 0); }} style={styles.boldText} blurOnSubmit={true} multiline={true} onChangeText={(updateEntity) => this.setState({updateEntity: updateEntity})}>{item.entity}</TextInput>
             </View>
           </View>
           <View style={styles.dictionaryValues}>
             <View style={styles.dictionaryContent}>
-              <Text style={styles.boldText}>CIF:</Text><TextInput onSubmitEditing={() => { this.updateWord(index, 1); }} style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateCIF) => this.setState({updateCIF: updateCIF})}>{item.cifValue} </TextInput>
+              <Text style={styles.boldText}>CIF</Text>
+              <TextInput onSubmitEditing={() => { this.updateWord(index, 1); }} style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateCIF) => this.setState({updateCIF: updateCIF})}>{item.cifValue} </TextInput>
             </View>
           </View>
           <View style={styles.dictionaryValues}>
             <View style={styles.dictionaryContent}>
-              <Text style={styles.boldText}>Palabras clave:</Text><TextInput onSubmitEditing={() => { this.updateWord(index, 2); }} style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateKeywords) => this.state.updateKeywords=updateKeywords}>{item.keywords}</TextInput>
+              <Text style={styles.boldText}>Palabras clave</Text><TextInput onSubmitEditing={() => { this.updateWord(index, 2); }} style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateKeywords) => this.state.updateKeywords=updateKeywords}>{item.keywords}</TextInput>
             </View>
            </View>
           <View style={styles.dictionaryValuesActions}>
@@ -414,7 +415,7 @@ class DictionaryViewScreen extends Component {
       transcript: {
         color: '#000',
         fontSize: 20,
-        width: "90%"
+        width: "95%",
       },
       mainHeader: {
         paddingTop: 20,
@@ -427,12 +428,14 @@ class DictionaryViewScreen extends Component {
       dictionaryView: {
         paddingLeft: 40,
         backgroundColor: "#FFF",
-        width:"100%",
+        width:"95%",
       },
       dictionaryValues: {
         padding: 5,
       },
       dictionaryContent: {
+        paddingLeft: 10,
+        paddingRight: 10,
         alignItems:"center",
         flexDirection:"row",
         fontSize: RFPercentage(3),
@@ -440,6 +443,7 @@ class DictionaryViewScreen extends Component {
         borderWidth: 0.5,
         borderColor: "lightgray",
         borderRadius: 20,
+        width:"100%"
       },
       dictionaryValuesActions: {
         textAlign: "right",
@@ -447,8 +451,8 @@ class DictionaryViewScreen extends Component {
         justifyContent:"flex-end"
       },
       wordsBox: {
-        width: "90%",
-        textAlign:"left"
+        width: "95%",
+        textAlign:"left",
       },
       delIcon: {
         paddingLeft: 10,
@@ -490,13 +494,13 @@ class DictionaryViewScreen extends Component {
         textAlign:"left",
         fontSize: RFPercentage(2),
         paddingLeft: 10,
-        paddingRight: 10
+        paddingRight: 10,
+        width:"95%"
       },
       boldText: {
-        textAlign:"left",
+        textAlign:"center",
         fontSize: RFPercentage(2),
         fontWeight:"bold",
-        paddingLeft: 10
       },
       exitForm: {
         fontSize: RFPercentage(3),

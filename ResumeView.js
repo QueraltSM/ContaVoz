@@ -6,6 +6,14 @@ import AsyncStorage from '@react-native-community/async-storage';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { RFPercentage } from "react-native-responsive-fontsize";
 
+import GDrive from "react-native-google-drive-api-wrapper";
+import RNFS from "react-native-fs"
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
+
 class ResumeViewScreen extends Component {
   
     constructor(props) {
@@ -18,10 +26,10 @@ class ResumeViewScreen extends Component {
         petitionType: "",
         type:"",
         flatlistPos: 0,
-        images: [],
         words: [],
         doc: [],
         list: [],
+        data:[],
         userid: "",
         cobroData: [],
         isChargeLinked: false,
@@ -29,11 +37,16 @@ class ResumeViewScreen extends Component {
         flag: 0,
         allDocsPerType: [],
         interpretedData: null,
+        imgs:[],
+        cifValue: ""
       }
       this.init()
     }
   
     async init() { 
+      //this.state.imgs.push({id_drive:'1MKyHwJQmBdtsfLrY0v-dnCERQJHq7coA'})
+      //this.state.imgs.push({id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX'})
+      //this.state.imgs.push({id_drive:'1trA1rdkTmxa1u4n2L5d10F9PJc0moWZD'})
       await AsyncStorage.getItem("petitionID").then((value) => {
         this.setState({ petitionID: JSON.parse(value).id })
       })
@@ -46,6 +59,10 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem("petitionType").then((value) => {
         this.setState({ petitionType: value })
       })
+      await AsyncStorage.getItem("data").then((value) => {
+        this.setState({ title: JSON.parse(value).titulo }) 
+        this.setState({ data: JSON.parse(value) })  
+      })
       await AsyncStorage.getItem(this.state.petitionType).then((value) => {
         if (value != null) {
           this.setState({ allDocsPerType: JSON.parse(value) })
@@ -54,17 +71,19 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem("type").then((value) => {
         this.setState({ type: value })
       })
-      await AsyncStorage.getItem("data").then((value) => {
-        this.setState({ title: JSON.parse(value).titulo }) 
-      })
       await AsyncStorage.getItem(this.state.petitionID+".savedData").then((value) => {
         if (value != null) {
           this.setState({ doc: JSON.parse(value) })
         }
       })
+      await AsyncStorage.getItem(this.state.petitionID+".cifValue").then((value) => {
+        if (value != null) {
+          this.setState({ cifValue: value })
+        }
+      })
       await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
         if (value != null) {
-          this.setState({ images: JSON.parse(value) })
+          this.setState({ imgs: JSON.parse(value) })
         }
       })
       await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
@@ -91,7 +110,7 @@ class ResumeViewScreen extends Component {
         }
       })
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(chargeDocs))
-      this.props.navigation.push("PetitionList")
+      this.props.navigation.push("PetitionHistory")
     }
   
     async setFlag(i) {
@@ -99,29 +118,24 @@ class ResumeViewScreen extends Component {
     }
   
     setAllFlags() {
-      var lastSaved = this.state.doc.findIndex(obj => obj.valor != null)
-        if (lastSaved == -1) {
-          var result = []
-          if (this.state.images.length > 1) {
-            for (let i = 0; i < this.state.images.length; i++) {
-              if (this.state.flag == i) {
-                result.push(<View style={styles.roundButtonsView}><Text style={styles.focusRoundButton}></Text></View>)
-              } else {
-                result.push(<View style={styles.roundButtonsView}>
-                  <TouchableOpacity onPress={() => this.setFlag(i)}>
-                    <Text style={styles.roundButton}></Text>
-                  </TouchableOpacity>
-                  </View>)
-              }
-            }
-            return (<View style={styles.flatlistView}>{result}</View>)
-          }
+      if (this.state.imgs.length<=1) return null
+      var result = []
+      for (let i = 0; i < this.state.imgs.length; i++) {
+        if (this.state.flag == i) {
+          result.push(<View style={styles.roundButtonsView}><Text style={styles.focusRoundButton}></Text></View>)
+        } else {
+          result.push(<View style={styles.roundButtonsView}>
+            <TouchableOpacity onPress={() => this.setFlag(i)}>
+              <Text style={styles.roundButton}></Text>
+            </TouchableOpacity>
+            </View>)
+        }
       }
-      return null
+      return (<View style={styles.flatlistView}>{result}</View>)
     }
   
     seeImage (image) {
-      this.props.navigation.push('ImageViewer', {image: image,back: "Petition"})
+      this.props.navigation.push('ImageViewer', {image: image,back: "ResumeView"})
     }
     
     setImageZoom() {
@@ -130,43 +144,26 @@ class ResumeViewScreen extends Component {
           cropHeight={Dimensions.get('window').height/2}
           imageWidth={Dimensions.get('window').width}
           imageHeight={Dimensions.get('window').height/2}>
-            <TouchableOpacity onPress={() => this.seeImage(this.state.images[this.state.flag])}>
+            <TouchableOpacity onPress={() => this.seeImage(this.state.imgs[this.state.flag])}>
             <Image
               source={{
-                uri: this.state.images[this.state.flag].uri.replace(/['"]+/g, ''),
+                uri: this.state.imgs[this.state.flag].uri,
               }}
               resizeMode="cover"
               key={this.state.flag}
-              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2, aspectRatio: 1 }}
+              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2 }}
             />
             </TouchableOpacity>
         </ImageZoom>)
     } 
-  
-    setUploadedImages () {
-      var lastSaved = this.state.doc.findIndex(obj => obj.valor != null)
-      if (lastSaved > -1 && this.state.images.length > 0) {
-          var denom = "imagen"
-          var uplodaded = "adjuntada"
-          if (this.state.images.length > 1) { 
-            denom = "imágenes"
-            uplodaded="adjuntadas"
-          }
-          return (
-            <View style={styles.imagesSection}>
-              <Text style={styles.imagesUploaded}>+ {this.state.images.length} {denom} {uplodaded}</Text>
-          </View>)
-      }
-      return null
-    }
 
     setImages() {
-      var lastSaved = this.state.doc.findIndex(obj => obj.valor != null)
-        if (lastSaved == -1 && this.state.images.length > 0) {
-            return (
-            <View style={styles.selectedImageView}>
-              {this.setImageZoom(this.state.images[this.state.flag])}
-          </View>)
+      if (this.state.imgs.length > 0) {
+        return (<View style={styles.imagesSection}>
+          <View style={styles.selectedImageView}>
+          {this.setImageZoom()}
+        </View>
+        </View>)
         }
       return null
     }
@@ -178,25 +175,71 @@ class ResumeViewScreen extends Component {
       this.props.navigation.push("PetitionHistory")
     }
 
+    async uploadImageDrive(i) {
+      var contents = "data:image/png;base64," + i.urid
+      console.log("contents:"+contents)
+      let result = await GDrive.files.createFileMultipart(
+        contents,
+        "image/png", {
+            parents: ["root"],
+            name: "foto.png"
+        },
+        true);
+        console.log("result:"+JSON.stringify(result))
+    }
+
     async proceedSent() {
-      var importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
-      var fecha = this.state.doc.findIndex(obj => obj.idcampo.includes("fecha"))
-      importe = this.state.doc[importe].valor
-      fecha = this.state.doc[fecha].valor
+      var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
+      var importe = ""
+      var fecha = ""
+      var cif = ""
+      if (noFieldCompleted==-1) {
+        importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
+        var fechaIndex = this.state.doc.findIndex(obj => obj.idcampo.includes("fecha"))
+        importe = this.state.doc[importe].valor
+        fecha = this.state.doc[fechaIndex].valor
+        var newDate = fecha.split("-")
+        fecha = newDate[2]+"-"+newDate[1]+"-"+newDate[0]
+        cif=this.state.cifValue 
+        this.state.doc[fechaIndex].valor = fecha
+      }
+      this.state.data.tipo=this.state.type
+      this.state.data.importe=importe
+      this.state.data.fecha=fecha
+      this.state.data.company_padisoft=this.state.company_padisoft 
+      this.state.data.idcliente=this.state.idcliente 
+      this.state.data.tipopeticion="guardar"
+      this.state.data.titulo=this.state.title
+      this.state.data.cif=cif
+      this.state.data.campos=this.state.doc
+      this.state.data.img=this.state.imgs
+      /*GoogleSignin.configure({
+          scopes: ['https://www.googleapis.com/auth/drive'], // We want   read and write access
+          webClientId: "AIzaSyBhxd_UsTJtnYut1Ac7v9Lo3ekiJyLQk4c", // REPLACE WITH YOUR ACTUAL  CLIENT ID !
+          offlineAccess: true
+      });
+      await GDrive.setAccessToken("AIzaSyBhxd_UsTJtnYut1Ac7v9Lo3ekiJyLQk4c");
+      await GDrive.init();
+      
+      this.state.imgs.forEach(i => {
+        this.uploadImageDrive(i)
+      })*/
       const requestOptions = {
         method: 'POST',
-        body: JSON.stringify({ company_padisoft:this.state.company_padisoft, idcliente: this.state.idcliente, titulo: this.state.title, tipopeticion: "guardar", tipo:this.state.type, importe:importe, fecha:fecha, campos: this.state.doc})
-      };
-      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+        body: JSON.stringify(this.state.data) };
+      
+      console.log("body="+requestOptions.body)
+      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
+        console.log("respuesta del servidor = " + JSON.stringify(responseJson))
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") {
           this.showAlert("Error", "Hubo un error al subir el documento")
         } else {
           this.uploadSucceeded()
         }
-      }).catch((error) => {});
+      }).catch((error) => {});*/
     }
 
     showAlert = (title, message) => {
@@ -213,34 +256,36 @@ class ResumeViewScreen extends Component {
       );
     }
 
+    async askSaveDoc() {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          "Enviar contabilidad",
+          "¿Está seguro que desea enviar este documento?",
+          [
+            {
+              text: 'Sí',
+              onPress: () => {
+                resolve(this.proceedSent());
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                resolve();
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+        await AsyncAlert();
+    }
+
     async sendDocument() {
-      var lastSaved = this.state.doc.findIndex(obj => obj.valor == null)
-      if (lastSaved > -1) {
-        this.showAlert("Error", "El documento de voz está incompleto")
-      } else {
-        const AsyncAlert = () => new Promise((resolve) => {
-          Alert.alert(
-            "Subir documento contable",
-            "¿Está seguro que desea enviar este documento finalmente?",
-            [
-              {
-                text: 'Sí',
-                onPress: () => {
-                  resolve(this.proceedSent());
-                },
-              },
-              {
-                text: 'No',
-                onPress: () => {
-                  resolve();
-                },
-              },
-            ],
-            { cancelable: false },
-          );
-          });
-          await AsyncAlert();
-      }
+      var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
+      if (noFieldCompleted>-1 && this.state.imgs.length==0) {
+        this.showAlert("Error", this.state.doc[noFieldCompleted].titulo + " debe completarse")
+      } else this.askSaveDoc()
     }
     
     async calculateData(index, porcentaje) {
@@ -348,14 +393,16 @@ class ResumeViewScreen extends Component {
     }
 
     setControlVoice(){
-        return(
-          <View style={styles.resumeView}>
-            <FlatList 
-              vertical
-              showsVerticalScrollIndicator={false}
-              data={this.state.doc}
-              renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
-            /></View>
+      var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
+      if (noFieldCompleted>-1) return null
+      return (
+        <View style={styles.resumeView}>
+          <FlatList 
+            vertical
+            showsVerticalScrollIndicator={false}
+            data={this.state.doc}
+            renderItem={({ item, index }) => (<View>{this.setData(item, index)}</View>)}
+          /></View>
         )
     }
   
@@ -417,15 +464,18 @@ class ResumeViewScreen extends Component {
       render () {
         return (
           <View style={{flex: 1, backgroundColor:"#FFF" }}>
-            <ScrollView style={{backgroundColor: "#FFF" }}>
+            <ScrollView 
+              showsVerticalScrollIndicator ={false}
+              showsHorizontalScrollIndicator={false}
+              persistentScrollbar={false}
+              style={{backgroundColor: "#FFF" }}>
             <View style={{backgroundColor: "#1A5276"}}>
               <Text style={styles.mainHeader}>{this.state.title} finalizado</Text>
             </View>
             <View style={styles.sections}>
+              {this.setControlVoice()}
               {this.setImages()}
               {this.setAllFlags()}
-              {this.setControlVoice()}
-              {this.setUploadedImages()}
             </View>
             </ScrollView>   
             <View style={styles.navBarBackHeader}>
@@ -480,10 +530,8 @@ class ResumeViewScreen extends Component {
       },
       imagesSection: {
         flex: 1,
-        paddingLeft: 20,
+        alignItems: 'center',
         textAlign: "center",
-        alignSelf: "flex-start",
-        paddingBottom: 100
       },
       imagesUploaded: {
         fontSize: RFPercentage(2.5),
@@ -507,12 +555,13 @@ class ResumeViewScreen extends Component {
       sections: {
         flex: 1,
         backgroundColor:"#FFF",
-        width:"100%"
+        width:"100%",
+        paddingBottom: 100
       },
       resumeView: {
-        paddingTop: 30,
+        paddingTop: 20,
         paddingLeft: 40,
-        paddingBottom: 30,
+        paddingBottom: 70,
         backgroundColor: "#FFF"
       },
       resumeText: {

@@ -39,6 +39,7 @@ class ImageViewerScreen extends Component {
     }
   
     goBack = () => {
+      console.log("back es " + this.state.back)
       this.props.navigation.push(this.state.back)
       return true
     }
@@ -53,11 +54,17 @@ class ImageViewerScreen extends Component {
         if (this.state.images[i].id != this.state.image.id) {
           arrayImages.push({
             id: this.state.images[i].id,
+            nombre: this.state.images[i].nombre,
+            id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
+            urid: this.state.images[i].urid,
             uri: this.state.images[i].uri
           })
         } else {
           var newImage = {
-            id: this.state.image.id,
+            id: this.state.images.id,
+            nombre: this.state.image.nombre,
+            id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
+            urid: this.state.image.urid,
             uri: uri
           }
           arrayImages.push(newImage)
@@ -137,7 +144,10 @@ class ImageViewerScreen extends Component {
       for (let i = 0; i < this.state.images.length; i++) {
         if (this.state.images[i].id != this.state.image.id) {
           arrayImages.push({
-            id:  this.state.image.id + "_" + i,
+            id: this.state.image.id + "_" + i,
+            nombre: this.state.images[i].nombre,
+            id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
+            urid: this.state.images[i].urid,
             uri: this.state.images[i].uri
           })
         }
@@ -207,6 +217,56 @@ class ImageViewerScreen extends Component {
         </ImageZoom>
       )
     }
+
+    setFootbar() {
+      return (<View style={styles.darkFootBar}>
+      <Icon
+          name='camera'
+          type='font-awesome'
+          color='#FFF'
+          size={40}
+          onPress={this.takePhoto}
+        />
+        <Icon
+          name='plus'
+          type='font-awesome'
+          color='#154360'
+          size={35}
+        />
+        <Icon
+          name='plus'
+          type='font-awesome'
+          color='#154360'
+          size={35}
+        />
+        <Icon
+          name='image'
+          type='font-awesome'
+          color='#FFF'
+          size={40}
+          onPress={this.goGallery}
+        />
+        <Icon
+          name='plus'
+          type='font-awesome'
+          color='#154360'
+          size={35}
+        />
+        <Icon
+          name='plus'
+          type='font-awesome'
+          color='#154360'
+          size={35}
+        />
+        <Icon
+          name='trash'
+          type='font-awesome'
+          color='#FFF'
+          size={40}
+          onPress={this._delete}
+        />
+      </View>)
+    }
   
     render () {
       return (
@@ -214,54 +274,8 @@ class ImageViewerScreen extends Component {
           <View style={styles.selectedImageView}>
           {this.setImageZoom()}
         </View>
-          <View style={styles.darkFootBar}>
-            <Icon
-                name='camera'
-                type='font-awesome'
-                color='#FFF'
-                size={30}
-                onPress={this.takePhoto}
-              />
-              <Icon
-                name='plus'
-                type='font-awesome'
-                color='#000'
-                size={35}
-              />
-              <Icon
-                name='plus'
-                type='font-awesome'
-                color='#000'
-                size={35}
-              />
-              <Icon
-                name='image'
-                type='font-awesome'
-                color='#FFF'
-                size={30}
-                onPress={this.goGallery}
-              />
-              <Icon
-                name='plus'
-                type='font-awesome'
-                color='#000'
-                size={35}
-              />
-              <Icon
-                name='plus'
-                type='font-awesome'
-                color='#000'
-                size={35}
-              />
-              <Icon
-                name='trash'
-                type='font-awesome'
-                color='#FFF'
-                size={30}
-                onPress={this._delete}
-              />
-            </View>
-          </View>
+          {this.setFootbar()}
+        </View>
       );
     }
   }
@@ -271,20 +285,21 @@ class ImageViewerScreen extends Component {
   const styles = StyleSheet.create({
     imageView: {
         flex: 1,
-        backgroundColor:"#000",
+        backgroundColor:"#154360",
       },
       selectedImageView: {
         flex: 1,
         alignItems: 'center',
         textAlign: "center",
-        backgroundColor: "#000",
+        backgroundColor: "#154360",
       },
       darkFootBar: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor:"#000", 
+        backgroundColor:"#154360", 
         flexDirection:'row', 
         textAlignVertical: 'center',
-        height: 50
+        height: 50,
+        paddingBottom: 20
       },
     })

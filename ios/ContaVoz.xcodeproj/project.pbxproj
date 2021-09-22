@@ -311,7 +311,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.name.ContaVoz;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.name.contavoz-v1";
 				PRODUCT_NAME = ContaVoz;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -335,7 +335,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.name.ContaVoz;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.name.contavoz-v1";
 				PRODUCT_NAME = ContaVoz;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
