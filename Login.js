@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Alert, Image, TextInput, Back
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
+import NetInfo from "@react-native-community/netinfo";
 
 class LoginScreen extends Component {  
     constructor(props) {
@@ -129,28 +130,34 @@ class LoginScreen extends Component {
     }
   
     login = async () => {
-      if (this.state.company != undefined && this.state.user != undefined && this.state.password != undefined) {
-        const requestOptions = {
-          method: 'POST',
-          body: JSON.stringify({aliasDb: this.state.company, user: this.state.user, password: this.state.password, appSource: "Disoft"})
-        };
-        fetch('https://app.dicloud.es/login.asp', requestOptions)
-          .then((response) => response.json())
-          .then((responseJson) => {
-            let error = JSON.stringify(responseJson.error_code)
-            if (error == 0) {
-              this.setState({fullname: JSON.parse(JSON.stringify(responseJson.fullName))})
-              this.setState({token: JSON.parse(JSON.stringify(responseJson.token))})
-              this.setState({idempresa: JSON.parse(JSON.stringify(responseJson.idempresa))})
-              this.setState({userid: JSON.parse(JSON.stringify(responseJson.id))})
-              this.saveUser()
-            } else {
-              this.handleError(error)
-            }
-          }).catch(() => {});
-      } else {
-        this.showAlert("Complete todos los campos")
-      }
+      await NetInfo.addEventListener(networkState => {
+        if (networkState.isConnected) {
+          if (this.state.company != undefined && this.state.user != undefined && this.state.password != undefined) {
+            const requestOptions = {
+              method: 'POST',
+              body: JSON.stringify({aliasDb: this.state.company, user: this.state.user, password: this.state.password, appSource: "Disoft"})
+            };
+            fetch('https://app.dicloud.es/login.asp', requestOptions)
+              .then((response) => response.json())
+              .then((responseJson) => {
+                let error = JSON.stringify(responseJson.error_code)
+                if (error == 0) {
+                  this.setState({fullname: JSON.parse(JSON.stringify(responseJson.fullName))})
+                  this.setState({token: JSON.parse(JSON.stringify(responseJson.token))})
+                  this.setState({idempresa: JSON.parse(JSON.stringify(responseJson.idempresa))})
+                  this.setState({userid: JSON.parse(JSON.stringify(responseJson.id))})
+                  this.saveUser()
+                } else {
+                  this.handleError(error)
+                }
+              }).catch(() => {});
+          } else {
+            this.showAlert("Complete todos los campos")
+          }
+        } else {
+          this.showAlert("No tiene conexión a Internet")
+        }
+      })
     }
   
     managePasswordVisibility = () => {
@@ -166,10 +173,10 @@ class LoginScreen extends Component {
             source={require('./assets/main.png')}
           />
           </View>
-          <TextInput placeholderTextColor="lightgray" blurOnSubmit={true} style = { styles.textBox } placeholder="Compañía"  onChangeText={(company) => this.setState({company})}  value={this.state.company} /> 
-          <TextInput placeholderTextColor="lightgray" blurOnSubmit={true} style = { styles.textBox } placeholder="Usuario" onChangeText={(user) => this.setState({user})}  value={this.state.user}/> 
+          <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} style = { styles.textBox } placeholder="Compañía"  onChangeText={(company) => this.setState({company})}  value={this.state.company} /> 
+          <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} style = { styles.textBox } placeholder="Usuario" onChangeText={(user) => this.setState({user})}  value={this.state.user}/> 
           <View style = { styles.textBoxBtnHolder }>
-            <TextInput placeholderTextColor="lightgray" blurOnSubmit={true} style = { styles.textBox } placeholder="Contraseña" secureTextEntry = { this.state.hidePassword } onChangeText={(password) => this.setState({password})} value={this.state.password}/>  
+            <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} style = { styles.textBox } placeholder="Contraseña" secureTextEntry = { this.state.hidePassword } onChangeText={(password) => this.setState({password})} value={this.state.password}/>  
             <TouchableOpacity activeOpacity = { 0.8 } style = { styles.visibilityBtn } onPress = { this.managePasswordVisibility }>
               {this.state.hidePassword &&
               (<Icon
@@ -188,7 +195,7 @@ class LoginScreen extends Component {
             </TouchableOpacity>   
           </View>  
           <View style={{paddingTop: 20}}>
-          <TouchableOpacity onPress={this.login} style={styles.appButtonContainer}>
+          <TouchableOpacity onPress={() => this.login()} style={styles.appButtonContainer}>
             <Text style={styles.appButtonText}>Entrar</Text>
           </TouchableOpacity>  
           </View>
@@ -251,13 +258,5 @@ const styles = StyleSheet.create({
     footbar: {
       flex:3
     },
-    credits: {
-      paddingTop: 50,
-      alignItems: 'center',
-      textAlign: "center",
-      fontWeight: "bold",
-      color: "#728C69",
-      fontSize: 15,
-    }
 })
   

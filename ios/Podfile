@@ -22,4 +22,6 @@ target 'ContaVoz' do
 
   pod 'react-native-voice', :path => '../node_modules/react-native-voice'
 
+  pod 'RNFS', :path => '../node_modules/react-native-fs'
+
 end

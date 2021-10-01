@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Platform, Text, View, TouchableOpacity, Alert, TextInput, Image, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Modal, Animated } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Modal, Animated } from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
@@ -8,7 +8,6 @@ import * as ImagePicker from 'react-native-image-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
 import evaluate from 'words-to-numbers-es';
 import { RFPercentage } from "react-native-responsive-fontsize";
-import base64 from 'react-native-base64'
 
 class PetitionScreen extends Component {
     
@@ -26,8 +25,6 @@ class PetitionScreen extends Component {
         listenedData: "",
         interpretedData: "",
         cifValue: "",
-        getData: false,
-        setData: false,
         images: [],
         words: [],
         list: [],
@@ -37,11 +34,10 @@ class PetitionScreen extends Component {
         saved: false,
         flag: 0,
         fadeAnimation: new Animated.Value(0),
-        timer: 0,
-        seconds: 15,
         hasStarted: false,
         listenFlag: 0,
-        showResult: false
+        showResult: false,
+        write_data: false
       }
       this.init()
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -73,11 +69,11 @@ class PetitionScreen extends Component {
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
       })
-      await AsyncStorage.getItem(this.state.petitionID+".listenFlag").then((value) => {
+      /*await AsyncStorage.getItem(this.state.petitionID+".listenFlag").then((value) => {
         if (value != null) {
           this.setState({ listenFlag: value })
         }
-      })
+      })*/
       await AsyncStorage.getItem(this.state.petitionID+".saved").then((value) => {
         if (value != null) {
           this.setState({ saved: JSON.parse(value) })
@@ -96,7 +92,9 @@ class PetitionScreen extends Component {
             if (i.xdefecto.toLowerCase() == "hoy") {
               result = ("0" + (new Date().getDate())).slice(-2)+ "-"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "-" + new Date().getFullYear()
             } else if (i.xdefecto.toLowerCase() == "ayer") {
-              result = ("0" + (new Date().getDate()-1)).slice(-2)+ "-"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "-" + new Date().getFullYear()
+              var yesterday = new Date()
+              yesterday.setDate(new Date().getDate() - 1)
+              result = ("0" + (yesterday.getDate()-1)).slice(-2)+ "-"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "-" + yesterday.getFullYear()
             } else {
               result = i.xdefecto
             }
@@ -161,7 +159,9 @@ class PetitionScreen extends Component {
       if (this.state.listenedData.toLowerCase() == "hoy") {
         this.setState({ interpretedData: ("0" + (new Date().getDate())).slice(-2)+ "-"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "-" + new Date().getFullYear() })
       } else if (this.state.listenedData.toLowerCase() == "ayer") {
-        this.setState({ interpretedData: ("0" + (new Date().getDate()-1)).slice(-2)+ "-"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "-" + new Date().getFullYear() })
+        var yesterday = new Date()
+        yesterday.setDate(new Date().getDate() - 1)
+        this.setState({ interpretedData: ("0" + (yesterday.getDate()-1)).slice(-2)+ "-"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "-" + yesterday.getFullYear() })
       } else {
         var daysL = ["Uno", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Ocho", "Nueve", "Diez",
         "Once", "Doce", "Trece", "Catorce", "Quince", "Dieciséis", "Diecisiete", "Dieciocho", "Diecinueve",
@@ -234,7 +234,6 @@ class PetitionScreen extends Component {
       if (number==0) {
         if (isNaN(this.state.listenedData)) {
           this.showAlert("Error", "El dato aportado no es numérico")
-          this.setState({ getData: false })
         } else {
           if (!this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje") && (!this.state.listenedData.includes(".") || !this.state.listenedData.includes(","))) {
             this.setState({ listenedData: this.state.listenedData + ",00" })
@@ -266,6 +265,7 @@ class PetitionScreen extends Component {
         this.saveCIF(this.state.words[sameEntity].cifValue)
       } else {
         this.setState({ interpretedData: this.state.listenedData })
+        this.saveCIF("")
       }
       this.resetListening()
     }
@@ -283,19 +283,14 @@ class PetitionScreen extends Component {
     onSpeechResults(e) {
       var res = e.value + ""
       var word = res.split(",")
-      if (word[0].length>0) {
-        this._stopRecognition(e)
-      }
       this.setState({
         listenedData: word[0],
       });
       if (this.state.savedData[this.state.listenFlag].idcampo=="factura") {
-        this.setState({listenedData:this.state.listenedData.toUpperCase()})
+        this.setState({listenedData:this.state.listenedData.toUpperCase().split(' ').join("")})
       }
       if (this.state.savedData[this.state.listenFlag].tipoexp == "E") {
-        console.log("siiii")
         var sameKeywords = this.state.words.findIndex(item => item.keywords.toLowerCase().includes(this.state.listenedData.toLowerCase()))
-        console.log("sameKeywords="+sameKeywords)
         if (sameKeywords>-1) {
           this.state.savedData[this.state.listenFlag].valor = this.state.words[sameKeywords].entity
           this.setState({ cif: this.state.words[sameKeywords].cifValue })
@@ -304,11 +299,12 @@ class PetitionScreen extends Component {
       if (this.state.savedData[this.state.listenFlag].tipoexp != "1" && this.state.savedData[this.state.listenFlag].tipoexp != "E" && this.state.savedData[this.state.listenFlag].tipoexp != "F") {
         this.setState({listenedData:this.state.listenedData.split(' ').join("")})
       }
-      this.setState({getData: true})
       this.setListenedData()
     }
   
     async _startRecognition(e) {
+      this.setState({ listenedData: "" })
+      this.setState({ interpretedData: "" })
       this.setState({
         recognized: '',
         started: '',
@@ -322,44 +318,28 @@ class PetitionScreen extends Component {
         (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[this.state.listenFlag].xdefecto != "")) {
           try {
             await Voice.start('es');
-            this.setTimer(e)
           } catch (e) {
             console.error(e);
-          }
-        } else {
-          if (idcampo.includes("base") || idcampo.includes("cuota") && this.state.savedData[percentage].valor != "") {
-            this.calculateResult()
-          } else {
-            this.setState({ interpretedData : this.state.data[this.state.listenFlag].xdefecto })
           }
         }
       }
     }
-
-    async setTimer (e) {
-      if (this.state.seconds > 0 ) {
-        var timer = setTimeout(() => {
-          this.setState({ seconds: this.state.seconds-1})
-          this.setTimer(e)
-        },1000);
-      } else {
-          this._stopRecognition(e)
-          clearTimeout(this.state.timer)
-      }
-      this.setState({ timer: timer })
-    }
   
     async _stopRecognition(e) {
       await this.setState({ is_recording: false })
-      await this.setState({ seconds: 15 })
-      clearTimeout(this.state.timer)
+      if (this.state.listenedData.length>0) {
+        this.updateListen(1)
+      }
       try {
         await Voice.stop()
       } catch (e) {}
     }
 
     setMicrophoneIcon() {
-      return (<View style={{ width: 70,textAlign:'center' }}><TouchableOpacity onPress={this._startRecognition.bind(this)}><Icon name='microphone' type='font-awesome' color='#1A5276' size={40} /></TouchableOpacity></View>)
+      if (this.state.is_recording) {
+        return (<View style={{ width: 70,textAlign:'center' }}><TouchableOpacity onPressOut={this._stopRecognition.bind(this)}><Icon name='microphone' type='font-awesome' color='#1A5276' size={40} /></TouchableOpacity></View>)
+      }
+      return (<View style={{ width: 70,textAlign:'center' }}><TouchableOpacity onPressIn={this._startRecognition.bind(this)}><Icon name='microphone' type='font-awesome' color='#1A5276' size={40} /></TouchableOpacity></View>)
     }
 
      takePhoto = async() =>{
@@ -378,21 +358,22 @@ class PetitionScreen extends Component {
                 path: 'images',
                 privateDirectory: true,
               },
-              includeBase64: true
+              includeBase64: false
             };
             if (this.state.images.length <= 9) {
               ImagePicker.launchCamera(options, (response) => {
                 if (response.didCancel || response.error || response.customButton) {
                 } else {
+                  //var source = JSON.stringify(response.assets[0]["base64"])
                   var arrayImages = this.state.images
                   var uri = JSON.stringify(response.assets[0]["uri"])
-                  var urid = "1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR"//JSON.stringify(response.assets[0]["base64"])
+                  //var urid = "" //JSON.stringify(response.assets[0]["base64"]) //"1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR"//JSON.stringify(response.assets[0]["base64"])
                   var newID = this.state.petitionID+"_"+(this.state.images.length+1)
                   arrayImages.push({
                     id: newID,
                     nombre: newID,
-                    id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
-                    urid: urid,
+                    id_drive:"",//'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
+                    urid: "",//"data:image/jpeg;base64," + source,
                     uri: uri.replace(/['"]+/g, '')
                   })
                   this.setState({images: arrayImages})
@@ -407,7 +388,6 @@ class PetitionScreen extends Component {
     }
   
     async saveImages() {
-      console.log("saveImages")
       var list = []
       await AsyncStorage.getItem(this.state.petitionType).then((value) => {
         if (value != null) {
@@ -430,7 +410,7 @@ class PetitionScreen extends Component {
         customButtons: [
           { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
         ],
-        includeBase64: true,
+        includeBase64: false,
         storageOptions: {
           skipBackup: true,
           path: 'images',
@@ -440,15 +420,16 @@ class PetitionScreen extends Component {
         ImagePicker.launchImageLibrary(options, (response) => {
           if (response.didCancel || response.error || response.customButton) {
           } else {
+            //var source = JSON.stringify(response.assets[0]["base64"])
             var arrayImages = this.state.images
             var uri = JSON.stringify(response.assets[0]["uri"])
-            var urid = "1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR"//JSON.stringify(response.assets[0]["base64"])
+            //var urid = "" //JSON.stringify(response.assets[0]["base64"]) //"1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR"//JSON.stringify(response.assets[0]["base64"])
             var newID = this.state.petitionID+"_"+(this.state.images.length+1)
             arrayImages.push({
               id: newID,
               nombre: newID,
-              id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
-              urid: urid,
+              id_drive:"",//'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
+              urid: "", //"data:image/jpeg;base64," + source,
               uri: uri.replace(/['"]+/g, '')
             })
             this.setState({images: arrayImages})
@@ -458,6 +439,30 @@ class PetitionScreen extends Component {
       } else {
         this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
       }
+    }
+
+    async showEntity() {
+      this.setState({ showResult: true })
+      this.setState({ listenFlag: 0 })
+    }
+
+    async showDialogAlert(title, message) {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          title,
+          message,
+          [
+            {
+              text: 'Editar',
+              onPress: () => {
+                resolve(this.showEntity());
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+      await AsyncAlert();
     }
   
       async showAlert (title, message) {
@@ -507,9 +512,9 @@ class PetitionScreen extends Component {
     setImageZoom() {
       return (<ImageZoom
           cropWidth={Dimensions.get('window').width}
-          cropHeight={Dimensions.get('window').height/2}
+          cropHeight={Dimensions.get('window').height/2.5}
           imageWidth={Dimensions.get('window').width}
-          imageHeight={Dimensions.get('window').height/2}>
+          imageHeight={Dimensions.get('window').height/2.5}>
             <TouchableOpacity onPress={() => this.seeImage(this.state.images[this.state.flag])}>
             <Image
               source={{
@@ -517,7 +522,7 @@ class PetitionScreen extends Component {
               }}
               resizeMode="cover"
               key={this.state.flag}
-              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2 }}
+              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2.5}}
             />
             </TouchableOpacity>
         </ImageZoom>)
@@ -566,40 +571,30 @@ class PetitionScreen extends Component {
 
     setModalButtons(){
       return (<View style={styles.modalNavBarButtons}>
-        {this.state.listenFlag==0 && (<View style={{paddingRight: 20}}><TouchableOpacity onPress={() => this.closeListen()} style={styles.saveButtomModal}><Icon name='times' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-        {this.state.listenFlag>0 && (<View style={{paddingRight: 20}}>
-            <TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity>
-                </View>)}
-                {this.state.listenFlag>0 && (
-                <View>
-                  <TouchableOpacity onPress={() => this.editListen(-1)} style={styles.editButtomModal}><Icon name='pencil' type='font-awesome' color='white' size={32}/></TouchableOpacity>
-                </View>)}
-                {this.state.listenFlag < this.state.savedData.length-1 && (
-                <View style={{paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-              </View>)
+        {this.state.listenFlag>0 && (<View style={{paddingRight: 20}}><TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag>0 && (<View><TouchableOpacity onPress={() => this.editListen(-1)} style={styles.editButtomModal}><Icon name='pencil' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag < this.state.savedData.length-1 && this.state.listenFlag>-1 && (<View style={{paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+      </View>)
     }
 
     setVoiceControlView() {
-      var lastSaved = Number(this.state.listenFlag)
+      var lastSaved = Number(this.state.listenFlag) 
       this.fadeIn()
       return (<View style={styles.titleView}>
-          {lastSaved>0 && lastSaved <= this.state.savedData.length-1 && this.state.savedData[lastSaved-1].valor != null && <Text style={styles.showNextData}>Último dato {this.state.savedData[lastSaved-1].titulo}: {this.state.savedData[lastSaved-1].valor}</Text>}
-          <Animated.View style={[ { opacity: this.state.fadeAnimation, width:"90%" }]}>
+         <Animated.View style={[ { opacity: this.state.fadeAnimation, width:"90%" }]}>
             <Text style={styles.showListen}>Escuchando {this.state.savedData[lastSaved].titulo.toLowerCase()}</Text>
+            {this.state.listenedData.length>0 && <Text style={styles.showNextData}>Ha dicho {this.state.savedData[lastSaved].escuchado.toLowerCase()}</Text>}
           </Animated.View>
-          <Text style={styles.secondsLabel}>Quedan {this.state.seconds} segundos</Text>
-          {lastSaved>-1 && lastSaved <= this.state.savedData.length-2 && <Text style={styles.showNextData}>Siguiente dato {this.state.data[lastSaved+1].titulo}</Text>}
-          <Text style={styles.transcript}></Text>
-            {this.setModalButtons()}
       </View>)
     }
 
     async editListen() {
       await this.setState({ listenFlag: this.state.listenFlag - 1 })
+      await this.setState({ showResult: true })
       if (this.state.savedData[this.state.listenFlag].escuchado.length>0) {
-        this.setState({ showResult: true })
-        this._stopRecognition(this)
         this.setState({ is_recording: false })
+      } else {
+        this.setState({ write_data: true })
       }
     }
 
@@ -609,20 +604,17 @@ class PetitionScreen extends Component {
     }
 
     async updateListen(value) {
-      var lng = this.state.savedData.length-1
-      if (this.state.listenFlag <= lng) {
+      if (this.state.listenFlag < this.state.savedData.length-1) {
         this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value)})
         await AsyncStorage.setItem(this.state.petitionID+".listenFlag", JSON.stringify(this.state.listenFlag))
         if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") || this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
           this.calculateResult()
         }
-        this.setState({ seconds: 10 })
-        this._stopRecognition(this)
-        this._startRecognition(this) 
         this.setState({interpretedData:""})
       } else {
-        this._stopRecognition(this)
         this.setState({ is_recording: false})
+        var lastSaved = this.state.savedData.findIndex(i=> i.valor == null && i.obligatorio=="S")
+        this.setState({listenFlag: lastSaved})
       }
     }
 
@@ -635,17 +627,19 @@ class PetitionScreen extends Component {
       } else if (JSON.parse(this.state.is_recording & this.state.listenFlag>=0 && this.state.listenFlag<=this.state.savedData.length-1)) {
         return this.setVoiceControlView()
       }
-      return null
+      return this.setModalButtons()
     }
 
     async saveEnterprise() {
       var sameKeywords = this.state.words.findIndex(item => item.keywords.toLowerCase().includes(this.state.savedData[this.state.listenFlag].escuchado.toLowerCase()))
+      if (this.state.interpretedData == "") {
+        await this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
+      }
       if (sameKeywords>-1) {
-        console.log("1")
         this.state.savedData[this.state.listenFlag].valor = this.state.words[sameKeywords].entity
         await this.setState({ cif: this.state.words[sameKeywords].cifValue })
+        await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cif)
       } else {
-        console.log("2")
         this.state.words.push({
           keywords: this.state.savedData[this.state.listenFlag].escuchado,
           entity: this.state.interpretedData,
@@ -660,49 +654,6 @@ class PetitionScreen extends Component {
       await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(this.state.words))
       this.setState({showResult: false})
       this.updateListen(1)
-      console.log("Diccionario\n:"+JSON.stringify(this.state.words))
-
-      
-      //this.state.words[sameKeywords]
-
-      /*if (this.state.interpretedData=="") {
-        await this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
-      }
-      var thereIsEntity = this.state.words.findIndex(item => item.entity.toLowerCase() === this.state.interpretedData.toLowerCase())
-      var thereIsCIF = this.state.words.findIndex(item => item.cifValue.toLowerCase() === this.state.cifValue.toLowerCase())
-      console.log("thereIsEntity:"+thereIsEntity +  " and thereIsCIF:" + thereIsCIF)
-      
-      if (thereIsEntity==-1 && thereIsCIF==-1) {
-        console.log("1")
-        this.state.words.push({
-          keywords: this.state.savedData[this.state.listenFlag].escuchado,
-          entity: this.state.interpretedData,
-          cifValue: this.state.cifValue,
-          time: new Date().getTime()
-        })
-        this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
-        await AsyncStorage.setItem(this.state.userid+".savedData", JSON.stringify(this.state.savedData))
-        
-      } else if (thereIsEntity==-1 && thereIsCIF>-1) {
-        console.log("2")
-        this.state.words[thereIsCIF].entity = this.state.interpretedData
-        this.state.words[thereIsCIF].cifValue = this.state.cifValue
-        this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
-      } else {
-        console.log("3")
-        this.state.words[thereIsEntity].entity = this.state.interpretedData
-        this.state.words[thereIsEntity].cifValue = this.state.cifValue
-        this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
-      }
-      this.setState({savedData: this.state.savedData})
-      await AsyncStorage.setItem(this.state.userid+".savedData", JSON.stringify(this.state.savedData))
-      this.setState({ words: this.state.words })
-      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(this.state.words))
-      await AsyncStorage.setItem(this.state.petitionID+".cifValue", this.state.cifValue)
-      this.setState({showResult: false})
-      this.updateListen(1)
-      this.setState({is_recording: true})
-      console.log("Diccionario\n:"+JSON.stringify(this.state.words))*/
     }
 
     async resetListening() {
@@ -710,12 +661,6 @@ class PetitionScreen extends Component {
       this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
       this.setState({savedData: this.state.savedData})
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
-      this.setState({ listenedData: "" })
-      this.setState({ interpretedData: "" })
-      if (this.state.listenFlag<this.state.savedData.length-1) {
-        this.setState({ is_recording: true })
-        this.updateListen(1)
-      }
       this.saveDocument()
     }
 
@@ -732,7 +677,7 @@ class PetitionScreen extends Component {
         }
         this.setState({showResult: false})
         this.updateListen(1)
-        this.setState({is_recording: true})
+        //this.setState({is_recording: true})
       }
     }
 
@@ -772,17 +717,10 @@ class PetitionScreen extends Component {
 
     setDefaultModalButtons() {
       return (<View style={styles.modalNavBarButtons}>
-        {this.state.listenFlag==0 && (<View style={{paddingRight: 20}}><TouchableOpacity onPress={() => this.closeListen()} style={styles.saveButtomModal}><Icon name='times' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-        {this.state.listenFlag>0 && (<View style={{paddingRight: 20}}>
-            <TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity>
-                </View>)}
-                {this.state.listenFlag>0 && (
-                <View>
-                  <TouchableOpacity onPress={() => this.dataOK(-1)} style={styles.editButtomModal}><Icon name='check' type='font-awesome' color='white' size={32}/></TouchableOpacity>
-                </View>)}
-                {this.state.listenFlag < this.state.savedData.length-1 && (
-                <View style={{paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-              </View>)
+        {this.state.listenFlag>0 && (<View style={{paddingRight: 20}}><TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag>0 && (<View><TouchableOpacity onPress={() => this.dataOK(-1)} style={styles.editButtomModal}><Icon name='check' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag < this.state.savedData.length-1 && (<View style={{paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        </View>)
     }
 
     setDefaultDataModal(message) {
@@ -807,7 +745,31 @@ class PetitionScreen extends Component {
     setDataModal() {
       if (this.state.savedData.length==0) return null
       if (!this.state.showResult) return null
-      return(<Modal
+      if (this.state.write_data) {
+        return (
+          <Modal
+          animationType = {"slide"}
+          transparent={true}>
+            <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+            <Text style={styles.listening}>{this.state.savedData[this.state.listenFlag].titulo}</Text>
+            <View style={styles.modalResult}>
+              <Text style={styles.resumeText}>Valor del campo</Text>
+              <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData})}>{this.state.savedData[this.state.listenFlag].valor}</TextInput>
+              {this.state.savedData[this.state.listenFlag].tipoexp=="E" &&
+              (<View><Text style={styles.resumeText}>CIF de la empresa</Text>
+                <TextInput blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={cifValue => this.setState({cifValue})}>{this.state.cifValue}</TextInput>
+              </View>)}
+              </View>
+              <Text style={styles.transcript}></Text>
+              <View style={styles.modalNavBarButtons}>
+                <TouchableOpacity onPress={() => this.dataOK()} style={styles.exitButtomModal}><Icon name='check' type='font-awesome' color='white' size={32}/></TouchableOpacity>
+              </View>
+          </View>
+        </View>
+      </Modal>)
+      } else {
+        return(<Modal
           animationType = {"slide"}
           transparent={true}>
             <View style={styles.centeredView}>
@@ -830,13 +792,17 @@ class PetitionScreen extends Component {
           </View>
         </View>
       </Modal>)
+      }
     }
 
     showMessage = (message) => {
+      if (this.state.savedData.length==0) return null
       if (!this.state.is_recording) {
         return(
           <View style={styles.titleView}>
+            {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].valor != null && <Text style={styles.showNextData}>Dato leído {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()}: {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
             <Text style={styles.showTitle}>{message}</Text>
+            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && <Text style={styles.showNextData}>Siguiente dato {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
           </View>
         )
       }
@@ -857,12 +823,24 @@ class PetitionScreen extends Component {
 
     documentState = () => {
       var firstEmpty = this.state.savedData.findIndex(obj => obj.escuchado == "" && obj.valor == null)
-      var lastSaved = this.state.savedData.findIndex(obj => obj.escuchado != "" && obj.valor != null)
-      if (lastSaved == -1) {
-        return this.showMessage("Adjunte imágenes o pulse el micrófono de voz")
+      var neverListened = this.state.savedData.findIndex(obj => obj.escuchado != "")
+      if (this.state.images.length==0 && neverListened == -1) {
+        return this.showMessage("Adjunte imágenes o mantenga pulsado el micrófono y diga su "+ this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
       }
-      if (firstEmpty>-1) {
-        return this.showMessage("Documento de voz no finalizado")
+      if (this.state.savedData[this.state.listenFlag].xdefecto != "") {
+        return this.setDefaultDataModal("Valor por defecto")
+      }
+      if (firstEmpty>-1 && this.state.savedData[this.state.listenFlag].idcampo.includes("base") || 
+      this.state.savedData[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedData[this.state.listenFlag-1].valor != "") {
+        return this.calculateResult()
+      } else if (firstEmpty>-1 ) {
+        if (this.state.savedData[this.state.listenFlag].obligatorio=="S") {
+          return this.showMessage("Dato solicitado *\n" + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
+        }
+        return this.showMessage("Dato solicitado\n" + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
+      }
+      if (this.state.cifValue.length==0) {
+        return this.showMessage("Documento de voz no finalizado. Indique el CIF de la entidad")
       }
       if (firstEmpty==-1) {
         return this.showMessage("Documento de voz finalizado")
@@ -871,8 +849,15 @@ class PetitionScreen extends Component {
     }
   
     seeDocument = () => {
-      this.state.images.length > 0 && (this.state.savedData.length == 0 || (this.state.data.length==this.state.savedData.length))
-      this.props.navigation.push('ResumeView')
+      var noDataNull = this.state.savedData.findIndex((i) => i.valor == null && i.obligatorio == "S")
+      var someData = this.state.savedData.findIndex((i) => i.valor != null)
+      if (someData==0 && noDataNull==-1 && this.state.cifValue.length==0) {
+        this.showDialogAlert("Entidad no registrada", "Introduzca el CIF de la entidad")
+      } else if ((this.state.images.length==0 && someData==-1 && noDataNull>-1)) {
+        this.showAlert("Documento incompleto", "Adjunte imágenes del documento o complete un documento de voz")
+      } else {
+        this.props.navigation.push('ResumeView')
+      }
     }
 
     async deleteDoc() {
@@ -912,9 +897,9 @@ class PetitionScreen extends Component {
     }
 
     setMenu() {
-        if (this.state.is_recording) return null
         return (
         <View style={styles.navBarBackHeader}>
+           {!this.state.is_recording &&
             <View style={{ width: 70,textAlign:'center' }}>
               <TouchableOpacity onPress={() => this.askDeleteDoc()}>
               <Icon
@@ -925,6 +910,8 @@ class PetitionScreen extends Component {
               />
               </TouchableOpacity>
             </View>
+            }
+            {!this.state.is_recording &&
             <View style={{ width: 70,textAlign:'center' }}>
             <TouchableOpacity onPress={() => this.takePhoto()}>
               <Icon
@@ -935,7 +922,9 @@ class PetitionScreen extends Component {
               />
               </TouchableOpacity>
               </View>
+              }
               {this.setMicrophoneIcon()}
+              {!this.state.is_recording &&
               <View style={{ width: 70,textAlign:'center' }}>
               <TouchableOpacity onPress={() => this.goGallery()}>
               <Icon
@@ -946,7 +935,8 @@ class PetitionScreen extends Component {
               />
               </TouchableOpacity>
               </View>
-            {(this.state.images.length > 0 || this.state.listenFlag >0) &&
+            }
+            {!this.state.is_recording &&
             (<View style={{ width: 70,textAlign:'center' }}>
               <TouchableOpacity onPress={() => this.seeDocument()}>
               <Icon
@@ -964,7 +954,7 @@ class PetitionScreen extends Component {
     render () {
       if (this.state.savedData.length==0) return null // Wait loop
       return (
-        <View style={{flex: 1 }}>
+        <View style={{ flex: 1 }}>
             <View style={styles.navBarHeader}>
               <Text style={styles.mainHeader}>{this.state.title}</Text>
             </View>
@@ -1017,8 +1007,6 @@ class PetitionScreen extends Component {
         backgroundColor:"#FFF", 
         flexDirection:'row',
         alignSelf: 'center',
-        paddingBottom: 20,
-        paddingTop: 20
       },
       exitText: {
         fontSize: 17,
@@ -1077,8 +1065,8 @@ class PetitionScreen extends Component {
         fontWeight: 'bold',
         fontSize: RFPercentage(4),
         width: "100%",
-        paddingBottom: 20,
-        paddingTop: 20,
+        paddingBottom: 10,
+        paddingTop: 10,
       },
       showSubTitle: {
         textAlign: 'center',
@@ -1093,7 +1081,7 @@ class PetitionScreen extends Component {
         color: '#56A494',
         fontSize: RFPercentage(2.5),
         width: "100%",
-        paddingTop: 20,
+        paddingTop: 10,
         fontWeight: 'bold',
       },
       centeredView: {
@@ -1147,7 +1135,7 @@ class PetitionScreen extends Component {
         flex: 1,
         alignItems: 'center',
         textAlign: "center",
-        backgroundColor: "#000",
+        backgroundColor: "#1A5276",
       },
       transcript: {
         color: '#000',
@@ -1161,7 +1149,7 @@ class PetitionScreen extends Component {
         textAlign:"center",
         width:"100%",
         borderWidth: 0.5,
-        borderColor: "lightgray",
+        borderColor: "darkgray",
         borderRadius: 20
       },
       resumeText: {
@@ -1172,12 +1160,6 @@ class PetitionScreen extends Component {
         color: "#000",
         fontWeight: 'bold',
         width:"100%"
-      },
-      secondsLabel: {
-        fontWeight: 'bold',
-        color: "#B03A2E",
-        fontSize: 20,
-        textAlign: "center",
       },
       exitButton: {
         fontSize: 20,

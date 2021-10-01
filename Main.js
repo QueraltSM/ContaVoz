@@ -29,6 +29,13 @@ class MainScreen extends Component {
       })
     }
 
+    async nextSegue(icon, allTypeConfigs, type) {
+      await AsyncStorage.setItem("icon", icon)
+      await AsyncStorage.setItem("config", JSON.stringify(allTypeConfigs))
+      await AsyncStorage.setItem("type", type)
+      this.props.navigation.push('PetitionList')
+    }
+
     goScreen = async (type, icon) => {
       var config = ""
       var allTypeConfigs = []
@@ -37,33 +44,37 @@ class MainScreen extends Component {
       })
       if (config != "null") {
         var array = JSON.parse(config)
-        array.forEach(i => {
-          if (i.tipo == type) {
-            allTypeConfigs.push(i)
-          }
-        })
+        var index = array.findIndex(i => i.tipo == type)
+        if (index==-1) {
+          this.showAlert("Atención", "No hay documentos de este tipo")
+        } else {
+          allTypeConfigs.push(array[index])
+          this.nextSegue(icon, allTypeConfigs, type)
+        }
       } else {
         allTypeConfigs = []
+        this.nextSegue(icon, allTypeConfigs, type)
       }
-      await AsyncStorage.setItem("icon", icon)
-      await AsyncStorage.setItem("config", JSON.stringify(allTypeConfigs))
-      await AsyncStorage.setItem("type", type)
-      this.props.navigation.push('PetitionList')
     }
 
       
-    showAlert = (title, message) => {
-      Alert.alert(
-        title,
-        message,
-        [
-          {
-            text: "Ok",
-            style: "cancel"
-          },
-        ],
-        { cancelable: false }
-      );
+    async showAlert (title, message) {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          title,
+          message,
+          [
+            {
+              text: 'Ok',
+              onPress: () => {
+                resolve();
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+      await AsyncAlert();
     }
   
     async goDictionary() {

@@ -407,7 +407,7 @@ class DictionaryViewScreen extends Component {
         fontSize: RFPercentage(3),
         width: "90%",
         borderWidth: 0.5,
-        borderColor: "lightgray",
+        borderColor: "darkgray",
         borderRadius: 20,
         paddingLeft: 10,
         paddingRight: 10
@@ -441,7 +441,7 @@ class DictionaryViewScreen extends Component {
         fontSize: RFPercentage(3),
         textAlign: "left",
         borderWidth: 0.5,
-        borderColor: "lightgray",
+        borderColor: "darkgray",
         borderRadius: 20,
         width:"100%"
       },

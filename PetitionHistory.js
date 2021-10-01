@@ -59,7 +59,7 @@ class PetitionHistoryScreen extends Component {
       var document = {
         id: new Date().getTime(),
         name: this.state.type.substring(0, 1).toUpperCase()+ "_"+ this.state.idempresa+"-"+this.state.userid+"-"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2) + ":" + ("0" + (today.getSeconds())).slice(-2),
-        title: ("0" + (today.getDate())).slice(-2)+"/"+("0" + (today.getMonth() + 1)).slice(-2)+"/"+today.getFullYear()+"  " + ("0" + (today.getHours())).slice(-2)+ ":"+("0" + (today.getMinutes())).slice(-2) + "  ",
+        title: ("0" + (today.getDate())).slice(-2)+"/"+("0" + (today.getMonth() + 1)).slice(-2)+"/"+today.getFullYear()+"  " + ("0" + (today.getHours())).slice(-2)+ ":"+("0" + (today.getMinutes())).slice(-2),
         images: [],
         savedData: []
       }
@@ -75,8 +75,8 @@ class PetitionHistoryScreen extends Component {
 
     setData (item) {
       var firstEmpty = item.savedData.findIndex(obj => obj.escuchado == "" && obj.valor == null)
-      var imagesContent ="lightgray"
-      var microContent ="lightgray"
+      var imagesContent ="darkgray"
+      var microContent ="darkgray"
       if (item.images.length > 0) {
         imagesContent = "#56A494"
       }
@@ -87,19 +87,13 @@ class PetitionHistoryScreen extends Component {
     }
 
     setList() {
-      if (this.state.list.length > 0) {
-        return (
-          <View style={styles.voiceControlView}>
-            <FlatList 
-              vertical
-              showsVerticalScrollIndicator={false}
-              data={ this.state.list.sort((a,b) => a.id < b.id) } 
-              renderItem={({ item }) => 
-              (<TouchableOpacity onPress={() => this.openDocument(item)}>{this.setData(item)}</TouchableOpacity>)}
-            />
-          </View>)
-        }
-      return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay documentos pendientes</Text></View>)
+      if (this.state.list.length==0) return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay documentos pendientes</Text></View>)
+      return (<View style={styles.voiceControlView}>
+        <FlatList vertical showsVerticalScrollIndicator={false}
+          data={ this.state.list.sort((a,b) => a.id < b.id) } 
+          renderItem={({ item }) => (<TouchableOpacity onPress={() => this.openDocument(item)}>{this.setData(item)}</TouchableOpacity>)}
+        />
+      </View>)
     }
 
     setMenu() {
@@ -236,7 +230,9 @@ class PetitionHistoryScreen extends Component {
         paddingTop: 20,
         color: "#1A5276",
         fontWeight: 'bold',
-        paddingBottom: 15
+        paddingBottom: 15,
+        paddingRight: 10,
+        paddingLeft: 10
       },
       navBarBackHeader: {
         alignItems: 'center',

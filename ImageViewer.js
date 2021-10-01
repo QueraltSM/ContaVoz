@@ -39,7 +39,6 @@ class ImageViewerScreen extends Component {
     }
   
     goBack = () => {
-      console.log("back es " + this.state.back)
       this.props.navigation.push(this.state.back)
       return true
     }
@@ -48,7 +47,7 @@ class ImageViewerScreen extends Component {
       await AsyncStorage.setItem(key, value)
     }
   
-    updateImage = async(uri) => {
+    updateImage = async(uri, urid) => {
       var arrayImages = []
       for (let i = 0; i < this.state.images.length; i++) {
         if (this.state.images[i].id != this.state.image.id) {
@@ -64,7 +63,7 @@ class ImageViewerScreen extends Component {
             id: this.state.images.id,
             nombre: this.state.image.nombre,
             id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
-            urid: this.state.image.urid,
+            urid: urid,
             uri: uri
           }
           arrayImages.push(newImage)
@@ -89,22 +88,23 @@ class ImageViewerScreen extends Component {
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           let options = {
             title: 'Hacer una foto',
-            customButtons: [
-              { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
-            ],
+            quality: 0.5,
+            aspect:[4,3],
+            customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
             storageOptions: {
               skipBackup: true,
               path: 'images',
               privateDirectory: true,
             },
+            includeBase64: false
           };
           if (this.state.images.length <= 9) {
             ImagePicker.launchCamera(options, (response) => {
               if (response.didCancel || response.error || response.customButton) {
-                console.log(JSON.stringify(response));
               } else {
                 var uri = JSON.stringify(response.assets[0]["uri"])
-                this.updateImage(uri)
+                //var source = "data:image/jpeg;base64," + JSON.stringify(response.assets[0]["base64"])
+                this.updateImage(uri.replace(/['"]+/g, ''), "")
               }
             })
           } else {
@@ -117,21 +117,22 @@ class ImageViewerScreen extends Component {
     goGallery = async () => {
       let options = {
         title: 'Foto desde la galería',
-        customButtons: [
-          { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
-        ],
+        quality: 0.5,
+        aspect:[4,3],
+        customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
         storageOptions: {
           skipBackup: true,
           path: 'images',
+          privateDirectory: true,
         },
+        includeBase64: false
       };
       if (this.state.images.length <= 9) {
         ImagePicker.launchImageLibrary(options, (response) => {
           if (response.didCancel || response.error || response.customButton) {
-            console.log('Something happened');
           } else {
             var uri = JSON.stringify(response.assets[0]["uri"])
-            this.updateImage(uri)
+            this.updateImage(uri.replace(/['"]+/g, ''), "")
           }
         })
       } else {
@@ -208,9 +209,9 @@ class ImageViewerScreen extends Component {
         imageHeight={Dimensions.get('window').height}>
         <Image
           source={{
-            uri: this.state.image.uri.replace(/['"]+/g, '')
+            uri: this.state.image.uri
           }}
-          resizeMode="center"
+          resizeMode="contain"
           key={this.state.image}
           style={{ width: "100%", height: "100%" }}
         />
@@ -299,7 +300,6 @@ class ImageViewerScreen extends Component {
         backgroundColor:"#154360", 
         flexDirection:'row', 
         textAlignVertical: 'center',
-        height: 50,
-        paddingBottom: 20
+        height: 60
       },
     })

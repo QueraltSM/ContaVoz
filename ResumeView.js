@@ -5,14 +5,8 @@ import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { RFPercentage } from "react-native-responsive-fontsize";
-
-import GDrive from "react-native-google-drive-api-wrapper";
-import RNFS from "react-native-fs"
-import {
-  GoogleSignin,
-  GoogleSigninButton,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
+import RNFS from 'react-native-fs';
+import NetInfo from "@react-native-community/netinfo";
 
 class ResumeViewScreen extends Component {
   
@@ -38,7 +32,8 @@ class ResumeViewScreen extends Component {
         allDocsPerType: [],
         interpretedData: null,
         imgs:[],
-        cifValue: ""
+        cifValue: "",
+        not_loaded: true
       }
       this.init()
     }
@@ -91,6 +86,7 @@ class ResumeViewScreen extends Component {
           this.setState({ words: JSON.parse(value) })
         }
       })
+      await this.setState({not_loaded: false})
     }
     
     componentDidMount(){
@@ -115,6 +111,10 @@ class ResumeViewScreen extends Component {
   
     async setFlag(i) {
       this.setState({flag: i })
+    }
+
+    goHome() {
+      this.props.navigation.push("Main")
     }
   
     setAllFlags() {
@@ -141,9 +141,9 @@ class ResumeViewScreen extends Component {
     setImageZoom() {
       return (<ImageZoom
           cropWidth={Dimensions.get('window').width}
-          cropHeight={Dimensions.get('window').height/2}
+          cropHeight={Dimensions.get('window').height/2.5}
           imageWidth={Dimensions.get('window').width}
-          imageHeight={Dimensions.get('window').height/2}>
+          imageHeight={Dimensions.get('window').height/2.5}>
             <TouchableOpacity onPress={() => this.seeImage(this.state.imgs[this.state.flag])}>
             <Image
               source={{
@@ -151,7 +151,7 @@ class ResumeViewScreen extends Component {
               }}
               resizeMode="cover"
               key={this.state.flag}
-              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2 }}
+              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2.5 }}
             />
             </TouchableOpacity>
         </ImageZoom>)
@@ -175,20 +175,35 @@ class ResumeViewScreen extends Component {
       this.props.navigation.push("PetitionHistory")
     }
 
-    async uploadImageDrive(i) {
-      var contents = "data:image/png;base64," + i.urid
-      console.log("contents:"+contents)
-      let result = await GDrive.files.createFileMultipart(
-        contents,
-        "image/png", {
-            parents: ["root"],
-            name: "foto.png"
-        },
-        true);
-        console.log("result:"+JSON.stringify(result))
+    async getBase64(j, uri) {
+      console.log("j="+j)
+      await RNFS.readFile(uri, 'base64')
+      .then(res =>{
+        this.state.imgs[j].urid = ""
+      })
+      const requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({ imgs: this.state.imgs }) };
+        
+      console.log(requestOptions.body)
+      
+      await fetch('https://app.dicloud.es/trataimagen.asp', requestOptions)
+      .then((response) => response.json())
+      .then((responseJson) => {
+        console.log("respuesta del servidor = " + JSON.stringify(responseJson))
+      }).catch((error) => {});
+    }
+
+    async uploadImages() {
+      var j = 0
+      this.state.imgs.forEach(i => {
+        this.getBase64(j, i.uri)
+        j++;
+      })
     }
 
     async proceedSent() {
+      //this.uploadImages()
       var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
       var importe = ""
       var fecha = ""
@@ -213,23 +228,11 @@ class ResumeViewScreen extends Component {
       this.state.data.cif=cif
       this.state.data.campos=this.state.doc
       this.state.data.img=this.state.imgs
-      /*GoogleSignin.configure({
-          scopes: ['https://www.googleapis.com/auth/drive'], // We want   read and write access
-          webClientId: "AIzaSyBhxd_UsTJtnYut1Ac7v9Lo3ekiJyLQk4c", // REPLACE WITH YOUR ACTUAL  CLIENT ID !
-          offlineAccess: true
-      });
-      await GDrive.setAccessToken("AIzaSyBhxd_UsTJtnYut1Ac7v9Lo3ekiJyLQk4c");
-      await GDrive.init();
-      
-      this.state.imgs.forEach(i => {
-        this.uploadImageDrive(i)
-      })*/
       const requestOptions = {
         method: 'POST',
         body: JSON.stringify(this.state.data) };
-      
       console.log("body="+requestOptions.body)
-      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         console.log("respuesta del servidor = " + JSON.stringify(responseJson))
@@ -239,7 +242,7 @@ class ResumeViewScreen extends Component {
         } else {
           this.uploadSucceeded()
         }
-      }).catch((error) => {});*/
+      }).catch((error) => {});
     }
 
     showAlert = (title, message) => {
@@ -256,7 +259,7 @@ class ResumeViewScreen extends Component {
       );
     }
 
-    async askSaveDoc() {
+    async showAskDoc(){
       const AsyncAlert = () => new Promise((resolve) => {
         Alert.alert(
           "Enviar contabilidad",
@@ -278,14 +281,22 @@ class ResumeViewScreen extends Component {
           { cancelable: false },
         );
         });
-        await AsyncAlert();
+      await AsyncAlert();
     }
 
-    async sendDocument() {
+    async askSaveDoc() {
       var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
-      if (noFieldCompleted>-1 && this.state.imgs.length==0) {
-        this.showAlert("Error", this.state.doc[noFieldCompleted].titulo + " debe completarse")
-      } else this.askSaveDoc()
+      await NetInfo.addEventListener(networkState => {
+        if (networkState.isConnected) {
+          if (noFieldCompleted>-1) {
+            this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
+          } else {
+            this.showAskDoc()
+          }
+        } else {
+          this.showAlert("Error", "No hay conexión a Internet")
+        }
+      });
     }
     
     async calculateData(index, porcentaje) {
@@ -322,6 +333,16 @@ class ResumeViewScreen extends Component {
             })
           } else if (idcampo.includes("porcentaje")) {
             this.calculateData(index, this.state.interpretedData)
+          } else if (idcampo.includes("fecha")) {
+            if (this.state.interpretedData.toLowerCase() == "hoy") {
+              this.state.doc[index].valor = ("0" + (new Date().getDate())).slice(-2)+ "-"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "-" + new Date().getFullYear()
+            } else if (this.state.interpretedData.toLowerCase() == "ayer") {
+              var yesterday = new Date()
+              yesterday.setDate(new Date().getDate() - 1)
+              this.state.doc[index].valor = ("0" + (yesterday.getDate()-1)).slice(-2)+ "-"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "-" + yesterday.getFullYear()
+            }
+          } else if (idcampo.includes("factura")) {
+            this.state.doc[index].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
           } else {
             this.state.doc[index].valor = this.state.interpretedData
           }
@@ -334,7 +355,7 @@ class ResumeViewScreen extends Component {
     setData = (item, index) => {
       return (<View>
         {this.state.doc.length > 0 && (<View>
-        <Text style={styles.resumeText}>{item.titulo} </Text>
+        <Text style={styles.resumeText}>{item.titulo} {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
         </View>
@@ -367,34 +388,9 @@ class ResumeViewScreen extends Component {
         await AsyncAlert();
     }
 
-    async askLinkCobro() {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "¿Vincular con cobro",
-          "¿Está seguro que desea vincular esta venta con un documento cobro?",
-          [
-            {
-              text: 'Sí',
-              onPress: () => {
-                resolve(this.saveCobro());
-              },
-            },
-            {
-              text: 'No',
-              onPress: () => {
-                resolve();
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-        await AsyncAlert();
-    }
-
     setControlVoice(){
-      var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
-      if (noFieldCompleted>-1) return null
+      var noDataNull = this.state.doc.findIndex((i) => i.valor != null && i.obligatorio == "S")
+      if (noDataNull==-1) return null
       return (
         <View style={styles.resumeView}>
           <FlatList 
@@ -461,7 +457,23 @@ class ResumeViewScreen extends Component {
         await AsyncAlert();
       }
   
+      setFootbar() {
+        return (<View style={styles.navBarBackHeader}>
+          <View style={{textAlign:'center', paddingLeft: 30, paddingRight: 30 }}>
+            <TouchableOpacity onPress={() => this.goHome()} style={styles.deleteButton}>
+              <Text style={styles.button}>Guardar y salir</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{textAlign:'center', paddingLeft: 30, paddingRight: 30 }}>
+            <TouchableOpacity onPress={() => this.askSaveDoc()} style={styles.sendButton}>
+              <Text style={styles.button}>Enviar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>)
+      }
+
       render () {
+        if (this.state.not_loaded) return null
         return (
           <View style={{flex: 1, backgroundColor:"#FFF" }}>
             <ScrollView 
@@ -473,19 +485,12 @@ class ResumeViewScreen extends Component {
               <Text style={styles.mainHeader}>{this.state.title} finalizado</Text>
             </View>
             <View style={styles.sections}>
-              {this.setControlVoice()}
               {this.setImages()}
               {this.setAllFlags()}
-            </View>
-            </ScrollView>   
-            <View style={styles.navBarBackHeader}>
-              <View style={{ width: 70,textAlign:'center' }}>
-                <Icon name='save' type='font-awesome' color='#FFF' size={35} onPress={() => this.sendDocument()} />
-              </View>
-              <View style={{ width: 70,textAlign:'center' }}>
-                <Icon name='trash' type='font-awesome' color='#FFF' size={35} onPress={this._delete} />
-              </View>
-            </View>
+              {this.setControlVoice()}
+            </View> 
+            {this.setFootbar()}
+            </ScrollView>  
           </View>
         );
       }
@@ -497,10 +502,11 @@ class ResumeViewScreen extends Component {
     navBarBackHeader: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor:"#1A5276", 
+        backgroundColor:"white", 
         flexDirection:'row', 
         textAlignVertical: 'center',
-        height: 60
+        paddingTop: 50,
+        paddingBottom: 50
       },
       roundButtonsView: {
         paddingLeft:7,
@@ -538,10 +544,11 @@ class ResumeViewScreen extends Component {
         padding: 10,
         color: "#267A4E",
         fontWeight:"bold",
-        borderRadius: 20
+        borderRadius: 20,
       },
       flatlistView: {
-        paddingTop:20, 
+        paddingBottom: 20,
+        paddingTop: 10, 
         backgroundColor:"#FFF", 
         flexDirection: "row", 
         justifyContent: 'center',
@@ -550,18 +557,15 @@ class ResumeViewScreen extends Component {
         flex: 1,
         alignItems: 'center',
         textAlign: "center",
-        backgroundColor: "#000",
+        backgroundColor: "#1A5276",
       },
       sections: {
         flex: 1,
         backgroundColor:"#FFF",
-        width:"100%",
-        paddingBottom: 100
+        width:"100%"
       },
       resumeView: {
-        paddingTop: 20,
         paddingLeft: 40,
-        paddingBottom: 70,
         backgroundColor: "#FFF"
       },
       resumeText: {
@@ -575,9 +579,9 @@ class ResumeViewScreen extends Component {
         color: '#000',
         fontSize: RFPercentage(2.5),
         textAlign:"left",
-        width:"90%",
+        width:"100%",
         borderWidth: 0.5,
-        borderColor: "lightgray",
+        borderColor: "darkgray",
         borderRadius: 20,
         padding: 10
       },
@@ -597,11 +601,16 @@ class ResumeViewScreen extends Component {
         fontWeight: 'bold',
       },
       deleteButton: {
-        fontSize: 20,
         textAlign: "center",
-        fontWeight: 'bold',
-        color: "#761A1B",
-        fontWeight: 'bold',
+        backgroundColor: "#761A1B",
+        borderRadius: 10,
+        padding: 10
+      },
+      sendButton: {
+        textAlign: "center",
+        backgroundColor: "#509080",
+        borderRadius: 10,
+        padding: 10
       },
       transcript: {
         color: '#000',
@@ -617,5 +626,10 @@ class ResumeViewScreen extends Component {
         paddingBottom: 20,
         paddingTop: 20
       },
+      button: {
+        fontWeight: 'bold',
+        color: "white",
+        fontSize: RFPercentage(2.5)
+      }
     })
 

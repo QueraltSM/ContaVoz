@@ -144,14 +144,6 @@ class PetitionListScreen extends Component {
 
     render () {
       if (!this.state.loaded) return null
-      if (this.state.config.length == 0) {
-        return (<View style={{flex: 1, backgroundColor:"#FFF" }}>
-          <View style={{flex: 1, flexDirection:'row', alignItems:'center', justifyContent:'center'}}>
-            <Text style={styles.showTitle}>No hay documentos de este tipo</Text>
-            </View>
-            {this.setFootbar()}
-        </View>) 
-      }
       return (
         <View style={styles.container}>
           {this.setMenu()}
@@ -175,8 +167,7 @@ class PetitionListScreen extends Component {
           </View>
           </ScrollView>   
             {this.setFootbar()}
-        </View>
-      );
+        </View>);
     }
   }
   

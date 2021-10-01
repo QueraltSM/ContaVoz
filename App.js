@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     alignSelf: "center"
   },
   mainView: {
-    backgroundColor:"#1A5276",
+    backgroundColor:"#154360",
     flex: 1,
     justifyContent: 'center',
     textAlign: "center"
