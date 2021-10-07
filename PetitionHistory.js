@@ -12,7 +12,6 @@ class PetitionHistoryScreen extends Component {
       this.state = {
         type: "",
         petitionType:  "",
-        config: "",
         idempresa: "",
         userid: "",
         list: [],
@@ -41,9 +40,7 @@ class PetitionHistoryScreen extends Component {
         this.setState({ petitionType: value })
       })
       await AsyncStorage.getItem(this.state.petitionType).then((value) => {
-        if (value != null) {
-          this.setState({ list: JSON.parse(value) })
-        }
+        if (value != null) this.setState({ list: JSON.parse(value) })
       })
       await AsyncStorage.getItem("idempresa").then((value) => {
         this.setState({ idempresa: value })
@@ -77,12 +74,8 @@ class PetitionHistoryScreen extends Component {
       var firstEmpty = item.savedData.findIndex(obj => obj.escuchado == "" && obj.valor == null)
       var imagesContent ="darkgray"
       var microContent ="darkgray"
-      if (item.images.length > 0) {
-        imagesContent = "#56A494"
-      }
-      if (item.savedData.length > 0 && firstEmpty==-1) {
-        microContent = "#56A494"
-      }
+      if (item.images.length > 0) imagesContent = "#56A494"
+      if (item.savedData.length > 0 && firstEmpty==-1) microContent = "#56A494"
       return <View style={{ flexDirection: "row", alignItems:"center", justifyContent:"center" }}><Text style={styles.registeredDocuments}>{item.title} </Text><Icon name='image' type='font-awesome' color={imagesContent} size={25} style={{ paddingRight: 15 }} /><Icon name='check' type='font-awesome' color={microContent} size={25} /></View>
     }
 

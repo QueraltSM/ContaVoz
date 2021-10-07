@@ -148,11 +148,11 @@ class PetitionListScreen extends Component {
         <View style={styles.container}>
           {this.setMenu()}
           <ScrollView 
-          vertical 
-          showsVerticalScrollIndicator ={false}
-          showsHorizontalScrollIndicator={false}
-          persistentScrollbar={false}
-          style={{backgroundColor: "#FFF" }}
+            vertical 
+            showsVerticalScrollIndicator ={false}
+            showsHorizontalScrollIndicator={false}
+            persistentScrollbar={false}
+            style={{backgroundColor: "#FFF" }}
           >
           <View style={styles.voiceControlView}>
             <FlatList 
@@ -166,8 +166,8 @@ class PetitionListScreen extends Component {
             />
           </View>
           </ScrollView>   
-            {this.setFootbar()}
-        </View>);
+        {this.setFootbar()}
+      </View>);
     }
   }
   

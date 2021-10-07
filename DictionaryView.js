@@ -11,7 +11,6 @@ class DictionaryViewScreen extends Component {
       this.state = {
         userid: "",
         words: [],
-        auxWords: [],
         addKeywords: "",
         addEntity: "",
         addCIF: "",
@@ -42,27 +41,28 @@ class DictionaryViewScreen extends Component {
         this.setState({ userid: value })
       })
       await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
-        if (value != null) {
-          this.setState({ words: JSON.parse(value).reverse() })
-        }
+        if (value != null) this.setState({ words: JSON.parse(value).reverse() })
       })
-      if (this.state.words != null) {
-        this.setState({isSearching: false})
-      }
+      if (this.state.words != null) this.setState({isSearching: false})
     }
   
-    showAlert = (title, message) => {
-      Alert.alert(
-        title,
-        message,
-        [
-          {
-            text: "Ok",
-            style: "cancel"
-          },
-        ],
-        { cancelable: false }
-      );
+    async showAlert (title, message) {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          title,
+          message,
+          [
+            {
+              text: 'Ok',
+              onPress: () => {
+                resolve();
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+      await AsyncAlert();
     }
   
     async pushArrayWords() {
@@ -147,11 +147,8 @@ class DictionaryViewScreen extends Component {
     }
 
     _addWord = async () => {
-      if (this.state.addKeywords == "" || this.state.addEntity == "" || this.state.addCIF == "") {
-        this.showAlert("Error", "Complete todos los campos")
-      } else {
-        await this.pushArrayWords()
-      }
+      if (this.state.addKeywords == "" || this.state.addEntity == "" || this.state.addCIF == "") this.showAlert("Error", "Complete todos los campos")
+      else await this.pushArrayWords()
     }
   
     formAction = (value) => {
@@ -188,14 +185,7 @@ class DictionaryViewScreen extends Component {
     setMenu() {
       return(
         <View style={{backgroundColor:"#FFF"}}>
-          <View style={styles.accountingViewShow}>
-          <Icon
-              name='list'
-              type='font-awesome'
-              color='#000'
-              size={45}
-            />
-            </View>
+          <View style={styles.accountingViewShow}><Icon name='list' type='font-awesome' color='#000' size={45} /></View>
           <Text style={styles.mainHeader}>Entidades</Text>
         </View>
       )

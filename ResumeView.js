@@ -25,7 +25,6 @@ class ResumeViewScreen extends Component {
         list: [],
         data:[],
         userid: "",
-        cobroData: [],
         isChargeLinked: false,
         isPayLinked: false,
         flag: 0,
@@ -39,9 +38,6 @@ class ResumeViewScreen extends Component {
     }
   
     async init() { 
-      //this.state.imgs.push({id_drive:'1MKyHwJQmBdtsfLrY0v-dnCERQJHq7coA'})
-      //this.state.imgs.push({id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX'})
-      //this.state.imgs.push({id_drive:'1trA1rdkTmxa1u4n2L5d10F9PJc0moWZD'})
       await AsyncStorage.getItem("petitionID").then((value) => {
         this.setState({ petitionID: JSON.parse(value).id })
       })
@@ -67,26 +63,19 @@ class ResumeViewScreen extends Component {
         this.setState({ type: value })
       })
       await AsyncStorage.getItem(this.state.petitionID+".savedData").then((value) => {
-        if (value != null) {
-          this.setState({ doc: JSON.parse(value) })
-        }
+        if (value != null) this.setState({ doc: JSON.parse(value) })
       })
       await AsyncStorage.getItem(this.state.petitionID+".cifValue").then((value) => {
-        if (value != null) {
-          this.setState({ cifValue: value })
-        }
+        if (value != null) this.setState({ cifValue: value })
       })
       await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
-        if (value != null) {
-          this.setState({ imgs: JSON.parse(value) })
-        }
+        if (value != null) this.setState({ imgs: JSON.parse(value) })
       })
       await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
-        if (value != null) {
-          this.setState({ words: JSON.parse(value) })
-        }
+        if (value != null) this.setState({ words: JSON.parse(value) })
       })
       await this.setState({not_loaded: false})
+      console.log("Datos son : " + JSON.stringify(this.state.doc))
     }
     
     componentDidMount(){
@@ -101,9 +90,7 @@ class ResumeViewScreen extends Component {
     async deleteDoc() {
       var chargeDocs = []
       this.state.list.forEach((i) => {
-        if (i.id != this.state.petitionID) {
-          chargeDocs.push(i)
-        }
+        if (i.id != this.state.petitionID) chargeDocs.push(i)
       })
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(chargeDocs))
       this.props.navigation.push("PetitionHistory")
@@ -140,11 +127,11 @@ class ResumeViewScreen extends Component {
     
     setImageZoom() {
       return (<ImageZoom
-          cropWidth={Dimensions.get('window').width}
-          cropHeight={Dimensions.get('window').height/2.5}
-          imageWidth={Dimensions.get('window').width}
-          imageHeight={Dimensions.get('window').height/2.5}>
-            <TouchableOpacity onPress={() => this.seeImage(this.state.imgs[this.state.flag])}>
+        cropWidth={Dimensions.get('window').width}
+        cropHeight={Dimensions.get('window').height/2.5}
+        imageWidth={Dimensions.get('window').width}
+        imageHeight={Dimensions.get('window').height/2.5}>
+          <TouchableOpacity onPress={() => this.seeImage(this.state.imgs[this.state.flag])}>
             <Image
               source={{
                 uri: this.state.imgs[this.state.flag].uri,
@@ -152,9 +139,9 @@ class ResumeViewScreen extends Component {
               resizeMode="cover"
               key={this.state.flag}
               style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2.5 }}
-            />
-            </TouchableOpacity>
-        </ImageZoom>)
+          />
+        </TouchableOpacity>
+      </ImageZoom>)
     } 
 
     setImages() {
@@ -176,22 +163,21 @@ class ResumeViewScreen extends Component {
     }
 
     async getBase64(j, uri) {
-      console.log("j="+j)
       await RNFS.readFile(uri, 'base64')
       .then(res =>{
-        this.state.imgs[j].urid = ""
+        this.state.imgs[j].urid = ""//res
       })
       const requestOptions = {
         method: 'POST',
-        body: JSON.stringify({ imgs: this.state.imgs }) };
-        
-      console.log(requestOptions.body)
-      
+        body: JSON.stringify({ imgs: this.state.imgs })
+       };
       await fetch('https://app.dicloud.es/trataimagen.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         console.log("respuesta del servidor = " + JSON.stringify(responseJson))
-      }).catch((error) => {});
+      }).catch((error) => {
+        console.log("error: "+error)
+      });
     }
 
     async uploadImages() {
@@ -231,32 +217,36 @@ class ResumeViewScreen extends Component {
       const requestOptions = {
         method: 'POST',
         body: JSON.stringify(this.state.data) };
-      console.log("body="+requestOptions.body)
-      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      console.log(requestOptions.body)
+      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
-        console.log("respuesta del servidor = " + JSON.stringify(responseJson))
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") {
           this.showAlert("Error", "Hubo un error al subir el documento")
         } else {
           this.uploadSucceeded()
         }
-      }).catch((error) => {});
+      }).catch((error) => {});*/
     }
 
-    showAlert = (title, message) => {
-      Alert.alert(
-        title,
-        message,
-        [
-          {
-            text: "Ok",
-            style: "cancel"
-          },
-        ],
-        { cancelable: false }
-      );
+    async showAlert (title, message) {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          title,
+          message,
+          [
+            {
+              text: 'Ok',
+              onPress: () => {
+                resolve();
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+      await AsyncAlert();
     }
 
     async showAskDoc(){
@@ -286,9 +276,10 @@ class ResumeViewScreen extends Component {
 
     async askSaveDoc() {
       var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
-      await NetInfo.addEventListener(networkState => {
+      var thereIs = this.state.doc.findIndex(obj => obj.valor != null && obj.obligatorio=="S")
+      NetInfo.addEventListener(networkState => {
         if (networkState.isConnected) {
-          if (noFieldCompleted>-1) {
+          if (noFieldCompleted>-1 && thereIs>-1) {
             this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
           } else {
             this.showAskDoc()
@@ -361,31 +352,6 @@ class ResumeViewScreen extends Component {
         </View>
       </View>)}  
       </View>)
-    }
-
-    async askUnlinkCobro() {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "¿Desvincular con cobro",
-          "¿Está seguro que desea desvincular esta venta con un documento cobro?",
-          [
-            {
-              text: 'Sí',
-              onPress: () => {
-                resolve(this.deleteCobro());
-              },
-            },
-            {
-              text: 'No',
-              onPress: () => {
-                resolve();
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-        await AsyncAlert();
     }
 
     setControlVoice(){

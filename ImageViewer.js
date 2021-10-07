@@ -28,9 +28,7 @@ class ImageViewerScreen extends Component {
         this.setState({ petitionID: JSON.parse(value).id })
       })
       await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
-        if (value != null) {
-          this.setState({ images: JSON.parse(value) })
-        }
+        if (value != null) this.setState({ images: JSON.parse(value) })
       })
     }
   
@@ -103,7 +101,6 @@ class ImageViewerScreen extends Component {
               if (response.didCancel || response.error || response.customButton) {
               } else {
                 var uri = JSON.stringify(response.assets[0]["uri"])
-                //var source = "data:image/jpeg;base64," + JSON.stringify(response.assets[0]["base64"])
                 this.updateImage(uri.replace(/['"]+/g, ''), "")
               }
             })

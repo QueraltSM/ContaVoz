@@ -30,17 +30,13 @@ class LaunchScreen extends Component {
       this.setState({ idempresa: JSON.parse(value) })
     })
     await AsyncStorage.getItem("userid").then((value) => {
-        this.setState({ userid: JSON.parse(value) })
+      this.setState({ userid: JSON.parse(value) })
     })
     await AsyncStorage.getItem("isUserLoggedIn").then((value) => {
-      if (value != null) {
-         this.setState({ isUserLoggedIn: JSON.parse(value) })
-      }
+      if (value != null) this.setState({ isUserLoggedIn: JSON.parse(value) })
     })
     var page = "Login"
-    if (JSON.parse(this.state.isUserLoggedIn)) {
-      page = "Main"
-    }
+    if (JSON.parse(this.state.isUserLoggedIn)) page = "Main"
     this.props.navigation.push(page)
   }
 
@@ -50,21 +46,6 @@ class LaunchScreen extends Component {
       <Image source={require('./assets/main.png')} style={{ width: 80, height: 80, alignSelf: "center", marginBottom:20 }}/>
       <Text style={styles.mainHeader}>ContaVoz</Text>
     </View>)
-  }
-}
-
-export class DocImage {
-  constructor(id, uri) {
-    this.id = id;
-    this.uri = uri;
-  }
-}
-
-export class Dictionary {
-  constructor(key, value, time) {
-    this.key = key;
-    this.value = value;
-    this.time = time;
   }
 }
 

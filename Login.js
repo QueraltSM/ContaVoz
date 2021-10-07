@@ -24,19 +24,13 @@ class LoginScreen extends Component {
   
     async init () {
       await AsyncStorage.getItem("company").then((value) => {
-        if (value != null) {
-          this.setState({ company: value })
-        }
+        if (value != null) this.setState({ company: value })
       })
       await AsyncStorage.getItem("user").then((value) => {
-        if (value != null) {
-          this.setState({ user: value })
-        }
+        if (value != null) this.setState({ user: value })
       })
       await AsyncStorage.getItem("password").then((value) => {
-        if (value != null) {
-          this.setState({ password: value })
-        }
+        if (value != null) this.setState({ password: value })
       })
     }
 
@@ -46,20 +40,6 @@ class LoginScreen extends Component {
   
     goBack = () => {
       return true
-    }
-  
-    showAlert = (message) => {
-      Alert.alert(
-        "Error",
-        message,
-        [
-          {
-            text: "Ok",
-            style: "cancel"
-          },
-        ],
-        { cancelable: false }
-      );
     }
   
     handleError = (error_code) => {
@@ -83,7 +63,7 @@ class LoginScreen extends Component {
         default:
           error = "Error desconocido"
       }
-      this.showAlert(error);
+      this.showAlert("Error al iniciar sesión", error);
     }
   
     async saveUser() {
@@ -112,7 +92,7 @@ class LoginScreen extends Component {
           if (error=="false") {
             this.saveConfig(responseJson.configuraciones)
           } else {
-            this.showAlert("Algo salió mal, disculpe las molestias")
+            this.showAlert("Error", "Algo salió mal, disculpe las molestias")
           }
         }
       }).catch((error) => {});
@@ -152,12 +132,31 @@ class LoginScreen extends Component {
                 }
               }).catch(() => {});
           } else {
-            this.showAlert("Complete todos los campos")
+            this.showAlert("Error", "Complete todos los campos")
           }
         } else {
-          this.showAlert("No tiene conexión a Internet")
+          this.showAlert("Error", "No tiene conexión a Internet")
         }
       })
+    }
+      
+    async showAlert (title, message) {
+      const AsyncAlert = () => new Promise((resolve) => {
+        Alert.alert(
+          title,
+          message,
+          [
+            {
+              text: 'Ok',
+              onPress: () => {
+                resolve();
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+        });
+      await AsyncAlert();
     }
   
     managePasswordVisibility = () => {
@@ -259,4 +258,3 @@ const styles = StyleSheet.create({
       flex:3
     },
 })
-  
