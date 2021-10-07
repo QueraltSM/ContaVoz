@@ -37,7 +37,8 @@ class PetitionScreen extends Component {
         listenFlag: 0,
         showResult: false,
         write_data: false,
-        lastPercentage: 0
+        lastPercentage: 0,
+        placeholder: "",
       }
       this.init()
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -110,6 +111,7 @@ class PetitionScreen extends Component {
         await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
         this.setState({ savedData: array })
       }
+      console.log(JSON.stringify(this.state.savedData))
       await AsyncStorage.getItem(this.state.petitionID+".cifValue").then((value) => {
         if (value != null) {
           this.setState({ cifValue: value })
@@ -504,9 +506,9 @@ class PetitionScreen extends Component {
     setImageZoom() {
       return (<ImageZoom
           cropWidth={Dimensions.get('window').width}
-          cropHeight={Dimensions.get('window').height/2.5}
+          cropHeight={Dimensions.get('window').height/3}
           imageWidth={Dimensions.get('window').width}
-          imageHeight={Dimensions.get('window').height/2.5}>
+          imageHeight={Dimensions.get('window').height/3}>
             <TouchableOpacity onPress={() => this.seeImage(this.state.images[this.state.flag])}>
             <Image
               source={{
@@ -514,7 +516,7 @@ class PetitionScreen extends Component {
               }}
               resizeMode="cover"
               key={this.state.flag}
-              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2.5}}
+              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/3}}
             />
             </TouchableOpacity>
         </ImageZoom>)
@@ -564,7 +566,7 @@ class PetitionScreen extends Component {
     setModalButtons(){
       return (<View style={styles.modalNavBarButtons}>
         {this.state.listenFlag>0 && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-        {this.state.listenFlag < this.state.savedData.length-1 && this.state.listenFlag>-1 && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag < this.state.savedData.length-1 && this.state.listenFlag>-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
       </View>)
     }
 
@@ -597,13 +599,12 @@ class PetitionScreen extends Component {
     }
 
     async updateListen(value) {
-      if (this.state.listenFlag <= this.state.savedData.length-1) {
+      if (this.state.listenFlag <= this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion")) {
         if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
         this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value)})
         await this.setState({ savedData: this.state.savedData })
         await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
         await AsyncStorage.setItem(this.state.petitionID+".listenFlag", JSON.stringify(this.state.listenFlag))
-
         if (this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje")) {
           this.setState({lastPercentage: this.state.savedData[this.state.listenFlag].valor })
           await AsyncStorage.setItem(this.state.petitionID+".lastPercentage", this.state.lastPercentage)
@@ -673,11 +674,11 @@ class PetitionScreen extends Component {
     }
 
     async calculateResult() {
-      var porcentaje =  this.state.savedData[this.state.listenFlag-1].valor
-      if (porcentaje != this.state.lastPercentage) {
-        var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
-        var importe = this.state.savedData[index].valor
-        if (importe != null) {
+      var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
+      var importe = this.state.savedData[index].valor
+      if (importe != null) {
+        var porcentaje =  this.state.savedData[this.state.listenFlag-1].valor
+        if (porcentaje != this.state.lastPercentage) {
           importe = importe.replace(",",".")
           var result = ""
           if (this.state.savedData[this.state.listenFlag].idcampo.includes("base")) {
@@ -694,13 +695,16 @@ class PetitionScreen extends Component {
           this.state.savedData[this.state.listenFlag].escuchado = result
           this.state.savedData[this.state.listenFlag].valor = result
         }
+      } else {
+        console.log("entro")
+        this.state.placeholder = "Debe introducir el importe"
       }
     }
 
     setWrittenData() {
       return (<View style={styles.modalResult}>
         <Text style={styles.defaultDataTitle}>Valor para {this.state.savedData[this.state.listenFlag].titulo}</Text>
-        <TextInput placeholder="Dato no completo" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData: interpretedData})}>{this.state.savedData[this.state.listenFlag].valor}</TextInput>
+        <TextInput placeholder={this.state.placeholder} blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData: interpretedData})}>{this.state.savedData[this.state.listenFlag].valor}</TextInput>
         {this.state.savedData[this.state.listenFlag].tipoexp=="E" &&
           (<View><Text style={styles.defaultDataTitle}>CIF de la empresa</Text>
             <TextInput blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={cifValue => this.setState({cifValue})}>{this.state.cifValue}</TextInput>
@@ -709,7 +713,7 @@ class PetitionScreen extends Component {
       </View>)
     }
 
-    setDataModal() {
+    /*setDataModal() {
       if (this.state.savedData.length==0) return null
       if (!this.state.showResult) return null
       if (this.state.write_data) {
@@ -760,14 +764,17 @@ class PetitionScreen extends Component {
         </View>
       </Modal>)
       }
-    }
+    }*/
 
     showMessage = (message) => {
       if (this.state.savedData.length==0) return null
+      var neverListened = this.state.savedData.findIndex(obj => obj.escuchado != "")
       if (!this.state.is_recording) {
         return(
           <View style={styles.titleView}>
-            {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].valor != null && <Text style={styles.showNextData}>Dato leído {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()}: {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
+            {this.state.images.length==0 && neverListened == -1 && <Text style={styles.showHeader}>Adjunte imágenes o mantenga pulsado el micrófono</Text>}
+            {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].valor != "" && <Text style={styles.showNextData}>Dato anterior {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()}: {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
+            
             <Text style={styles.showTitle}>{message}</Text>
             {this.setWrittenData()}
             {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && <Text style={styles.showNextData}>Siguiente dato {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
@@ -790,24 +797,26 @@ class PetitionScreen extends Component {
     }
 
     documentState = () => {
-      var firstEmpty = this.state.savedData.findIndex(obj => obj.escuchado == "" && obj.valor == null)
-      var neverListened = this.state.savedData.findIndex(obj => obj.escuchado != "")
-      if (this.state.images.length==0 && neverListened == -1) {
-        return this.showMessage("Adjunte imágenes o mantenga pulsado el micrófono y diga su "+ this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
+      if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") && !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
+        this.state.placeholder = "Dato no completo"
       }
+      var firstEmpty = this.state.savedData.findIndex(obj => obj.escuchado == "" && obj.valor == null)
       if (this.state.savedData[this.state.listenFlag].xdefecto!="") {
-        return this.showMessage("Dato por defecto\n" + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
-      } else if ((this.state.savedData[this.state.listenFlag].idcampo.includes("base") || this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) && this.state.savedData[this.state.listenFlag-1].valor != null) {
+        return this.showMessage("Dato por defecto " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
+      } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") || this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
         this.calculateResult()
-        return this.showMessage("Dato calculado\n" + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
+        if (this.state.savedData[this.state.listenFlag].valor == null) {
+          return this.showMessage("Dato no calculado " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
+        }
+        return this.showMessage("Dato calculado " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
       }
       if (firstEmpty>-1) {
         if (this.state.savedData[this.state.listenFlag].escuchado!="") {
-          return this.showMessage("Dato escuchado\n" + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
+          return this.showMessage("Dato escuchado " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
         } else if (this.state.savedData[this.state.listenFlag].obligatorio=="S") {
-          return this.showMessage("Dato a solicitar *\n" + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
+          return this.showMessage("Dato a solicitar " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
         }
-        return this.showMessage("Dato a solicitar\n" + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
+        return this.showMessage("Dato a solicitar " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
       }
       if (firstEmpty==-1) {
         return this.showMessage("Documento de voz finalizado")
@@ -936,7 +945,6 @@ class PetitionScreen extends Component {
                 {this.setAllFlags()}
                 {this.documentState()}
                 {this.setVoiceControl()}
-                {this.setDataModal()}
               </View>
             </ScrollView>
           {this.setMenu()}
@@ -1017,6 +1025,14 @@ class PetitionScreen extends Component {
         fontWeight: 'bold',
         fontSize: RFPercentage(4),
       },
+      showHeader: {
+        paddingTop: 20,
+        textAlign: 'center',
+        color: '#117864',
+        fontWeight: 'bold',
+        fontSize: RFPercentage(3),
+        width: "100%",
+      },
       showTitle:{
         paddingTop: 20,
         textAlign: 'center',
@@ -1057,7 +1073,7 @@ class PetitionScreen extends Component {
         color: '#56A494',
         fontSize: RFPercentage(2.5),
         width: "100%",
-        paddingTop: 10,
+        paddingTop: 20,
         fontWeight: 'bold',
       },
       centeredView: {

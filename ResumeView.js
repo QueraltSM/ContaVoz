@@ -32,7 +32,8 @@ class ResumeViewScreen extends Component {
         interpretedData: null,
         imgs:[],
         cifValue: "",
-        not_loaded: true
+        not_loaded: true,
+        conexion: false
       }
       this.init()
     }
@@ -75,7 +76,7 @@ class ResumeViewScreen extends Component {
         if (value != null) this.setState({ words: JSON.parse(value) })
       })
       await this.setState({not_loaded: false})
-      console.log("Datos son : " + JSON.stringify(this.state.doc))
+      this.setState({ conexion: (this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))!=-1) })
     }
     
     componentDidMount(){
@@ -345,7 +346,7 @@ class ResumeViewScreen extends Component {
 
     setData = (item, index) => {
       return (<View>
-        {this.state.doc.length > 0 && (<View>
+        {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && (<View>
         <Text style={styles.resumeText}>{item.titulo} {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
@@ -396,7 +397,10 @@ class ResumeViewScreen extends Component {
     async saveWord(key, value) {
       await AsyncStorage.setItem(key, value)
     }
-  
+
+    async linkDoc() {
+      this.showAlert("Error", "Estamos desarrollando esto")
+    }
   
     async askSaveWord(msn, key, value) {
       const AsyncAlert = () => new Promise((resolve) => {
@@ -423,6 +427,16 @@ class ResumeViewScreen extends Component {
         await AsyncAlert();
       }
   
+      setLink() {
+        if (!this.state.conexion) return null
+        var title = this.state.doc[this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))].titulo
+        return <View style={styles.navBarBackHeader}>
+          <TouchableOpacity onPress={() => this.linkDoc()} style={styles.linkButton}>
+            <Text style={styles.button}>Vincular con {title.toLowerCase()}</Text>
+          </TouchableOpacity>
+        </View>
+      }
+
       setFootbar() {
         return (<View style={styles.navBarBackHeader}>
           <View style={{textAlign:'center', paddingLeft: 30, paddingRight: 30 }}>
@@ -441,7 +455,7 @@ class ResumeViewScreen extends Component {
       render () {
         if (this.state.not_loaded) return null
         return (
-          <View style={{flex: 1, backgroundColor:"#FFF" }}>
+          <View style={{flex: 1, backgroundColor:"#FFF", paddingBottom: 50 }}>
             <ScrollView 
               showsVerticalScrollIndicator ={false}
               showsHorizontalScrollIndicator={false}
@@ -455,6 +469,7 @@ class ResumeViewScreen extends Component {
               {this.setAllFlags()}
               {this.setControlVoice()}
             </View> 
+            {this.setLink()}
             {this.setFootbar()}
             </ScrollView>  
           </View>
@@ -466,14 +481,13 @@ class ResumeViewScreen extends Component {
 
   const styles = StyleSheet.create({
     navBarBackHeader: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor:"white", 
-        flexDirection:'row', 
-        textAlignVertical: 'center',
-        paddingTop: 50,
-        paddingBottom: 50
-      },
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor:"white", 
+      flexDirection:'row', 
+      textAlignVertical: 'center',
+      paddingTop: 30,
+    },
       roundButtonsView: {
         paddingLeft:7,
         paddingRight:7,
@@ -565,6 +579,12 @@ class ResumeViewScreen extends Component {
         fontWeight: 'bold',
         color: "#2E8B57",
         fontWeight: 'bold',
+      },
+      linkButton:{
+        textAlign: "center",
+        backgroundColor: "#1A5276",
+        borderRadius: 10,
+        padding: 10
       },
       deleteButton: {
         textAlign: "center",

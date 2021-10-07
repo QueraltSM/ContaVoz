@@ -30,6 +30,9 @@ class MainScreen extends Component {
     }
 
     async nextSegue(icon, allTypeConfigs, type) {
+      console.log("icon="+icon)
+      console.log("allTypeConfigs="+JSON.stringify(allTypeConfigs))
+      console.log("type="+type)
       await AsyncStorage.setItem("icon", icon)
       await AsyncStorage.setItem("config", JSON.stringify(allTypeConfigs))
       await AsyncStorage.setItem("type", type)
@@ -44,13 +47,11 @@ class MainScreen extends Component {
       })
       if (config != "null") {
         var array = JSON.parse(config)
-        var index = array.findIndex(i => i.tipo == type)
-        if (index==-1) {
-          this.showAlert("Atención", "No hay documentos de este tipo")
-        } else {
-          allTypeConfigs.push(array[index])
-          this.nextSegue(icon, allTypeConfigs, type)
-        }
+        array.forEach(i => {
+          if (i.tipo == type) allTypeConfigs.push(i)
+        });
+        if (allTypeConfigs.length==0) this.showAlert("Atención", "No hay documentos de este tipo")
+        else this.nextSegue(icon, allTypeConfigs, type)
       } else {
         allTypeConfigs = []
         this.nextSegue(icon, allTypeConfigs, type)
