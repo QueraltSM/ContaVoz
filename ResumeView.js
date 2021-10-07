@@ -462,7 +462,7 @@ class ResumeViewScreen extends Component {
               persistentScrollbar={false}
               style={{backgroundColor: "#FFF" }}>
             <View style={{backgroundColor: "#1A5276"}}>
-              <Text style={styles.mainHeader}>{this.state.title} finalizado</Text>
+              <Text style={styles.mainHeader}>{this.state.title}</Text>
             </View>
             <View style={styles.sections}>
               {this.setImages()}

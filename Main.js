@@ -161,18 +161,6 @@ class MainScreen extends Component {
           </View>
           <View style={styles.twoColumnsInARow}>
           <View style={styles.oneRow}>
-          <TouchableOpacity onPress={() => this.goScreen("cobro", "shopping-basket")}>
-              <View style={styles.mainIcon}>
-                <Icon
-                  name='shopping-basket'
-                  type='font-awesome'
-                  color='#FFF'
-                  size={35}/>
-                </View>
-              <Text style={styles.mainButton}>Cobros</Text>
-            </TouchableOpacity>
-            </View>
-          <View style={styles.oneRow}>
           <TouchableOpacity onPress={() => this.goScreen("pago", "money")}>
             <View style={styles.mainIcon}>
               <Icon
@@ -184,6 +172,18 @@ class MainScreen extends Component {
             <Text style={styles.mainButton}>Pagos</Text>
           </TouchableOpacity>
         </View>
+          <View style={styles.oneRow}>
+          <TouchableOpacity onPress={() => this.goScreen("cobro", "shopping-basket")}>
+              <View style={styles.mainIcon}>
+                <Icon
+                  name='shopping-basket'
+                  type='font-awesome'
+                  color='#FFF'
+                  size={35}/>
+                </View>
+              <Text style={styles.mainButton}>Cobros</Text>
+            </TouchableOpacity>
+            </View>
         </View>
         <View style={styles.twoColumnsInARow}>
         <View style={styles.oneRow}>

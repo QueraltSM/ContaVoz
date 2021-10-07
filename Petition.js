@@ -37,7 +37,6 @@ class PetitionScreen extends Component {
         listenFlag: 0,
         showResult: false,
         write_data: false,
-        lastPercentage: 0,
         placeholder: "",
       }
       this.init()
@@ -69,9 +68,6 @@ class PetitionScreen extends Component {
       })
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
-      })
-      await AsyncStorage.getItem(this.state.petitionID + ".lastPercentage").then((value) => {
-        if (value != null) this.setState({ lastPercentage: value})
       })
       await AsyncStorage.getItem(this.state.petitionID+".saved").then((value) => {
         if (value != null) {
@@ -111,7 +107,6 @@ class PetitionScreen extends Component {
         await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
         this.setState({ savedData: array })
       }
-      console.log(JSON.stringify(this.state.savedData))
       await AsyncStorage.getItem(this.state.petitionID+".cifValue").then((value) => {
         if (value != null) {
           this.setState({ cifValue: value })
@@ -313,6 +308,7 @@ class PetitionScreen extends Component {
       var percentage = this.state.savedData.findIndex(obj => obj.idcampo.includes("porcentaje"))
       if (this.state.listenFlag<this.state.savedData.length) {
         this.setState({is_recording: true })
+        if (this.state.savedData[this.state.listenFlag].valor != null) this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
         var idcampo = this.state.data[this.state.listenFlag].idcampo
         if ((!idcampo.includes("base") && !idcampo.includes("cuota") && this.state.data[this.state.listenFlag].xdefecto == "") || 
         (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[this.state.listenFlag].xdefecto != "")) {
@@ -600,18 +596,14 @@ class PetitionScreen extends Component {
 
     async updateListen(value) {
       if (this.state.listenFlag <= this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion")) {
-        if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
+        if (this.state.savedData[this.state.listenFlag].valor==null && this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
         this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value)})
         await this.setState({ savedData: this.state.savedData })
         await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
         await AsyncStorage.setItem(this.state.petitionID+".listenFlag", JSON.stringify(this.state.listenFlag))
-        if (this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje")) {
-          this.setState({lastPercentage: this.state.savedData[this.state.listenFlag].valor })
-          await AsyncStorage.setItem(this.state.petitionID+".lastPercentage", this.state.lastPercentage)
-        }
-
       } else {
         this.setState({ is_recording: false})
+        this.setState({ listenFlag: Number(this.state.listenFlag) - 1})
       }
       this.setState({interpretedData:""})
     }
@@ -678,7 +670,7 @@ class PetitionScreen extends Component {
       var importe = this.state.savedData[index].valor
       if (importe != null) {
         var porcentaje =  this.state.savedData[this.state.listenFlag-1].valor
-        if (porcentaje != this.state.lastPercentage) {
+        if (porcentaje != null) {
           importe = importe.replace(",",".")
           var result = ""
           if (this.state.savedData[this.state.listenFlag].idcampo.includes("base")) {
@@ -694,11 +686,8 @@ class PetitionScreen extends Component {
           }
           this.state.savedData[this.state.listenFlag].escuchado = result
           this.state.savedData[this.state.listenFlag].valor = result
-        }
-      } else {
-        console.log("entro")
-        this.state.placeholder = "Debe introducir el importe"
-      }
+        } else this.state.placeholder = "Debe introducir el porcentaje"
+      } else this.state.placeholder = "Debe introducir el importe"
     }
 
     setWrittenData() {
