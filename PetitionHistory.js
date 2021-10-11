@@ -80,7 +80,7 @@ class PetitionHistoryScreen extends Component {
     }
 
     setList() {
-      if (this.state.list.length==0) return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay documentos pendientes</Text></View>)
+      if (this.state.list.length==0) return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay documentos pendientes</Text><Text style={styles.registeredDocuments}>Pulse + para empezar</Text></View>)
       return (<View style={styles.voiceControlView}>
         <FlatList vertical showsVerticalScrollIndicator={false}
           data={ this.state.list.sort((a,b) => a.id < b.id) } 
@@ -220,12 +220,12 @@ class PetitionHistoryScreen extends Component {
       registeredDocuments: {
         fontSize: RFPercentage(2.5),
         textAlign: "center",
-        paddingTop: 20,
         color: "#1A5276",
         fontWeight: 'bold',
-        paddingBottom: 15,
-        paddingRight: 10,
-        paddingLeft: 10
+        paddingTop: 10,
+        paddingBottom: 10,
+        paddingLeft: 10,
+        paddingRight: 10
       },
       navBarBackHeader: {
         alignItems: 'center',

@@ -33,7 +33,8 @@ class ResumeViewScreen extends Component {
         imgs:[],
         cifValue: "",
         not_loaded: true,
-        conexion: false
+        conexion: false,
+        cifError: false
       }
       this.init()
     }
@@ -77,6 +78,7 @@ class ResumeViewScreen extends Component {
       })
       await this.setState({not_loaded: false})
       this.setState({ conexion: (this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))!=-1) })
+      console.log("documento: " + JSON.stringify(this.state.doc))
     }
     
     componentDidMount(){
@@ -280,8 +282,11 @@ class ResumeViewScreen extends Component {
       var thereIs = this.state.doc.findIndex(obj => obj.valor != null && obj.obligatorio=="S")
       NetInfo.addEventListener(networkState => {
         if (networkState.isConnected) {
-          if (noFieldCompleted>-1 && thereIs>-1) {
-            this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
+          if (this.state.cifValue.length==0) {
+            this.setState({cifError: true})
+            return this.showAlert("Atención", "Indica el CIF de la empresa")
+          } else if (noFieldCompleted>-1 && thereIs>-1) {
+            return this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
           } else {
             this.showAskDoc()
           }
@@ -331,7 +336,7 @@ class ResumeViewScreen extends Component {
             } else if (this.state.interpretedData.toLowerCase() == "ayer") {
               var yesterday = new Date()
               yesterday.setDate(new Date().getDate() - 1)
-              this.state.doc[index].valor = ("0" + (yesterday.getDate()-1)).slice(-2)+ "-"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "-" + yesterday.getFullYear()
+              this.state.doc[index].valor = ("0" + (yesterday.getDate())).slice(-2)+ "-"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "-" + yesterday.getFullYear()
             }
           } else if (idcampo.includes("factura")) {
             this.state.doc[index].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
@@ -352,6 +357,12 @@ class ResumeViewScreen extends Component {
         <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
         </View>
       </View>)}  
+        {item.tipoexp.includes("E") && this.state.cifError && <View>
+        <Text style={styles.resumeText}>CIF de la entidad*</Text>
+        <View style={{flexDirection:'row', width:"90%"}}>
+        <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
+        </View>
+      </View>}
       </View>)
     }
 
@@ -400,6 +411,7 @@ class ResumeViewScreen extends Component {
 
     async linkDoc() {
       this.showAlert("Error", "Estamos desarrollando esto")
+      console.log("id sera => " )
     }
   
     async askSaveWord(msn, key, value) {

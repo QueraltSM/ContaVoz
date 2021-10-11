@@ -198,10 +198,12 @@ class PetitionListScreen extends Component {
       registeredDocuments: {
         fontSize: RFPercentage(2.5),
         textAlign: "center",
-        paddingTop: 20,
         color: "#1A5276",
         fontWeight: 'bold',
-        paddingBottom: 15
+        paddingTop: 10,
+        paddingBottom: 10,
+        paddingLeft: 10,
+        paddingRight: 10
       },
       showTitle:{
         textAlign: 'center',

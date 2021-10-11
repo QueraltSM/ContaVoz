@@ -30,9 +30,6 @@ class MainScreen extends Component {
     }
 
     async nextSegue(icon, allTypeConfigs, type) {
-      console.log("icon="+icon)
-      console.log("allTypeConfigs="+JSON.stringify(allTypeConfigs))
-      console.log("type="+type)
       await AsyncStorage.setItem("icon", icon)
       await AsyncStorage.setItem("config", JSON.stringify(allTypeConfigs))
       await AsyncStorage.setItem("type", type)
@@ -50,11 +47,11 @@ class MainScreen extends Component {
         array.forEach(i => {
           if (i.tipo == type) allTypeConfigs.push(i)
         });
-        if (allTypeConfigs.length==0) this.showAlert("Atención", "No hay documentos de este tipo")
+        if (allTypeConfigs.length==0) await this.showAlert("Atención", "No hay configuraciones existentes para " + type)
         else this.nextSegue(icon, allTypeConfigs, type)
       } else {
         allTypeConfigs = []
-        this.nextSegue(icon, allTypeConfigs, type)
+        await this.showAlert("Atención", "No hay configuraciones existentes para " + type)
       }
     }
 
