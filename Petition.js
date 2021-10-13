@@ -600,6 +600,11 @@ class PetitionScreen extends Component {
     }
 
     async updateListen(value) {
+      if (this.state.listenFlag < this.state.savedData.length-1 && value>0 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida")) {
+        await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value)})
+      } else if (this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && value<0 && this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida")) {
+        await this.setState({ listenFlag: Number(this.state.listenFlag) - 1 })
+      }
       if (this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion")) {
         if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
         if (this.state.savedData[this.state.listenFlag].tipoexp=="E" && this.state.cifValue.length>0) await this.saveEnterprise()
@@ -615,12 +620,14 @@ class PetitionScreen extends Component {
         }
       } else {
         this.setState({ is_recording: false})
-        this.setState({ listenFlag: Number(this.state.listenFlag) - 1})
+        await this.setState({ listenFlag: Number(this.state.listenFlag) - 1})
       }
       await this.setState({ savedData: this.state.savedData })
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
       await AsyncStorage.setItem(this.state.petitionID+".listenFlag", JSON.stringify(this.state.listenFlag))
       if (this.state.cifValue.length>0) await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cifValue) 
+    
+      console.log("-----"+this.state.listenFlag+"----")
     }
 
     setVoiceControl() {
@@ -724,11 +731,11 @@ class PetitionScreen extends Component {
         return(
           <View style={styles.titleView}>
             {this.state.images.length==0 && neverListened == -1 && <Text style={styles.showHeader}>Adjunte imágenes o mantenga pulsado el micrófono</Text>}
-            {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].valor != "" && this.state.savedData[this.state.listenFlag-1].valor != null && <Text style={styles.showNextData}>Dato anterior {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()}: {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
-            
+            {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].valor != "" && this.state.savedData[this.state.listenFlag-1].valor != null && <Text style={styles.showNextData}>Anterior {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()}: {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
             <Text style={styles.showTitle}>{message}</Text>
             {this.setWrittenData()}
-            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente dato {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
+            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
+            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-2 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+2].titulo.toLowerCase()}</Text>}
           </View>
         )
       }
@@ -748,6 +755,7 @@ class PetitionScreen extends Component {
     }
 
     documentState = () => {
+      console.log("this.state.listenFlag:"+this.state.listenFlag)
       if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") && !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
         this.state.placeholder = "Dato no completo"
       }
