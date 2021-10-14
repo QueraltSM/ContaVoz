@@ -85,11 +85,11 @@ class PetitionScreen extends Component {
           var result = null
           if (i.xdefecto != "") {
             if (i.xdefecto.toLowerCase() == "hoy") {
-              result = ("0" + (new Date().getDate())).slice(-2)+ "-"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "-" + new Date().getFullYear()
+              result = ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear()
             } else if (i.xdefecto.toLowerCase() == "ayer") {
               var yesterday = new Date()
               yesterday.setDate(new Date().getDate() - 1)
-              result = ("0" + (yesterday.getDate())).slice(-2)+ "-"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "-" + yesterday.getFullYear()
+              result = ("0" + (yesterday.getDate())).slice(-2)+ "/"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "/" + yesterday.getFullYear()
             } else {
               result = i.xdefecto
             }
@@ -126,7 +126,13 @@ class PetitionScreen extends Component {
         if (value != null) {
           this.setState({ list: JSON.parse(value) })
         }
-      })
+      })  
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, { title: "ContaVoz", message:"Necesitamos permisos para acceder a su micrófono", buttonNegative: "Cancelar", buttonPositive: "Aceptar" }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {}
+      } catch(e){}
     }
   
     componentWillUnmount() {
@@ -152,11 +158,11 @@ class PetitionScreen extends Component {
 
     setFixedDate() {
       if (this.state.listenedData.toLowerCase() == "hoy") {
-        this.setState({ interpretedData: ("0" + (new Date().getDate())).slice(-2)+ "-"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "-" + new Date().getFullYear() })
+        this.setState({ interpretedData: ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear() })
       } else if (this.state.listenedData.toLowerCase() == "ayer") {
         var yesterday = new Date()
         yesterday.setDate(new Date().getDate() - 1)
-        this.setState({ interpretedData: ("0" + (yesterday.getDate())).slice(-2)+ "-"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "-" + yesterday.getFullYear() })
+        this.setState({ interpretedData: ("0" + (yesterday.getDate())).slice(-2)+ "/"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "/" + yesterday.getFullYear() })
       } else {
         var daysL = ["Uno", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Ocho", "Nueve", "Diez",
         "Once", "Doce", "Trece", "Catorce", "Quince", "Dieciséis", "Diecisiete", "Dieciocho", "Diecinueve",
@@ -192,7 +198,7 @@ class PetitionScreen extends Component {
           indexM++
           var d = ("0" + daysN[indexL]).slice(-2)
           var m = ("0" + indexM).slice(-2)
-          this.setState({ interpretedData: d + "-" + m + "-" + new Date().getFullYear() })
+          this.setState({ interpretedData: d + "/" + m + "/" + new Date().getFullYear() })
         } else if (indexN > -1 && indexM > -1 && day != "") {
           indexM++
           var d = ("0" + day).slice(-2)
@@ -203,22 +209,22 @@ class PetitionScreen extends Component {
             var year = /[0-9]{4}/
             if (year.test(this.state.listenedData)) {
               var interpretedYear = RegExp(year).exec(this.state.listenedData)
-              this.setState({ interpretedData: d + "-" + m + "-" + interpretedYear })
-            } else this.setState({ interpretedData: d + "-" + m + "-" + new Date().getFullYear() })
+              this.setState({ interpretedData: d + "/" + m + "/" + interpretedYear })
+            } else this.setState({ interpretedData: d + "/" + m + "/" + new Date().getFullYear() })
           }
         } else if (indexL > -1) {
           var d = ("0" + daysN[indexL]).slice(-2)
           if (d > new Date().getDate()) {
-            this.setState({ interpretedData: d + "-" + (("0" + (new Date().getMonth())).slice(-2)) + "-" + new Date().getFullYear() })
+            this.setState({ interpretedData: d + "/" + (("0" + (new Date().getMonth())).slice(-2)) + "/" + new Date().getFullYear() })
           } else {
-            this.setState({ interpretedData: d + "-" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "-" + new Date().getFullYear() })
+            this.setState({ interpretedData: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
           }
         } else if (indexN > -1 && day != "") {
           var d = ("0" + day).slice(-2)
           if (d > new Date().getDate()) {
-            this.setState({ interpretedData: d + "-" + (("0" + (new Date().getMonth())).slice(-2)) + "-" + new Date().getFullYear() })
+            this.setState({ interpretedData: d + "/" + (("0" + (new Date().getMonth())).slice(-2)) + "/" + new Date().getFullYear() })
           } else {
-            this.setState({ interpretedData: d + "-" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "-" + new Date().getFullYear() })
+            this.setState({ interpretedData: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
           }
         } else {
           this.showDateError()
@@ -302,28 +308,21 @@ class PetitionScreen extends Component {
     }
   
     async _startRecognition(e) {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, { title: "ContaVoz", message:"Necesitamos permisos para acceder a su micrófono", buttonNegative: "Cancelar", buttonPositive: "Aceptar" }
-        );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          this.setState({ listenedData: "" })
-          this.setState({ interpretedData: "" })
-          this.setState({ recognized: '', started: '', results: [],
-          });
-          if (this.state.listenFlag<this.state.savedData.length) {
-            this.setState({is_recording: true })
-            if (this.state.savedData[this.state.listenFlag].valor != null) this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
-            var idcampo = this.state.data[this.state.listenFlag].idcampo
-            if ((!idcampo.includes("base") && !idcampo.includes("cuota") && this.state.data[this.state.listenFlag].xdefecto == "") || 
-            (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[this.state.listenFlag].xdefecto != "")) {
-              try {
-                await Voice.start('es');
-              } catch (e) {}
-            }
-          }
+      this.setState({ listenedData: "" })
+      this.setState({ interpretedData: "" })
+      this.setState({ recognized: '', started: '', results: [],
+      });
+      if (this.state.listenFlag<this.state.savedData.length) {
+        this.setState({is_recording: true })
+        if (this.state.savedData[this.state.listenFlag].valor != null) this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
+        var idcampo = this.state.data[this.state.listenFlag].idcampo
+        if ((!idcampo.includes("base") && !idcampo.includes("cuota") && this.state.data[this.state.listenFlag].xdefecto == "") || 
+        (idcampo.includes("base") && idcampo.includes("cuota") && this.state.data[this.state.listenFlag].xdefecto != "")) {
+          try {
+            await Voice.start('es');
+          } catch (e) {}
         }
-      } catch(e){}
+      }
     }
 
     async _stopRecognition(e) {
@@ -626,8 +625,6 @@ class PetitionScreen extends Component {
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
       await AsyncStorage.setItem(this.state.petitionID+".listenFlag", JSON.stringify(this.state.listenFlag))
       if (this.state.cifValue.length>0) await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cifValue) 
-    
-      console.log("-----"+this.state.listenFlag+"----")
     }
 
     setVoiceControl() {
@@ -755,7 +752,6 @@ class PetitionScreen extends Component {
     }
 
     documentState = () => {
-      console.log("this.state.listenFlag:"+this.state.listenFlag)
       if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") && !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
         this.state.placeholder = "Dato no completo"
       }
@@ -780,15 +776,7 @@ class PetitionScreen extends Component {
     }
   
     seeDocument = () => {
-      var noDataNull = this.state.savedData.findIndex((i) => i.valor == null && i.obligatorio == "S")
-      var someData = this.state.savedData.findIndex((i) => i.valor != null)
-      if (someData==0 && noDataNull==-1 && this.state.cifValue.length==0) {
-        this.showDialogAlert("Entidad no registrada", "Introduzca el CIF de la entidad")
-      } else if ((this.state.images.length==0 && someData==-1 && noDataNull>-1)) {
-        this.showAlert("Documento incompleto", "Adjunte imágenes del documento o complete un documento de voz")
-      } else {
-        this.props.navigation.push('ResumeView')
-      }
+      this.props.navigation.push('ResumeView')
     }
 
     async deleteDoc() {

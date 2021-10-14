@@ -1,7 +1,6 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions, CheckBox} from 'react-native';
 import { createAppContainer } from 'react-navigation';
-import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { RFPercentage } from "react-native-responsive-fontsize";
@@ -37,7 +36,8 @@ class ResumeViewScreen extends Component {
         cifValueLinkedDoc: "",
         showConexion: false,
         conexionDoc: [],
-        linkedDoc: ""
+        conexionType: "",
+        documentVoice: true
       }
       this.init()
     }
@@ -60,15 +60,16 @@ class ResumeViewScreen extends Component {
         this.setState({ data: JSON.parse(value) })  
       })
       await AsyncStorage.getItem(this.state.petitionType).then((value) => {
-        if (value != null) {
-          this.setState({ allDocsPerType: JSON.parse(value) })
-        }
+        if (value != null) this.setState({ allDocsPerType: JSON.parse(value) })
+      })
+      await AsyncStorage.getItem(this.state.petitionID+".documentVoice").then((value) => {
+        if (value != null) this.setState({ documentVoice: JSON.parse(value) })
+      })
+      await AsyncStorage.getItem(this.state.petitionID+".showConexion").then((value) => {
+        if (value != null) this.setState({ showConexion: JSON.parse(value) })
       })
       await AsyncStorage.getItem(this.state.petitionID+".conexionDoc").then((value) => {
-        if (value!="null") {
-          this.setState({ conexionDoc: JSON.parse(value) }) 
-          this.setState({ showConexion: true })  
-        }
+        if (value!=null) this.setState({ conexionDoc: JSON.parse(value) }) 
       })
       await AsyncStorage.getItem("type").then((value) => {
         this.setState({ type: value })
@@ -117,7 +118,17 @@ class ResumeViewScreen extends Component {
     goHome() {
       this.props.navigation.push("Main")
     }
+
+    async changeCheckBoxDoc() {
+      await AsyncStorage.setItem(this.state.petitionID+".documentVoice", JSON.stringify(!this.state.documentVoice))
+      this.setState({documentVoice: !this.state.documentVoice})
+    }
   
+    checkBoxDoc() {
+      if (this.state.imgs.length>0) return<View style={styles.checkboxContainer}><CheckBox value={this.state.documentVoice} onValueChange={() => this.changeCheckBoxDoc()}/><Text style={styles.checkbox}>Añadir datos del documento contable</Text></View>
+      return null
+    }
+
     setAllFlags() {
       if (this.state.imgs.length<=1) return null
       var result = []
@@ -201,70 +212,65 @@ class ResumeViewScreen extends Component {
         j++;
       })
     }*/
+''
+    async uploadImages() {}
 
     async sentLinkedDoc() {
-      var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
       var importe = ""
       var fecha = ""
-      var cif = ""
-      if (noFieldCompleted==-1) {
-        importe = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("importe"))
-        var fechaIndex = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("fecha"))
-        importe = this.state.conexionDoc.campos[importe].valor
-        fecha = this.state.conexionDoc.campos[fechaIndex].valor
-        var newDate = fecha.split("-")
-        fecha = newDate[2]+"-"+newDate[1]+"-"+newDate[0]
-        cif=this.state.cifValueLinkedDoc 
-        this.state.conexionDoc.campos[fechaIndex].valor = fecha
-      }
-      this.state.conexionDoc.tipo=this.state.type
+      importe = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("importe"))
+      var fechaIndex = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("fecha"))
+      importe = this.state.conexionDoc.campos[importe].valor
+      fecha = this.state.conexionDoc.campos[fechaIndex].valor
+      var newDate = fecha.split("/")
+      fecha = newDate[2]+"/"+newDate[1]+"/"+newDate[0]
+      this.state.conexionDoc.campos[fechaIndex].valor = fecha
+      this.state.conexionDoc.tipo=this.state.conexionDoc.tipo
       this.state.conexionDoc.importe=importe
       this.state.conexionDoc.fecha=fecha
       this.state.conexionDoc.company_padisoft=this.state.company_padisoft 
       this.state.conexionDoc.idcliente=this.state.idcliente 
       this.state.conexionDoc.tipopeticion="guardar"
-      this.state.conexionDoc.titulo=this.state.title
-      this.state.conexionDoc.cif=cif
+      this.state.conexionDoc.titulo=this.state.conexionDoc.titulo
+      this.state.conexionDoc.cif=this.state.cifValueLinkedDoc 
       this.state.conexionDoc.campos=this.state.conexionDoc.campos
+      this.state.conexionDoc.img = []
       const requestOptions = { method: 'POST', body: JSON.stringify(this.state.conexionDoc) };
       fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
-        console.log("error:::"+error)
-        if (error=="true") {
-          this.showAlert("Error", "Hubo un error al subir el documento")
-        } else {
-          this.uploadSucceeded()
-        }
+        if (error=="true") this.showAlert("Error", "Hubo un error al subir el documento")
+        else this.uploadDoc()
       }).catch((error) => {});
     }
 
     async proceedSent() {
-      //this.uploadImages()
-      var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
+      if (this.state.imgs.length>0) this.uploadImages()
+      if (this.state.showConexion) this.sentLinkedDoc()
+      else if (this.state.documentVoice) this.uploadDoc()
+    }
+
+    async uploadDoc() {
       var importe = ""
       var fecha = ""
-      var cif = ""
-      if (noFieldCompleted==-1) {
-        importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
-        var fechaIndex = this.state.doc.findIndex(obj => obj.idcampo.includes("fecha"))
-        importe = this.state.doc[importe].valor
-        fecha = this.state.doc[fechaIndex].valor
-        var newDate = fecha.split("-")
-        fecha = newDate[2]+"-"+newDate[1]+"-"+newDate[0]
-        cif=this.state.cifValue 
-        this.state.doc[fechaIndex].valor = fecha
-      }
+      importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
+      var fechaIndex = this.state.doc.findIndex(obj => obj.idcampo.includes("fecha"))
+      importe = this.state.doc[importe].valor
+      fecha = this.state.doc[fechaIndex].valor
+      var newDate = fecha.split("/")
+      fecha = newDate[2]+"/"+newDate[1]+"/"+newDate[0]
+      this.state.doc[fechaIndex].valor = fecha
       this.state.data.tipo=this.state.type
       this.state.data.importe=importe
       this.state.data.fecha=fecha
       this.state.data.company_padisoft=this.state.company_padisoft 
       this.state.data.idcliente=this.state.idcliente 
       this.state.data.tipopeticion="guardar"
-      this.state.data.titulo=this.state.title
-      this.state.data.cif=cif
+      this.state.data.titulo=this.state.data.titulo
+      this.state.data.cif=this.state.cifValue
       this.state.data.campos=this.state.doc
+      this.state.data.img=[]
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
       fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
@@ -272,10 +278,7 @@ class ResumeViewScreen extends Component {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") {
           this.showAlert("Error", "Hubo un error al subir el documento")
-        } else {
-          if (this.state.showConexion) this.sentLinkedDoc()
-          else this.uploadSucceeded()
-        }
+        } else this.uploadSucceeded()
       }).catch((error) => {});
     }
 
@@ -325,25 +328,36 @@ class ResumeViewScreen extends Component {
       await AsyncAlert();
     }
 
-    async askSaveDoc() {
+    async checkLinkedDoc() {
+      var noFieldCompleted = this.state.conexionDoc.campos.findIndex(obj => obj.valor == null && obj.obligatorio=="S" && !obj.idcampo.includes("contrapartida") && !obj.idcampo.includes("conexion"))
+      var thereIs = this.state.conexionDoc.campos.findIndex(obj => obj.valor != null && obj.obligatorio=="S" && !obj.idcampo.includes("contrapartida") && !obj.idcampo.includes("conexion"))
+      if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) {
+        return this.showAlert("Atención", "Hay campos obligatorios que deben completarse en el " + this.state.conexionType)
+      } else if (this.state.cifValueLinkedDoc.length==0) {
+        return this.showAlert("Atención", "Indica el CIF de la entidad del " + this.state.conexionType)
+      } else this.showAskDoc()
+    }
+
+    async checkDoc() {
       var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S" && !obj.idcampo.includes("contrapartida") && !obj.idcampo.includes("conexion"))
       var thereIs = this.state.doc.findIndex(obj => obj.valor != null && obj.obligatorio=="S" && !obj.idcampo.includes("contrapartida") && !obj.idcampo.includes("conexion"))
+      if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) {
+        return this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
+      } else if (this.state.cifValue.length==0) {
+        return this.showAlert("Atención", "Indica el CIF de la entidad")
+      } else if (this.state.showConexion) {
+        this.checkLinkedDoc()
+      } else this.showAskDoc()
+    }
+
+    async askSaveDoc() {
       NetInfo.addEventListener(networkState => {
         if (networkState.isConnected) {
-          if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) {
-            return this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
-          } else if (this.state.cifValue.length==0) {
-            this.setState({cifError: true})
-            return this.showAlert("Atención", "Indica el CIF de la empresa")
-          } else if (this.state.cifValueLinkedDoc.length==0) {
-            return this.showAlert("Atención", "Indica el CIF de la empresa del " + this.state.conexionType)
-          } else {
-            this.showAskDoc()
-          }
-        } else {
-          this.showAlert("Error", "No hay conexión a Internet")
-        }
-      });
+          if (this.state.documentVoice) {
+            this.checkDoc()
+          } else if (this.state.imgs.length>0) this.showAskDoc()
+        } else this.showAlert("Error", "No hay conexión a Internet")
+      })
     }
     
     async calculateData(index, porcentaje) {
@@ -383,11 +397,11 @@ class ResumeViewScreen extends Component {
             this.calculateData(index, this.state.interpretedData)
           } else if (idcampo.includes("fecha")) {
             if (this.state.interpretedData.toLowerCase() == "hoy") {
-              this.state.conexionDoc.campos[index].valor = ("0" + (new Date().getDate())).slice(-2)+ "-"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "-" + new Date().getFullYear()
+              this.state.conexionDoc.campos[index].valor = ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear()
             } else if (this.state.interpretedData.toLowerCase() == "ayer") {
               var yesterday = new Date()
               yesterday.setDate(new Date().getDate() - 1)
-              this.state.conexionDoc.campos[index].valor = ("0" + (yesterday.getDate())).slice(-2)+ "-"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "-" + yesterday.getFullYear()
+              this.state.conexionDoc.campos[index].valor = ("0" + (yesterday.getDate())).slice(-2)+ "/"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "/" + yesterday.getFullYear()
             }
           } else if (idcampo.includes("factura")) {
             this.state.conexionDoc.campos[index].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
@@ -421,11 +435,11 @@ class ResumeViewScreen extends Component {
             this.calculateData(index, this.state.interpretedData)
           } else if (idcampo.includes("fecha")) {
             if (this.state.interpretedData.toLowerCase() == "hoy") {
-              this.state.doc[index].valor = ("0" + (new Date().getDate())).slice(-2)+ "-"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "-" + new Date().getFullYear()
+              this.state.doc[index].valor = ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear()
             } else if (this.state.interpretedData.toLowerCase() == "ayer") {
               var yesterday = new Date()
               yesterday.setDate(new Date().getDate() - 1)
-              this.state.doc[index].valor = ("0" + (yesterday.getDate())).slice(-2)+ "-"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "-" + yesterday.getFullYear()
+              this.state.doc[index].valor = ("0" + (yesterday.getDate())).slice(-2)+ "/"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "/" + yesterday.getFullYear()
             }
           } else if (idcampo.includes("factura")) {
             this.state.doc[index].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
@@ -447,7 +461,7 @@ class ResumeViewScreen extends Component {
         </View>
       </View>)}
       {item.tipoexp.includes("E") && <View>
-        <Text style={styles.resumeText}>CIF de la entidad*</Text>
+        <Text style={styles.resumeText}>CIF de la entidad *</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitLinkedDocText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValueLinkedDoc: result})}>{this.state.cifValueLinkedDoc}</TextInput>
         </View>
@@ -456,7 +470,7 @@ class ResumeViewScreen extends Component {
     }
 
     setData = (item, index) => {
-      return (<View>
+      return (<View style={{paddingBottom: 10}}>
         {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && !item.idcampo.includes("contrapartidageneral") && (<View>
         <Text style={styles.resumeText}>{item.titulo} {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
@@ -464,7 +478,7 @@ class ResumeViewScreen extends Component {
         </View>
       </View>)}  
         {item.tipoexp.includes("E") && <View>
-        <Text style={styles.resumeText}>CIF de la entidad*</Text>
+        <Text style={styles.resumeText}>CIF de la entidad *</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
         </View>
@@ -476,7 +490,7 @@ class ResumeViewScreen extends Component {
       if (!this.state.showConexion) return null
       return (
         <View style={styles.resumeView}>
-          <Text style={styles.resumeLinkedDoc}>Documento de {this.state.linkedDoc} vinculado</Text>
+          <Text style={styles.resumeLinkedDoc}>Documento de {this.state.conexionType}</Text>
           <FlatList 
             vertical
             showsVerticalScrollIndicator={false}
@@ -487,8 +501,7 @@ class ResumeViewScreen extends Component {
     }
 
     setControlVoice(){
-      var noDataNull = this.state.doc.findIndex((i) => i.valor != null && i.obligatorio == "S")
-      if (noDataNull==-1) return null
+      if (!this.state.documentVoice) return null
       return (
         <View style={styles.resumeView}>
           <FlatList 
@@ -532,8 +545,9 @@ class ResumeViewScreen extends Component {
     async unlinkDoc() {
       this.setState({showConexion: false })
       this.setState({cifValueLinkedDoc:""})
-      await AsyncStorage.setItem(this.state.petitionID+".conexionDoc", JSON.stringify(null))
+      await AsyncStorage.setItem(this.state.petitionID+".conexionDoc", JSON.stringify([]))
       await AsyncStorage.setItem(this.state.petitionID+".cifValueLinkedDoc", JSON.stringify(null))
+      await AsyncStorage.setItem(this.state.petitionID+".showConexion", JSON.stringify(this.state.showConexion))
     }
 
     async linkDoc() {
@@ -543,16 +557,19 @@ class ResumeViewScreen extends Component {
       if (this.state.type=="compra") {
         conexionType = "pago"
       }
-      this.setState({linkedDoc:conexionType})
       await AsyncStorage.getItem("allConfigs").then((value) => {
         config = JSON.parse(JSON.stringify(value))
       })
       var array = JSON.parse(config)
       array.forEach(i => {
-        if (i.tipo == conexionType && i.idcfg == conexionID) this.state.conexionDoc = i
+        if (i.tipo == conexionType && i.idcfg == conexionID) {
+          this.state.conexionDoc = i
+          this.setState({conexionType:i.titulo})
+        }
       });
       this.setState({ showConexion: true })
       await AsyncStorage.setItem(this.state.petitionID+".conexionDoc", JSON.stringify(this.state.conexionDoc))
+      await AsyncStorage.setItem(this.state.petitionID+".showConexion", JSON.stringify(this.state.showConexion))
     }
   
     async askSaveWord(msn, key, value) {
@@ -583,12 +600,12 @@ class ResumeViewScreen extends Component {
       setLink() {
         if (!this.state.conexion) return null
         var title = this.state.doc[this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))].titulo
-        return <View style={styles.navBarBackHeader}>
+        return <View style={styles.navBarLinkDoc}>
           {!this.state.showConexion && <TouchableOpacity onPress={() => this.linkDoc()} style={styles.linkButton}>
-            <Text style={styles.button}>Vincular con {title.toLowerCase()}</Text>
+            <Text style={styles.button}>Conectar con {title.toLowerCase()}</Text>
           </TouchableOpacity>}
           {this.state.showConexion && <TouchableOpacity onPress={() => this.unlinkDoc()} style={styles.linkButton}>
-            <Text style={styles.button}>Desvincular con {title.toLowerCase()}</Text>
+            <Text style={styles.button}>Desconectar con {title.toLowerCase()}</Text>
           </TouchableOpacity>}
         </View>
       }
@@ -611,7 +628,7 @@ class ResumeViewScreen extends Component {
       render () {
         if (this.state.not_loaded) return null
         return (
-          <View style={{flex: 1, backgroundColor:"#FFF", paddingBottom: 50 }}>
+          <View style={{flex: 1, backgroundColor:"#FFF" }}>
             <ScrollView 
               showsVerticalScrollIndicator ={false}
               showsHorizontalScrollIndicator={false}
@@ -623,6 +640,7 @@ class ResumeViewScreen extends Component {
             <View style={styles.sections}>
               {this.setImages()}
               {this.setAllFlags()}
+              {this.checkBoxDoc()}
               {this.setControlVoice()}
               {this.setControlConexion()}
             </View> 
@@ -637,14 +655,23 @@ class ResumeViewScreen extends Component {
   export default createAppContainer(ResumeViewScreen);
 
   const styles = StyleSheet.create({
-    navBarBackHeader: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor:"white", 
-      flexDirection:'row', 
-      textAlignVertical: 'center',
-      paddingTop: 30,
-    },
+      navBarBackHeader: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor:"white", 
+        flexDirection:'row', 
+        textAlignVertical: 'center',
+        paddingTop: 30,
+        paddingBottom: 50
+      },
+      navBarLinkDoc: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor:"white", 
+        flexDirection:'row', 
+        textAlignVertical: 'center',
+        paddingTop: 30
+      },
       roundButtonsView: {
         paddingLeft:7,
         paddingRight:7,
@@ -782,6 +809,18 @@ class ResumeViewScreen extends Component {
         fontWeight: 'bold',
         color: "white",
         fontSize: RFPercentage(2.5)
+      },
+      checkbox: {
+        color: '#154360',
+        fontSize: RFPercentage(2.5),
+        width: "100%",
+        fontWeight: 'bold',
+      },
+      checkboxContainer: {
+        paddingTop: 20,
+        paddingLeft: 10,
+        paddingRight: 10,
+        flexDirection: "row"
       }
     })
 
