@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, Image, TextInput, BackHandler } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Image, TextInput, BackHandler, ScrollView } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
@@ -162,11 +162,42 @@ class LoginScreen extends Component {
     managePasswordVisibility = () => {
       this.setState({ hidePassword: !this.state.hidePassword });
     }
+
+    setFootbar(){
+      return <View style={styles.footerView}>
+          <View style={{paddingRight: 10}}>
+            <Image
+              source={require('./assets/union-europea.jpg')}
+              resizeMode="contain"
+              key="assets/canarias-avanza-con-europa"
+              style={{ width: 100, height: 100}}/> 
+          </View>
+          <View style={{paddingRight: 10}}>
+            <Image
+              source={require('./assets/exagon.jpg')}
+              resizeMode="contain"
+              key="assets/canarias-avanza-con-europa"
+              style={{ width: 100, height: 100}}/>
+          </View>
+          <View style={{paddingRight: 10}}>
+            <Image
+              source={require('./assets/canarias-avanza-con-europa.png')}
+              resizeMode="contain"
+              key="assets/canarias-avanza-con-europa"
+              style={{ width: 100, height: 100}}/> 
+          </View> 
+      </View>
+    }
     
     render() {
       return (
-        <View style={ styles.container }>
-          <View style={{paddingBottom: 20}}>
+        <View style={ styles.container }>            
+          <ScrollView
+            style={{backgroundColor: "white", width:"100%" }}
+            showsVerticalScrollIndicator ={false}
+            showsHorizontalScrollIndicator={false}
+            persistentScrollbar={false}>
+          <View style={{paddingBottom: 20, alignSelf:"center"}}>
           <Image
             style={{ height: 100, width: 100, margin: 10}}
             source={require('./assets/main.png')}
@@ -193,11 +224,13 @@ class LoginScreen extends Component {
             />)}    
             </TouchableOpacity>   
           </View>  
-          <View style={{paddingTop: 20}}>
+          <View style={{paddingTop: 20, alignSelf:"center"}}>
           <TouchableOpacity onPress={() => this.login()} style={styles.appButtonContainer}>
             <Text style={styles.appButtonText}>Entrar</Text>
           </TouchableOpacity>  
           </View>
+          </ScrollView>
+          {this.setFootbar()}
         </View>
       );
     } 
@@ -208,6 +241,7 @@ export default createAppContainer(LoginScreen);
 const styles = StyleSheet.create({
     container: {
       flex: 1,
+      paddingTop: 50,
       backgroundColor: '#fff',
       alignItems: 'center',
       justifyContent: 'center',
@@ -246,7 +280,6 @@ const styles = StyleSheet.create({
       textTransform: "uppercase"
     },
     appButtonContainer: {
-      elevation: 8,
       backgroundColor: "#98A406",
       borderRadius: 20,
       paddingVertical: 10,
@@ -254,7 +287,12 @@ const styles = StyleSheet.create({
       width: 150,
       margin: 20 
     },
-    footbar: {
-      flex:3
-    },
+    footerView: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor:"white", 
+      flexDirection:'row', 
+      textAlignVertical: 'center',
+      height: 65
+    }
 })

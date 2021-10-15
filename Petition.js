@@ -72,14 +72,10 @@ class PetitionScreen extends Component {
         this.setState({ userid: value })
       })
       await AsyncStorage.getItem(this.state.petitionID+".saved").then((value) => {
-        if (value != null) {
-          this.setState({ saved: JSON.parse(value) })
-        }
+        if (value != null) this.setState({ saved: JSON.parse(value) })
       })
       await AsyncStorage.getItem(this.state.petitionID+".savedData").then((value) => {
-        if (value != null) {
-          this.setState({ savedData: JSON.parse(value) })
-        }
+        if (value != null) this.setState({ savedData: JSON.parse(value) })
       })
       if (this.state.savedData.length == 0) {
         var array = []

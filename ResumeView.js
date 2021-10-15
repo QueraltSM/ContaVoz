@@ -33,8 +33,7 @@ class ResumeViewScreen extends Component {
         imgs:[],
         cifValue: "",
         not_loaded: true,
-        conexion: false,
-        cifValueLinkedDoc: "",
+        thereIsConexion: false,
         showConexion: false,
         conexionDoc: [],
         conexionType: "",
@@ -70,9 +69,6 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem(this.state.petitionID+".showConexion").then((value) => {
         if (value != null) this.setState({ showConexion: JSON.parse(value) })
       })
-      await AsyncStorage.getItem(this.state.petitionID+".conexionDoc").then((value) => {
-        if (value!=null) this.setState({ conexionDoc: JSON.parse(value) }) 
-      })
       await AsyncStorage.getItem("type").then((value) => {
         this.setState({ type: value })
       })
@@ -85,9 +81,6 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem(this.state.petitionID+".cifValue").then((value) => {
         if (value != null) this.setState({ cifValue: value })
       })
-      await AsyncStorage.getItem(this.state.petitionID+".cifValueLinkedDoc").then((value) => {
-        if (value != "null") this.setState({ cifValueLinkedDoc: value })
-      })
       await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
         if (value != null) this.setState({ imgs: JSON.parse(value) })
       })
@@ -95,15 +88,15 @@ class ResumeViewScreen extends Component {
         if (value != null) this.setState({ words: JSON.parse(value) })
       })
       await this.setState({not_loaded: false})
-      this.setState({ conexion: (this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))!=-1) })
-      var newID = this.state.petitionID+"_"+(this.state.imgs.length+1)
+      await this.setState({ thereIsConexion: (this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))>-1) })
+      /*var newID = this.state.petitionID+"_"+(this.state.imgs.length+1)
       this.state.imgs.push({
         id: newID,
         nombre: newID,
         id_drive:"1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX",
         urid: "1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR",
         uri: "file:///data/user/0/com.contavoz/cache/rn_image_picker_lib_temp_17ac4003-f056-4d7c-b66b-d35174385156.jpg"
-      })
+      })*/
     }
     
     componentDidMount(){
@@ -128,7 +121,16 @@ class ResumeViewScreen extends Component {
       this.setState({flag: i })
     }
 
-    goHome() {
+    async goHome() {
+      var list = []
+      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
+        if (value != null) {
+          list = JSON.parse(value) 
+        }
+      })
+      var index = list.findIndex(obj => JSON.stringify(obj.id) == this.state.petitionID)
+      list[index].doc = this.state.doc
+      await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
       this.props.navigation.push("Main")
     }
 
@@ -250,9 +252,9 @@ class ResumeViewScreen extends Component {
       this.state.conexionDoc.idcliente=this.state.idcliente 
       this.state.conexionDoc.tipopeticion="guardar"
       this.state.conexionDoc.titulo=this.state.conexionDoc.titulo
-      this.state.conexionDoc.cif=this.state.cifValueLinkedDoc 
+      this.state.conexionDoc.cif=this.state.cifValue 
       this.state.conexionDoc.campos=this.state.conexionDoc.campos
-      this.state.conexionDoc.img = []
+      this.state.conexionDoc.img = this.state.imgs
       const requestOptions = { method: 'POST', body: JSON.stringify(this.state.conexionDoc) };
       fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
@@ -265,7 +267,7 @@ class ResumeViewScreen extends Component {
 
     async proceedSent() {
       if (this.state.imgs.length>0) this.uploadImages()
-      if (this.state.showConexion) this.sentLinkedDoc()
+      if (this.state.thereIsConexion) this.linkDoc()
       else if (this.state.documentVoice) this.uploadDoc()
     }
 
@@ -290,7 +292,6 @@ class ResumeViewScreen extends Component {
       this.state.data.campos=this.state.doc
       this.state.data.img=this.state.imgs
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
-      console.log("body:"+requestOptions.body)
       fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
@@ -347,25 +348,13 @@ class ResumeViewScreen extends Component {
       await AsyncAlert();
     }
 
-    async checkLinkedDoc() {
-      var noFieldCompleted = this.state.conexionDoc.campos.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
-      var thereIs = this.state.conexionDoc.campos.findIndex(obj => obj.valor != null && obj.obligatorio=="S")
-      if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) {
-        return this.showAlert("Atención", "Hay campos obligatorios que deben completarse en el " + this.state.conexionType)
-      } else if (this.state.cifValueLinkedDoc.length==0) {
-        return this.showAlert("Atención", "Indica el CIF de la entidad del " + this.state.conexionType)
-      } else this.showAskDoc()
-    }
-
     async checkDoc() {
       var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
       var thereIs = this.state.doc.findIndex(obj => obj.valor != null && obj.obligatorio=="S")
       if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) {
         return this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
       } else if (this.state.cifValue.length==0) {
-        return this.showAlert("Atención", "Indica el CIF de la entidad")
-      } else if (this.state.showConexion) {
-        this.checkLinkedDoc()
+        return this.showAlert("Atención", "Indica el NIF/CIF")
       } else this.showAskDoc()
     }
 
@@ -395,49 +384,10 @@ class ResumeViewScreen extends Component {
       this.state.doc[index+2].valor = cuota
     }
 
-    async onSubmitLinkedDocText(index) {
-      if (this.state.cifValue.length>0) await AsyncStorage.setItem(this.state.petitionID+".cifValueLinkedDoc", this.state.cifValueLinkedDoc)
-      if (this.state.interpretedData != null) {
-        if (this.state.conexionDoc.campos[index].obligatorio == "S" && this.state.interpretedData.length==0) {
-          this.showAlert("Error", "Este campo es obligatorio, no puede estar vacío")
-        } else {
-          var idcampo = this.state.conexionDoc.campos[index].idcampo
-          if (idcampo.includes("importe")) {
-            if (!this.state.interpretedData.includes(",") && !this.state.interpretedData.includes(".")) {
-              await this.setState({interpretedData: this.state.interpretedData + ",00" })
-            }
-            this.state.conexionDoc.campos[index].valor = this.state.interpretedData
-            this.state.conexionDoc.campos.filter(obj => obj.idcampo.includes("porcentaje")).forEach(i => {
-              var item = this.state.conexionDoc.campos.findIndex(obj => obj == i)
-              this.setState({ conexionDoc: this.state.conexionDoc})
-              this.calculateData(item, this.state.conexionDoc.campos[item].valor)
-            })
-          } else if (idcampo.includes("porcentaje")) {
-            this.calculateData(index, this.state.interpretedData)
-          } else if (idcampo.includes("fecha")) {
-            if (this.state.interpretedData.toLowerCase() == "hoy") {
-              this.state.conexionDoc.campos[index].valor = ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear()
-            } else if (this.state.interpretedData.toLowerCase() == "ayer") {
-              var yesterday = new Date()
-              yesterday.setDate(new Date().getDate() - 1)
-              this.state.conexionDoc.campos[index].valor = ("0" + (yesterday.getDate())).slice(-2)+ "/"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "/" + yesterday.getFullYear()
-            }
-          } else if (idcampo.includes("factura")) {
-            this.state.conexionDoc.campos[index].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
-          } else {
-            this.state.conexionDoc.campos[index].valor = this.state.interpretedData
-          }
-          this.setState({ conexionDoc: this.state.conexionDoc})
-          await AsyncStorage.setItem(this.state.petitionID+".conexionDoc", JSON.stringify(this.state.conexionDoc))
-        }
-      }
-    }
-
     async onSubmitText(index) {
-      if (this.state.cifValue.length>0) await AsyncStorage.setItem(this.state.petitionID+".cifValue", this.state.cifValue)
       if (this.state.interpretedData != null) {
         if (this.state.doc[index].obligatorio == "S" && this.state.interpretedData.length==0) {
-          this.showAlert("Error", "Este campo es obligatorio, no puede estar vacío")
+          this.state.doc[index].valor = ""
         } else {
           var idcampo = this.state.doc[index].idcampo
           if (idcampo.includes("importe")) {
@@ -460,32 +410,20 @@ class ResumeViewScreen extends Component {
               yesterday.setDate(new Date().getDate() - 1)
               this.state.doc[index].valor = ("0" + (yesterday.getDate())).slice(-2)+ "/"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "/" + yesterday.getFullYear()
             }
-          } else if (idcampo.includes("factura")) {
-            this.state.doc[index].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
-          } else {
-            this.state.doc[index].valor = this.state.interpretedData
-          }
-          this.setState({ doc: this.state.doc})
-          await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+          } else if (idcampo.includes("factura")) this.state.doc[index].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
+          else this.state.doc[index].valor = this.state.interpretedData
         }
       }
+      this.setState({ doc: this.state.doc})
+      await AsyncStorage.setItem(this.state.petitionID+".cifValue", this.state.cifValue)
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
     }
 
-    setConexionData = (item, index) => {
-      return (<View>
-        {this.state.doc.length > 0 && (<View>
-        <Text style={styles.resumeText}>{item.titulo} {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
-        <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput onSubmitEditing={() => { this.onSubmitLinkedDocText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.conexionDoc.campos[index].valor}</TextInput>
-        </View>
-      </View>)}
-      {item.tipoexp.includes("E") && <View>
-        <Text style={styles.resumeText}>CIF de la entidad *</Text>
-        <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput onSubmitEditing={() => { this.onSubmitLinkedDocText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValueLinkedDoc: result})}>{this.state.cifValueLinkedDoc}</TextInput>
-        </View>
-      </View>}
-      </View>)
+    setInput(item, index) {
+      if (item.idcampo.includes("cuenta")) return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
+      if (item.idcampo.includes("importe")) return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0,00" onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
+      if (item.idcampo.includes("fecha")) return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 01/01/2021" onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
+      return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput> 
     }
 
     setData = (item, index) => {
@@ -493,13 +431,13 @@ class ResumeViewScreen extends Component {
         {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && (<View>
         <Text style={styles.resumeText}>{item.titulo} {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
+          {this.setInput(item, index)}
         </View>
       </View>)}   
         {item.tipoexp.includes("E") && <View>
-        <Text style={styles.resumeText}>CIF de la entidad *</Text>
+        <Text style={styles.resumeText}>NIF/CIF *</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
+        <TextInput onSubmitEditing={() => { this.onSubmitText(index); }} placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
         </View>
       </View>}
       {this.state.doc.length > 0 && item.idcampo.includes("conexion") && (<View>
@@ -516,20 +454,6 @@ class ResumeViewScreen extends Component {
         </View>
       </View>)} 
       </View>)
-    }
-
-    setControlConexion() {
-      if (!this.state.showConexion) return null
-      return (
-        <View style={styles.resumeView}>
-          <Text style={styles.resumeLinkedDoc}>Documento de {this.state.conexionType}</Text>
-          <FlatList 
-            vertical
-            showsVerticalScrollIndicator={false}
-            data={this.state.conexionDoc.campos}
-            renderItem={({ item, index }) => (<View>{this.setConexionData(item, index)}</View>)}
-          /></View>
-        )
     }
 
     setControlVoice(){
@@ -574,14 +498,6 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.setItem(key, value)
     }
 
-    async unlinkDoc() {
-      this.setState({showConexion: false })
-      this.setState({cifValueLinkedDoc:""})
-      await AsyncStorage.setItem(this.state.petitionID+".conexionDoc", JSON.stringify([]))
-      await AsyncStorage.setItem(this.state.petitionID+".cifValueLinkedDoc", JSON.stringify(null))
-      await AsyncStorage.setItem(this.state.petitionID+".showConexion", JSON.stringify(this.state.showConexion))
-    }
-
     async linkDoc() {
       var conexionID = this.state.doc.find(obj => obj.idcampo.includes("conexion")).xdefecto
       var conexionType = "cobro"
@@ -601,7 +517,11 @@ class ResumeViewScreen extends Component {
       });
       this.setState({ showConexion: true })
       await AsyncStorage.setItem(this.state.petitionID+".conexionDoc", JSON.stringify(this.state.conexionDoc))
-      await AsyncStorage.setItem(this.state.petitionID+".showConexion", JSON.stringify(this.state.showConexion))
+      this.state.doc.forEach(i=> {
+        var index = this.state.conexionDoc.campos.findIndex(obj=>obj.idcampo==i.idcampo)
+        if (index > -1) this.state.conexionDoc.campos[index].valor = i.valor
+      })
+      this.sentLinkedDoc()
     }
   
     async askSaveWord(msn, key, value) {
@@ -629,19 +549,6 @@ class ResumeViewScreen extends Component {
         await AsyncAlert();
       }
   
-      setLink() {
-        return null
-        /*if (!this.state.conexion) return null
-        var title = this.state.doc[this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))].titulo
-        return <View style={styles.navBarLinkDoc}>
-          {!this.state.showConexion && <TouchableOpacity onPress={() => this.linkDoc()} style={styles.linkButton}>
-            <Text style={styles.button}>Conectar con {title.toLowerCase()}</Text>
-          </TouchableOpacity>}
-          {this.state.showConexion && <TouchableOpacity onPress={() => this.unlinkDoc()} style={styles.linkButton}>
-            <Text style={styles.button}>Desconectar con {title.toLowerCase()}</Text>
-          </TouchableOpacity>}
-        </View>*/
-      }
 
       setFootbar() {
         return (<View style={styles.navBarBackHeader}>
@@ -675,9 +582,7 @@ class ResumeViewScreen extends Component {
               {this.setAllFlags()}
               {this.checkBoxDoc()}
               {this.setControlVoice()}
-              {this.setControlConexion()}
-            </View> 
-            {this.setLink()}
+            </View>
             {this.setFootbar()}
             </ScrollView>  
           </View>

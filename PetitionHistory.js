@@ -39,7 +39,7 @@ class PetitionHistoryScreen extends Component {
       await AsyncStorage.getItem("petitionType").then((value) => {
         this.setState({ petitionType: value })
       })
-      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
+      await AsyncStorage.getItem(this.state.petitionType + "").then((value) => {
         if (value != null) this.setState({ list: JSON.parse(value) })
       })
       await AsyncStorage.getItem("idempresa").then((value) => {
@@ -71,7 +71,9 @@ class PetitionHistoryScreen extends Component {
     }
 
     setData (item) {
-      var firstEmpty = item.savedData.findIndex(obj => obj.escuchado == "" && obj.valor == null)
+      var firstEmpty = item.savedData.findIndex(obj => obj.valor == null && obj.obligatorio == "S")
+      console.log("firstEmpty:"+firstEmpty)
+      console.log("jjejejeje:"+JSON.stringify(this.state.list))
       var imagesContent ="darkgray"
       var microContent ="darkgray"
       if (item.images.length > 0) imagesContent = "#56A494"
