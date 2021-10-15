@@ -6,6 +6,7 @@ import ImageZoom from 'react-native-image-pan-zoom';
 import { RFPercentage } from "react-native-responsive-fontsize";
 import RNFS from 'react-native-fs';
 import NetInfo from "@react-native-community/netinfo";
+import { Picker } from '@react-native-picker/picker';
 
 class ResumeViewScreen extends Component {
   
@@ -37,7 +38,8 @@ class ResumeViewScreen extends Component {
         showConexion: false,
         conexionDoc: [],
         conexionType: "",
-        documentVoice: true
+        documentVoice: true,
+        payment: "Efectivo"
       }
       this.init()
     }
@@ -77,6 +79,9 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem(this.state.petitionID+".savedData").then((value) => {
         if (value != null) this.setState({ doc: JSON.parse(value) })
       })
+      await AsyncStorage.getItem(this.state.petitionID+".payment").then((value) => {
+        if (value != null) this.setState({ payment: value })
+      })
       await AsyncStorage.getItem(this.state.petitionID+".cifValue").then((value) => {
         if (value != null) this.setState({ cifValue: value })
       })
@@ -91,6 +96,14 @@ class ResumeViewScreen extends Component {
       })
       await this.setState({not_loaded: false})
       this.setState({ conexion: (this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))!=-1) })
+      var newID = this.state.petitionID+"_"+(this.state.imgs.length+1)
+      this.state.imgs.push({
+        id: newID,
+        nombre: newID,
+        id_drive:"1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX",
+        urid: "1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR",
+        uri: "file:///data/user/0/com.contavoz/cache/rn_image_picker_lib_temp_17ac4003-f056-4d7c-b66b-d35174385156.jpg"
+      })
     }
     
     componentDidMount(){
@@ -212,7 +225,12 @@ class ResumeViewScreen extends Component {
         j++;
       })
     }*/
-''
+
+    async setSelectedPayment(itemValue) {
+      await this.setState({payment:itemValue})
+      await AsyncStorage.setItem(this.state.petitionID+".payment", itemValue)
+    }
+
     async uploadImages() {}
 
     async sentLinkedDoc() {
@@ -270,8 +288,9 @@ class ResumeViewScreen extends Component {
       this.state.data.titulo=this.state.data.titulo
       this.state.data.cif=this.state.cifValue
       this.state.data.campos=this.state.doc
-      this.state.data.img=[]
+      this.state.data.img=this.state.imgs
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
+      console.log("body:"+requestOptions.body)
       fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
@@ -329,8 +348,8 @@ class ResumeViewScreen extends Component {
     }
 
     async checkLinkedDoc() {
-      var noFieldCompleted = this.state.conexionDoc.campos.findIndex(obj => obj.valor == null && obj.obligatorio=="S" && !obj.idcampo.includes("contrapartida") && !obj.idcampo.includes("conexion"))
-      var thereIs = this.state.conexionDoc.campos.findIndex(obj => obj.valor != null && obj.obligatorio=="S" && !obj.idcampo.includes("contrapartida") && !obj.idcampo.includes("conexion"))
+      var noFieldCompleted = this.state.conexionDoc.campos.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
+      var thereIs = this.state.conexionDoc.campos.findIndex(obj => obj.valor != null && obj.obligatorio=="S")
       if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) {
         return this.showAlert("Atención", "Hay campos obligatorios que deben completarse en el " + this.state.conexionType)
       } else if (this.state.cifValueLinkedDoc.length==0) {
@@ -339,8 +358,8 @@ class ResumeViewScreen extends Component {
     }
 
     async checkDoc() {
-      var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S" && !obj.idcampo.includes("contrapartida") && !obj.idcampo.includes("conexion"))
-      var thereIs = this.state.doc.findIndex(obj => obj.valor != null && obj.obligatorio=="S" && !obj.idcampo.includes("contrapartida") && !obj.idcampo.includes("conexion"))
+      var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
+      var thereIs = this.state.doc.findIndex(obj => obj.valor != null && obj.obligatorio=="S")
       if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) {
         return this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
       } else if (this.state.cifValue.length==0) {
@@ -454,7 +473,7 @@ class ResumeViewScreen extends Component {
 
     setConexionData = (item, index) => {
       return (<View>
-        {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && !item.idcampo.includes("contrapartidageneral") && (<View>
+        {this.state.doc.length > 0 && (<View>
         <Text style={styles.resumeText}>{item.titulo} {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitLinkedDocText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.conexionDoc.campos[index].valor}</TextInput>
@@ -471,18 +490,31 @@ class ResumeViewScreen extends Component {
 
     setData = (item, index) => {
       return (<View style={{paddingBottom: 10}}>
-        {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && !item.idcampo.includes("contrapartidageneral") && (<View>
+        {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && (<View>
         <Text style={styles.resumeText}>{item.titulo} {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
         </View>
-      </View>)}  
+      </View>)}   
         {item.tipoexp.includes("E") && <View>
         <Text style={styles.resumeText}>CIF de la entidad *</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
         </View>
       </View>}
+      {this.state.doc.length > 0 && item.idcampo.includes("conexion") && (<View>
+        <Text style={styles.resumeText}>Forma de pago {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
+        <View style={styles.pickerView}>
+          <Picker
+          selectedValue={this.state.payment}
+          onValueChange={(itemValue, itemIndex) =>
+            this.setSelectedPayment(itemValue)
+          }>
+          <Picker.Item label="Efectivo" value="Efectivo" />
+          <Picker.Item label="Tarjeta" value="Tarjeta" />
+        </Picker>
+        </View>
+      </View>)} 
       </View>)
     }
 
@@ -598,7 +630,8 @@ class ResumeViewScreen extends Component {
       }
   
       setLink() {
-        if (!this.state.conexion) return null
+        return null
+        /*if (!this.state.conexion) return null
         var title = this.state.doc[this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))].titulo
         return <View style={styles.navBarLinkDoc}>
           {!this.state.showConexion && <TouchableOpacity onPress={() => this.linkDoc()} style={styles.linkButton}>
@@ -607,7 +640,7 @@ class ResumeViewScreen extends Component {
           {this.state.showConexion && <TouchableOpacity onPress={() => this.unlinkDoc()} style={styles.linkButton}>
             <Text style={styles.button}>Desconectar con {title.toLowerCase()}</Text>
           </TouchableOpacity>}
-        </View>
+        </View>*/
       }
 
       setFootbar() {
@@ -757,6 +790,15 @@ class ResumeViewScreen extends Component {
         borderColor: "darkgray",
         borderRadius: 20,
         padding: 10
+      },
+      pickerView: {
+        color: '#000',
+        fontSize: RFPercentage(2.5),
+        textAlign:"center",
+        width:"90%",
+        borderWidth: 0.5,
+        borderColor: "darkgray",
+        borderRadius: 20
       },
       mainHeader: {
         padding: 10,

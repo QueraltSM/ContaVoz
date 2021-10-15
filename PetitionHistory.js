@@ -80,7 +80,7 @@ class PetitionHistoryScreen extends Component {
     }
 
     setList() {
-      if (this.state.list.length==0) return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay documentos pendientes</Text><Text style={styles.registeredDocuments}>Pulse + para empezar</Text></View>)
+      if (this.state.list.length==0) return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay documentos pendientes</Text></View>)
       return (<View style={styles.voiceControlView}>
         <FlatList vertical showsVerticalScrollIndicator={false}
           data={ this.state.list.sort((a,b) => a.id < b.id) } 

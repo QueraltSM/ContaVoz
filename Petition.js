@@ -8,6 +8,7 @@ import * as ImagePicker from 'react-native-image-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
 import evaluate from 'words-to-numbers-es';
 import { RFPercentage } from "react-native-responsive-fontsize";
+import { Picker } from '@react-native-picker/picker';
 
 class PetitionScreen extends Component {
     
@@ -38,6 +39,7 @@ class PetitionScreen extends Component {
         showResult: false,
         write_data: false,
         placeholder: "",
+        payment: "Efectivo"
       }
       this.init()
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -111,6 +113,9 @@ class PetitionScreen extends Component {
         if (value != null) {
           this.setState({ cifValue: value })
         }
+      })
+      await AsyncStorage.getItem(this.state.petitionID+".payment").then((value) => {
+        if (value != null) this.setState({ payment: value })
       })
       await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
         if (value != null) {
@@ -276,12 +281,16 @@ class PetitionScreen extends Component {
     }
 
     async setListenedData() {
+      if (this.state.interpretedData.length==0 && this.state.listenedData.length>0) await this.setState({interpretedData: this.state.listenedData}) 
       if (this.state.savedData[this.state.listenFlag].tipoexp == "F") {
         this.setFixedDate()
       } else if (this.state.savedData[this.state.listenFlag].tipoexp == "N") {
         this.setFixedNumber()
-      } else {
+      } else if (this.state.savedData[this.state.listenFlag].tipoexp == "E") {
         this.setFixedData()
+      } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) {
+        await this.setState({interpretedData: this.state.interpretedData.toUpperCase()}) 
+        this.resetListening()
       }
     }
   
@@ -566,7 +575,7 @@ class PetitionScreen extends Component {
     setModalButtons(){
       return (<View style={styles.modalNavBarButtons}>
         {this.state.listenFlag>0 && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-        {this.state.listenFlag < this.state.savedData.length-1 && this.state.listenFlag>-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag < this.state.savedData.length-1 && this.state.listenFlag>-1 && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
       </View>)
     }
 
@@ -579,7 +588,7 @@ class PetitionScreen extends Component {
           </Animated.View>
           {this.state.listenedData.length>0 && <Text style={styles.showSubNextData}>Ha dicho {this.state.savedData[lastSaved].escuchado.toLowerCase()}</Text>}
           {this.state.listenedData.length == 0 && <Text style={styles.infoListen}>Mantén pulsado el micrófono y espere</Text>}
-          {this.state.listenedData.length > 0 && <Text style={styles.infoListen}>Puede dejar de pulsar el micrófono</Text>}
+          {this.state.listenedData.length > 0 && <Text style={styles.infoListen}>Deje de pulsar el micrófono</Text>}
       </View>)
     }
 
@@ -599,12 +608,7 @@ class PetitionScreen extends Component {
     }
 
     async updateListen(value) {
-      if (this.state.listenFlag < this.state.savedData.length-1 && value>0 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida")) {
-        await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value)})
-      } else if (this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && value<0 && this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida")) {
-        await this.setState({ listenFlag: Number(this.state.listenFlag) - 1 })
-      }
-      if (this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion")) {
+      if (this.state.listenFlag < this.state.savedData.length-1) {
         if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
         if (this.state.savedData[this.state.listenFlag].tipoexp=="E" && this.state.cifValue.length>0) await this.saveEnterprise()
         await this.setState({interpretedData:""})
@@ -709,10 +713,30 @@ class PetitionScreen extends Component {
       } 
     }
 
+    async setSelectedPayment(itemValue) {
+      await this.setState({payment:itemValue})
+      await AsyncStorage.setItem(this.state.petitionID+".payment", itemValue)
+    }
+
     setWrittenData() {
+      if (this.state.savedData[this.state.listenFlag].idcampo.includes("conexion")) {
+        return (<View style={styles.modalResult}>
+          <Text style={styles.defaultDataTitle}>Forma de pago</Text>
+          <View style={styles.changeTranscript}>
+          <Picker
+          selectedValue={this.state.payment}
+          onValueChange={(itemValue, itemIndex) =>
+            this.setSelectedPayment(itemValue)
+          }>
+          <Picker.Item label="Efectivo" value="Efectivo" />
+          <Picker.Item label="Tarjeta" value="Tarjeta" />
+        </Picker>
+        </View>
+        </View>)
+      }
       return (<View style={styles.modalResult}>
-        <Text style={styles.defaultDataTitle}>Valor para {this.state.savedData[this.state.listenFlag].titulo}</Text>
-        <TextInput placeholder={this.state.placeholder} blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={interpretedData => this.setState({interpretedData: interpretedData})}>{this.state.savedData[this.state.listenFlag].valor}</TextInput>
+        <Text style={styles.defaultDataTitle}>{this.state.savedData[this.state.listenFlag].titulo}</Text>
+        <TextInput placeholder={this.state.placeholder} onSubmitEditing = {() => this.setListenedData()} blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedData[this.state.listenFlag].valor}</TextInput>
         {this.state.savedData[this.state.listenFlag].tipoexp=="E" &&
           (<View><Text style={styles.defaultDataTitle}>CIF de la empresa</Text>
             <TextInput blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={cifValue => this.setState({cifValue})}>{this.state.cifValue}</TextInput>
@@ -727,12 +751,12 @@ class PetitionScreen extends Component {
       if (!this.state.is_recording) {
         return(
           <View style={styles.titleView}>
-            {this.state.images.length==0 && neverListened == -1 && <Text style={styles.showHeader}>Adjunte imágenes o mantenga pulsado el micrófono</Text>}
+            <Text style={styles.showHeader}>Adjunte imágenes o mantenga pulsado el micrófono</Text>
             {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].valor != "" && this.state.savedData[this.state.listenFlag-1].valor != null && <Text style={styles.showNextData}>Anterior {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()}: {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
-            <Text style={styles.showTitle}>{message}</Text>
+            <Text style={styles.stateDoc}>{message}</Text>
             {this.setWrittenData()}
-            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
-            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-2 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+2].titulo.toLowerCase()}</Text>}
+            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
+            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente forma de pago</Text>}
           </View>
         )
       }
@@ -753,26 +777,13 @@ class PetitionScreen extends Component {
 
     documentState = () => {
       if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") && !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
-        this.state.placeholder = "Dato no completo"
+        this.state.placeholder = "Diga o introduzca dato"
       }
-      var firstEmpty = this.state.savedData.findIndex(obj => obj.escuchado == "" && obj.valor == null)
-      if (this.state.savedData[this.state.listenFlag].xdefecto!="") {
-        return this.showMessage("Dato por defecto " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
-      } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") || this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
-        return this.showMessage("Dato " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
-      }
-      if (firstEmpty>-1) {
-        if (this.state.savedData[this.state.listenFlag].escuchado!="") {
-          return this.showMessage("Dato escuchado " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
-        } else if (this.state.savedData[this.state.listenFlag].obligatorio=="S") {
-          return this.showMessage("Dato a solicitar " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
-        }
-        return this.showMessage("Dato a solicitar " + this.state.savedData[this.state.listenFlag].titulo.toUpperCase())
-      }
+      var firstEmpty = this.state.savedData.findIndex(obj => obj.valor == null)
       if (firstEmpty==-1) {
-        return this.showMessage("Documento de voz finalizado")
+        return this.showMessage("Documento finalizado")
       }
-      return null
+      return this.showMessage("Documento NO finalizado")
     }
   
     seeDocument = () => {
@@ -871,7 +882,7 @@ class PetitionScreen extends Component {
     }
 
     render () {
-      if (this.state.savedData.length==0) return null // Wait loop
+      if (this.state.savedData.length==0) return null
       return (
         <View style={{ flex: 1 }}>
             <View style={styles.navBarHeader}>
@@ -972,6 +983,14 @@ class PetitionScreen extends Component {
         paddingTop: 20,
         textAlign: 'center',
         color: '#117864',
+        fontWeight: 'bold',
+        fontSize: RFPercentage(3),
+        width: "100%",
+      },
+      stateDoc: {
+        paddingTop: 20,
+        textAlign: 'center',
+        color: '#922B21',
         fontWeight: 'bold',
         fontSize: RFPercentage(3),
         width: "100%",
@@ -1198,17 +1217,6 @@ class PetitionScreen extends Component {
         borderWidth:2,
         borderColor: '#1A5276',
       },
-      fadingContainer: {
-        paddingVertical: 5,
-        paddingHorizontal: 25,
-        backgroundColor: "lightseagreen"
-      },
-      fadingText: {
-        fontSize: 20,
-        textAlign: "center",
-        margin: 10,
-        color : "#fff"
-      },
       saveButtomModal: {
         backgroundColor: "#922B21",
         borderRadius: 10,
@@ -1219,24 +1227,4 @@ class PetitionScreen extends Component {
         borderRadius: 10,
         padding: 10
       },
-      editButtomModal: {
-        backgroundColor: "#1B4F72",
-        borderRadius: 10,
-        padding: 10
-      },
-      continueButtomModal: {
-        backgroundColor: "#2874A6",
-        borderRadius: 10,
-        padding: 10,
-        flexDirection: "row"
-      },
-      clickImage: {
-        padding: 10,
-        backgroundColor: "white",
-      },
-      imagesCount: {
-        fontWeight: "bold",
-        fontSize: RFPercentage(3),
-        color: "#154360"
-      }
   })

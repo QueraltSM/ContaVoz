@@ -12,6 +12,7 @@
     "@react-native-community/async-storage": "^1.12.1",
     "@react-native-community/netinfo": "^6.0.2",
     "@react-native-google-signin/google-signin": "^7.0.0-alpha.3",
+    "@react-native-picker/picker": "^2.1.0",
     "child_process": "^1.0.2",
     "child-process": "^1.0.2",
     "expo": "~41.0.1",

@@ -24,4 +24,6 @@ target 'ContaVoz' do
 
   pod 'RNFS', :path => '../node_modules/react-native-fs'
 
+  pod 'RNCPicker', :path => '../node_modules/@react-native-picker/picker'
+
 end

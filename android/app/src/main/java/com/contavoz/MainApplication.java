@@ -6,6 +6,7 @@ import android.net.Uri;
 
 import com.facebook.react.PackageList;
 import com.facebook.react.ReactApplication;
+import com.reactnativecommunity.picker.RNCPickerPackage;
 import com.rnfs.RNFSPackage;
 import com.rnfs.RNFSPackage;
 import com.wenkesj.voice.VoicePackage;
