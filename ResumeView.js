@@ -136,11 +136,16 @@ class ResumeViewScreen extends Component {
 
     async changeCheckBoxDoc() {
       await AsyncStorage.setItem(this.state.petitionID+".documentVoice", JSON.stringify(!this.state.documentVoice))
-      this.setState({documentVoice: !this.state.documentVoice})
+      await this.setState({documentVoice: !this.state.documentVoice})
+      if (!this.state.documentVoice) {
+        await AsyncStorage.setItem(this.state.petitionID+".cifValue", "")
+        this.state.doc.forEach(i => { i.valor = null })
+        await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+      }
     }
   
     checkBoxDoc() {
-      if (this.state.imgs.length>0) return<View style={styles.checkboxContainer}><CheckBox value={this.state.documentVoice} onValueChange={() => this.changeCheckBoxDoc()}/><Text style={styles.checkbox}>Añadir datos del documento contable</Text></View>
+      if (this.state.imgs.length>0) return<View style={styles.checkboxContainer}><CheckBox value={this.state.documentVoice} onValueChange={() => this.changeCheckBoxDoc()}/><Text style={styles.checkbox}>Añadir datos del documento</Text></View>
       return null
     }
 
@@ -233,21 +238,26 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.setItem(this.state.petitionID+".payment", itemValue)
     }
 
-    async uploadImages() {}
+    async uploadImages() {
+      console.log("---uploadImages---")
+    }
 
     async sentLinkedDoc() {
       var importe = ""
       var fecha = ""
-      importe = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("importe"))
       var fechaIndex = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("fecha"))
-      importe = this.state.conexionDoc.campos[importe].valor
-      fecha = this.state.conexionDoc.campos[fechaIndex].valor
-      var newDate = fecha.split("/")
-      fecha = newDate[2]+"/"+newDate[1]+"/"+newDate[0]
+      if (this.state.documentVoice) {
+        importe = this.state.conexionDoc.findIndex(obj => obj.idcampo.includes("importe"))
+        importe = this.state.conexionDoc[importe].valor
+        fecha = this.state.conexionDoc.campos[fechaIndex].valor
+        var newDate = fecha.split("/")
+        fecha = newDate[2]+"/"+newDate[1]+"/"+newDate[0]
+      } else fecha = new Date().getFullYear() + "/" + ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + ("0" + (new Date().getDate())).slice(-2)
       this.state.conexionDoc.campos[fechaIndex].valor = fecha
       this.state.conexionDoc.tipo=this.state.conexionDoc.tipo
       this.state.conexionDoc.importe=importe
       this.state.conexionDoc.fecha=fecha
+      if (!this.state.documentVoice) this.state.conexionDoc.campos[fechaIndex].valor = null
       this.state.conexionDoc.company_padisoft=this.state.company_padisoft 
       this.state.conexionDoc.idcliente=this.state.idcliente 
       this.state.conexionDoc.tipopeticion="guardar"
@@ -256,34 +266,37 @@ class ResumeViewScreen extends Component {
       this.state.conexionDoc.campos=this.state.conexionDoc.campos
       this.state.conexionDoc.img = this.state.imgs
       const requestOptions = { method: 'POST', body: JSON.stringify(this.state.conexionDoc) };
+      console.log("Documento linkeado : " +requestOptions.body)
       fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") this.showAlert("Error", "Hubo un error al subir el documento")
-        else this.uploadDoc()
       }).catch((error) => {});
     }
 
     async proceedSent() {
-      if (this.state.imgs.length>0) this.uploadImages()
-      if (this.state.thereIsConexion) this.linkDoc()
-      else if (this.state.documentVoice) this.uploadDoc()
+      if (this.state.imgs.length>0) await this.uploadImages()
+      if (this.state.thereIsConexion) await this.linkDoc()
+      await this.uploadDoc()
     }
 
     async uploadDoc() {
       var importe = ""
       var fecha = ""
-      importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
       var fechaIndex = this.state.doc.findIndex(obj => obj.idcampo.includes("fecha"))
-      importe = this.state.doc[importe].valor
-      fecha = this.state.doc[fechaIndex].valor
-      var newDate = fecha.split("/")
-      fecha = newDate[2]+"/"+newDate[1]+"/"+newDate[0]
+      if (this.state.documentVoice) {
+        importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
+        importe = this.state.doc[importe].valor
+        fecha = this.state.doc[fechaIndex].valor
+        var newDate = fecha.split("/")
+        fecha = newDate[2]+"/"+newDate[1]+"/"+newDate[0]
+      } else fecha = new Date().getFullYear() + "/" + ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + ("0" + (new Date().getDate())).slice(-2)
       this.state.doc[fechaIndex].valor = fecha
       this.state.data.tipo=this.state.type
       this.state.data.importe=importe
       this.state.data.fecha=fecha
+      if (!this.state.documentVoice) this.state.doc[fechaIndex].valor = null
       this.state.data.company_padisoft=this.state.company_padisoft 
       this.state.data.idcliente=this.state.idcliente 
       this.state.data.tipopeticion="guardar"
@@ -429,23 +442,23 @@ class ResumeViewScreen extends Component {
     setData = (item, index) => {
       return (<View style={{paddingBottom: 10}}>
         {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && (<View>
-        <Text style={styles.resumeText}>{item.titulo} {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
+        <Text style={styles.resumeText}>{item.titulo}{item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
           {this.setInput(item, index)}
         </View>
       </View>)}   
         {item.tipoexp.includes("E") && <View>
-        <Text style={styles.resumeText}>NIF/CIF *</Text>
+        <Text style={styles.resumeText}>NIF/CIF*</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitText(index); }} placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
         </View>
       </View>}
       {this.state.doc.length > 0 && item.idcampo.includes("conexion") && (<View>
-        <Text style={styles.resumeText}>Forma de pago {item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
+        <Text style={styles.resumeText}>Forma de pago{item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={styles.pickerView}>
           <Picker
           selectedValue={this.state.payment}
-          onValueChange={(itemValue, itemIndex) =>
+          onValueChange={(itemValue) =>
             this.setSelectedPayment(itemValue)
           }>
           <Picker.Item label="Efectivo" value="Efectivo" />
@@ -669,7 +682,8 @@ class ResumeViewScreen extends Component {
       resumeView: {
         paddingTop: 20,
         paddingBottom: 20,
-        paddingLeft: 40,
+        paddingLeft: 30,
+        width:"100%",
         backgroundColor: "#FFF"
       },
       resumeText: {
@@ -678,6 +692,7 @@ class ResumeViewScreen extends Component {
         paddingTop: 20,
         color: "#000",
         fontWeight: 'bold',
+        width:"90%"
       },
       resumeLinkedDoc: {
         fontSize: RFPercentage(3),
@@ -694,7 +709,6 @@ class ResumeViewScreen extends Component {
         borderWidth: 0.5,
         borderColor: "darkgray",
         borderRadius: 20,
-        padding: 10
       },
       pickerView: {
         color: '#000',
@@ -764,10 +778,11 @@ class ResumeViewScreen extends Component {
         fontWeight: 'bold',
       },
       checkboxContainer: {
+        flexDirection: "row",
+        alignContent:"center",
+        alignItems:"center",
         paddingTop: 20,
         paddingLeft: 10,
         paddingRight: 10,
-        flexDirection: "row"
       }
     })
-

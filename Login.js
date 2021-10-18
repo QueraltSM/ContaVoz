@@ -4,6 +4,7 @@ import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import NetInfo from "@react-native-community/netinfo";
+import { RFPercentage } from "react-native-responsive-fontsize";
 
 class LoginScreen extends Component {  
     constructor(props) {
@@ -17,7 +18,9 @@ class LoginScreen extends Component {
         idempresa: "",
         userID: "",
         userid: "",
-        hidePassword: true 
+        hidePassword: true,
+        errorMessage: "",
+        error: -1
       }
       this.init()
     }
@@ -63,7 +66,7 @@ class LoginScreen extends Component {
         default:
           error = "Error desconocido"
       }
-      this.showAlert("Error al iniciar sesión", error);
+      this.setState({errorMessage: "Error al iniciar sesión:\n" + error })
     }
   
     async saveUser() {
@@ -72,6 +75,7 @@ class LoginScreen extends Component {
     }
 
     async saveConfig(config) {
+      await this.setState({errorMessage: "" })
       await AsyncStorage.setItem("allConfigs", JSON.stringify(config))
       this.goHome()
     }
@@ -89,11 +93,8 @@ class LoginScreen extends Component {
           this.saveConfig(responseJson.configuraciones)
         } else {
           var error = JSON.parse(JSON.stringify(JSON.parse(configs)[0].error))
-          if (error=="false") {
-            this.saveConfig(responseJson.configuraciones)
-          } else {
-            this.showAlert("Error", "Algo salió mal, disculpe las molestias")
-          }
+          if (error=="false") this.saveConfig(responseJson.configuraciones)
+          else this.setState({errorMessage: "Algo salió mal, disculpe las molestias" })
         }
       }).catch((error) => {});
     }
@@ -111,8 +112,9 @@ class LoginScreen extends Component {
   
     login = async () => {
       await NetInfo.addEventListener(networkState => {
-        if (networkState.isConnected) {
-          if (this.state.company != undefined && this.state.user != undefined && this.state.password != undefined) {
+        if (networkState.isConnected && this.state.error<0) {
+          this.setState({ error: 0 })
+          if (this.state.company.length>0 && this.state.user.length>0 && this.state.password.length>0) {
             const requestOptions = {
               method: 'POST',
               body: JSON.stringify({aliasDb: this.state.company, user: this.state.user, password: this.state.password, appSource: "Disoft"})
@@ -120,8 +122,8 @@ class LoginScreen extends Component {
             fetch('https://app.dicloud.es/login.asp', requestOptions)
               .then((response) => response.json())
               .then((responseJson) => {
-                let error = JSON.stringify(responseJson.error_code)
-                if (error == 0) {
+                this.setState({ error: JSON.stringify(responseJson.error_code) })
+                if (this.state.error == 0) {
                   this.setState({fullname: JSON.parse(JSON.stringify(responseJson.fullName))})
                   this.setState({token: JSON.parse(JSON.stringify(responseJson.token))})
                   this.setState({idempresa: JSON.parse(JSON.stringify(responseJson.idempresa))})
@@ -132,31 +134,12 @@ class LoginScreen extends Component {
                 }
               }).catch(() => {});
           } else {
-            this.showAlert("Error", "Complete todos los campos")
+            this.setState({errorMessage: "Complete todos los campos" })
           }
         } else {
-          this.showAlert("Error", "No tiene conexión a Internet")
+          this.setState({errorMessage: "No tiene conexión a Internet" })
         }
       })
-    }
-      
-    async showAlert (title, message) {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          title,
-          message,
-          [
-            {
-              text: 'Ok',
-              onPress: () => {
-                resolve();
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-      await AsyncAlert();
     }
   
     managePasswordVisibility = () => {
@@ -170,21 +153,14 @@ class LoginScreen extends Component {
               source={require('./assets/union-europea.jpg')}
               resizeMode="contain"
               key="assets/canarias-avanza-con-europa"
-              style={{ width: 100, height: 100}}/> 
-          </View>
-          <View style={{paddingRight: 10}}>
-            <Image
-              source={require('./assets/exagon.jpg')}
-              resizeMode="contain"
-              key="assets/canarias-avanza-con-europa"
-              style={{ width: 100, height: 100}}/>
+              style={{ width: 150, height: 150}}/> 
           </View>
           <View style={{paddingRight: 10}}>
             <Image
               source={require('./assets/canarias-avanza-con-europa.png')}
               resizeMode="contain"
               key="assets/canarias-avanza-con-europa"
-              style={{ width: 100, height: 100}}/> 
+              style={{ width: 150, height: 150}}/> 
           </View> 
       </View>
     }
@@ -193,7 +169,7 @@ class LoginScreen extends Component {
       return (
         <View style={ styles.container }>            
           <ScrollView
-            style={{backgroundColor: "white", width:"100%" }}
+            style={{flex: 1, backgroundColor: "white", width:"100%", height:"100%" }}
             showsVerticalScrollIndicator ={false}
             showsHorizontalScrollIndicator={false}
             persistentScrollbar={false}>
@@ -224,13 +200,14 @@ class LoginScreen extends Component {
             />)}    
             </TouchableOpacity>   
           </View>  
-          <View style={{paddingTop: 20, alignSelf:"center"}}>
+          <View style={{alignSelf:"center"}}>
           <TouchableOpacity onPress={() => this.login()} style={styles.appButtonContainer}>
             <Text style={styles.appButtonText}>Entrar</Text>
           </TouchableOpacity>  
           </View>
-          </ScrollView>
+          <View style={{flex: 1, paddingTop:20}}><Text style={styles.errorText}>{this.state.errorMessage}</Text></View>
           {this.setFootbar()}
+          </ScrollView>
         </View>
       );
     } 
@@ -241,6 +218,7 @@ export default createAppContainer(LoginScreen);
 const styles = StyleSheet.create({
     container: {
       flex: 1,
+      flexDirection: 'column',
       paddingTop: 50,
       backgroundColor: '#fff',
       alignItems: 'center',
@@ -261,8 +239,6 @@ const styles = StyleSheet.create({
       textAlign: "center"
     },
     textBoxBtnHolder:{
-      position: 'relative',
-      alignSelf: 'stretch',
       justifyContent: 'center'
     },
     visibilityBtn: {
@@ -288,11 +264,18 @@ const styles = StyleSheet.create({
       margin: 20 
     },
     footerView: {
+      flex: 0,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor:"white", 
       flexDirection:'row', 
-      textAlignVertical: 'center',
-      height: 65
-    }
+    },
+    errorText: {
+      paddingTop: 20,
+      textAlign: 'center',
+      color: '#922B21',
+      fontWeight: 'bold',
+      fontSize: RFPercentage(2.5),
+      width: "100%",
+    },
 })

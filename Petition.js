@@ -128,12 +128,12 @@ class PetitionScreen extends Component {
           this.setState({ list: JSON.parse(value) })
         }
       })  
-      try {
+      /*try {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, { title: "ContaVoz", message:"Necesitamos permisos para acceder a su micrófono", buttonNegative: "Cancelar", buttonPositive: "Aceptar" }
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {}
-      } catch(e){}
+      } catch(e){}*/
     }
   
     componentWillUnmount() {
@@ -286,8 +286,8 @@ class PetitionScreen extends Component {
         this.setFixedData()
       } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) {
         await this.setState({interpretedData: this.state.interpretedData.toUpperCase()}) 
-        this.resetListening()
       }
+      this.resetListening()
     }
   
     onSpeechResults(e) {
@@ -683,7 +683,14 @@ class PetitionScreen extends Component {
       }
     }
 
+    async saveCalculation(result) {
+      this.state.savedData[this.state.listenFlag].escuchado = result
+      this.state.savedData[this.state.listenFlag].valor = result
+      this.setState({ interpretedData: result})
+    }
+
     async calculateResult() {
+      var bases = this.state.savedData.filter(i => i.idcampo.includes("base"))
       var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
       var importe = this.state.savedData[index].valor
       if (importe != null) {
@@ -691,21 +698,21 @@ class PetitionScreen extends Component {
         if (porcentaje != null) {
           importe = importe.replace(",",".")
           var result = ""
-          if (this.state.savedData[this.state.listenFlag].idcampo.includes("base")) {
+          if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && bases.length == 1) {
             var x = 100 + Number(porcentaje)
             result = ( importe * 100 ) / x
             result = Math.round(result * 100) / 100
+            this.saveCalculation(result)
           } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
             var base = this.state.savedData[this.state.listenFlag-1].valor + ""
             if (base.includes(",")) base = base.replace(",",".") 
             var porcentaje = Number(this.state.savedData[this.state.listenFlag-2].valor) 
-            result = Number(base)*porcentaje
+            porcentaje = (importe*porcentaje) / 100
+            result = Number(base)*Number(porcentaje)
             result = Math.round(result * 100) / 100
+            this.saveCalculation(result)
           }
-          this.state.savedData[this.state.listenFlag].escuchado = result
-          this.state.savedData[this.state.listenFlag].valor = result
-          this.setState({ interpretedData: result})
-        }
+        } 
       } 
     }
 
@@ -721,7 +728,7 @@ class PetitionScreen extends Component {
           <View style={styles.changeTranscript}>
           <Picker
           selectedValue={this.state.payment}
-          onValueChange={(itemValue, itemIndex) =>
+          onValueChange={(itemValue) =>
             this.setSelectedPayment(itemValue)
           }>
           <Picker.Item label="Efectivo" value="Efectivo" />
@@ -743,7 +750,6 @@ class PetitionScreen extends Component {
 
     showMessage = (message) => {
       if (this.state.savedData.length==0) return null
-      var neverListened = this.state.savedData.findIndex(obj => obj.escuchado != "")
       if (!this.state.is_recording) {
         return(
           <View style={styles.titleView}>
@@ -896,8 +902,9 @@ class PetitionScreen extends Component {
                 {this.documentState()}
                 {this.setVoiceControl()}
               </View>
+              
             </ScrollView>
-          {this.setMenu()}
+            {this.setMenu()}
         </View>
       );
     }
@@ -914,12 +921,13 @@ class PetitionScreen extends Component {
         textAlignVertical: 'center',
       },
       navBarBackHeader: {
+        paddingTop: 50,
+        paddingBottom: 20,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor:"white", 
         flexDirection:'row', 
         textAlignVertical: 'center',
-        height: 65
       },
       navBarButtons: {
         flex:1,
