@@ -239,8 +239,53 @@ class ResumeViewScreen extends Component {
     }
 
     async uploadImages() {
-      console.log("---uploadImages---")
+
+      var fileContent = 'sample text'; // As a sample, upload a text file.
+      var file = new Blob([fileContent], {type: 'text/plain'});
+      var metadata = {
+          'name': 'sampleName', // Filename at Google Drive
+          'mimeType': 'text/plain', // mimeType at Google Drive
+          'parents': ['### folder ID ###'], // Folder ID at Google Drive
+      };
+
+      var accessToken = gapi.auth.getToken().access_token; // Here gapi is used for retrieving the access token.
+      var form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+      form.append('file', file);
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('post', 'https://drive.google.com/drive/folders/18AlOuBltEUNk_6_XdT2sLX0OjIPe0pcd?usp=sharing');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+      xhr.responseType = 'json';
+      xhr.onload = () => {
+          console.log(xhr.response.id); // Retrieve uploaded file ID.
+      };
+      xhr.send(form);
+
+      /*var imageuri = this.state.imgs[0].uri
+      var data = new FormData();
+      data.append("name", "Techup media");
+      data.append("profile_image", {
+        name: "image",
+        type: "image/png",
+        uri: Platform.OS === "android" ? imageuri : imageuri.replace("file://", "")});
+          console.log("imageuri:"+imageuri)
+            // Change file upload URL
+            var url = "https://drive.google.com/drive/u/0/folders/18AlOuBltEUNk_6_XdT2sLX0OjIPe0pcd";
+            let res = await fetch(url, {
+              method: "POST",
+              body: JSON.stringify({ img: data }),
+              headers: {
+                "Content-Type": "multipart/form-data",
+                Accept: "application/json"
+              }
+            }).then((responseJson) => {
+              console.log("ok:"+JSON.stringify(responseJson))
+            }).catch((error) => {
+              console.log("error:"+error)
+            });*/
     }
+
 
     async sentLinkedDoc() {
       var importe = ""
@@ -277,8 +322,8 @@ class ResumeViewScreen extends Component {
 
     async proceedSent() {
       if (this.state.imgs.length>0) await this.uploadImages()
-      if (this.state.thereIsConexion) await this.linkDoc()
-      await this.uploadDoc()
+      //if (this.state.thereIsConexion) await this.linkDoc()
+      //await this.uploadDoc()
     }
 
     async uploadDoc() {
@@ -305,6 +350,7 @@ class ResumeViewScreen extends Component {
       this.state.data.campos=this.state.doc
       this.state.data.img=this.state.imgs
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
+      console.log("uploaddoc:"+requestOptions.body)
       fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
@@ -364,6 +410,8 @@ class ResumeViewScreen extends Component {
     async checkDoc() {
       var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
       var thereIs = this.state.doc.findIndex(obj => obj.valor != null && obj.obligatorio=="S")
+      console.log("thereIs:"+thereIs)
+      console.log("noFieldCompleted:"+noFieldCompleted)
       if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) {
         return this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
       } else if (this.state.cifValue.length==0) {
@@ -372,13 +420,16 @@ class ResumeViewScreen extends Component {
     }
 
     async askSaveDoc() {
-      NetInfo.addEventListener(networkState => {
+      if (this.state.documentVoice) {
+        this.checkDoc()
+      } else if (this.state.imgs.length>0) this.showAskDoc()
+      /*NetInfo.addEventListener(networkState => {
         if (networkState.isConnected) {
           if (this.state.documentVoice) {
             this.checkDoc()
           } else if (this.state.imgs.length>0) this.showAskDoc()
         } else this.showAlert("Error", "No hay conexión a Internet")
-      })
+      })*/
     }
     
     async calculateData(index, porcentaje) {

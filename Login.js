@@ -150,17 +150,24 @@ class LoginScreen extends Component {
       return <View style={styles.footerView}>
           <View style={{paddingRight: 10}}>
             <Image
+              source={require('./assets/gob-canarias.png')}
+              resizeMode="contain"
+              key="assets/canarias-avanza-con-europa"
+              style={{ width: 100, height: 100}}/> 
+          </View> 
+          <View style={{paddingRight: 10}}>
+            <Image
               source={require('./assets/union-europea.jpg')}
               resizeMode="contain"
               key="assets/canarias-avanza-con-europa"
-              style={{ width: 150, height: 150}}/> 
+              style={{ width: 100, height: 100}}/> 
           </View>
           <View style={{paddingRight: 10}}>
             <Image
               source={require('./assets/canarias-avanza-con-europa.png')}
               resizeMode="contain"
               key="assets/canarias-avanza-con-europa"
-              style={{ width: 150, height: 150}}/> 
+              style={{ width: 100, height: 100}}/> 
           </View> 
       </View>
     }
@@ -168,11 +175,6 @@ class LoginScreen extends Component {
     render() {
       return (
         <View style={ styles.container }>            
-          <ScrollView
-            style={{flex: 1, backgroundColor: "white", width:"100%", height:"100%" }}
-            showsVerticalScrollIndicator ={false}
-            showsHorizontalScrollIndicator={false}
-            persistentScrollbar={false}>
           <View style={{paddingBottom: 20, alignSelf:"center"}}>
           <Image
             style={{ height: 100, width: 100, margin: 10}}
@@ -207,7 +209,6 @@ class LoginScreen extends Component {
           </View>
           <View style={{flex: 1, paddingTop:20}}><Text style={styles.errorText}>{this.state.errorMessage}</Text></View>
           {this.setFootbar()}
-          </ScrollView>
         </View>
       );
     } 
@@ -239,6 +240,7 @@ const styles = StyleSheet.create({
       textAlign: "center"
     },
     textBoxBtnHolder:{
+      width:"100%",
       justifyContent: 'center'
     },
     visibilityBtn: {
