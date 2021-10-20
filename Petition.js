@@ -128,12 +128,6 @@ class PetitionScreen extends Component {
           this.setState({ list: JSON.parse(value) })
         }
       })  
-      /*try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, { title: "ContaVoz", message:"Necesitamos permisos para acceder a su micrófono", buttonNegative: "Cancelar", buttonPositive: "Aceptar" }
-        );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {}
-      } catch(e){}*/
     }
   
     componentWillUnmount() {
@@ -241,9 +235,8 @@ class PetitionScreen extends Component {
         if (isNaN(this.state.listenedData)) {
           this.showAlert("Error", "El dato aportado no es numérico")
         } else {
-          if (!this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje") && (!this.state.listenedData.includes(".") || !this.state.listenedData.includes(","))) {
-            this.setState({ listenedData: this.state.listenedData + ",00" })
-          }
+          if (this.state.listenedData.includes(".")) this.setState({listenedData: this.state.listenedData.replace(".", ",")})
+          if (this.state.savedData[this.state.listenFlag].tipoexp=="N" && !this.state.listenedData.includes(",")) this.setState({ listenedData: this.state.listenedData + ",00" })
           this.setState({ interpretedData: this.state.listenedData.split(' ').join("").replace("/",".") })
           this.resetListening()
         }
@@ -585,8 +578,8 @@ class PetitionScreen extends Component {
       if (this.state.listenFlag < this.state.savedData.length-1) {
         if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
         if (this.state.savedData[this.state.listenFlag].tipoexp=="E" && this.state.cifValue.length>0) await this.saveEnterprise()
-        await this.setState({interpretedData:""})
-        await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value)})
+        await this.setState({ interpretedData: "" })
+        await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value) })
         if (this.state.savedData[this.state.listenFlag].idcampo.includes("base")) {
           var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
           var importe = this.state.savedData[index].valor
@@ -601,14 +594,14 @@ class PetitionScreen extends Component {
           if (importe==null) await this.setState({placeholder:"Debe introducir importe"})
           else if (porcentaje==null) await this.setState({placeholder:"Debe introducir porcentaje"})
           else await this.calculateResult()
-      } else {
-        this.setState({ is_recording: false})
-        await this.setState({ listenFlag: Number(this.state.listenFlag) - 1})
       }
       await this.setState({ savedData: this.state.savedData })
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
       await AsyncStorage.setItem(this.state.petitionID+".listenFlag", JSON.stringify(this.state.listenFlag))
       if (this.state.cifValue.length>0) await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cifValue) 
+    } else {
+      this.setState({ is_recording: false})
+      await this.setState({ listenFlag: Number(this.state.listenFlag) - 1})
     }
   }
 
@@ -652,26 +645,10 @@ class PetitionScreen extends Component {
       await this.saveDocument()
     }
 
-    async dataOK() {
-      if (this.state.cifValue.length==0 && this.state.savedData[this.state.listenFlag].tipoexp == "E") {
-        this.showAlert("Error", "Indique un CIF para esta empresa")
-      } else if (this.state.savedData[this.state.listenFlag].tipoexp == "E") {
-        this.saveEnterprise()
-      } else {
-        if (this.state.interpretedData.length>0) {
-          this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
-          this.setState({savedData: this.state.savedData})
-          await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
-        }
-        this.setState({showResult: false})
-        this.updateListen(1)
-      }
-    }
-
     async saveCalculation(result) {
       this.state.savedData[this.state.listenFlag].escuchado = result
       this.state.savedData[this.state.listenFlag].valor = result
-      this.setState({ interpretedData: result})
+      await this.setState({ interpretedData: result })
     }
 
     async calculateResult() {
@@ -730,11 +707,11 @@ class PetitionScreen extends Component {
       if (!this.state.is_recording) {
         return(
           <View style={styles.titleView}>
-            <Text style={styles.showHeader}>Adjunte imágenes o mantenga pulsado el micrófono</Text>
+            <Text style={styles.showHeader}>Adjunte imágenes, diga o introduzca los datos</Text>
             {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].valor != "" && this.state.savedData[this.state.listenFlag-1].valor != null && <Text style={styles.showNextData}>Anterior {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()}: {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
             <Text style={styles.stateDoc}>{message}</Text>
             {this.setWrittenData()}
-            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
+            {this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
             {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente forma de pago</Text>}
           </View>
         )
@@ -745,9 +722,7 @@ class PetitionScreen extends Component {
     async saveDocument() {
       var list = []
       await AsyncStorage.getItem(this.state.petitionType).then((value) => {
-        if (value != null) {
-          list = JSON.parse(value) 
-        }
+        if (value != null) list = JSON.parse(value) 
       })
       var index = list.findIndex(obj => JSON.stringify(obj.id) == this.state.petitionID)
       list[index].savedData = this.state.savedData
@@ -755,7 +730,13 @@ class PetitionScreen extends Component {
     }
 
     documentState = () => {
-      if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") && !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) this.state.placeholder = "Diga o introduzca dato"
+      if (this.state.savedData[this.state.listenFlag].tipoexp == "E") this.state.placeholder = "Ej: Disoft Servicios Informáticos S.L."
+      else if (this.state.savedData[this.state.listenFlag].tipoexp == "F") this.state.placeholder = "Ej: 1 de Enero, 1 de Enero de 2021 o 01/01/2021"
+      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) this.state.placeholder = "Ej: 1217 o F/1217 o F-1217"
+      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("importe")) this.state.placeholder = "Ej: 1070 o 1070,00"
+      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje")) this.state.placeholder = "Ej: 3 o 7"
+      else if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedData[this.state.listenFlag].tipoexp == "N") this.state.placeholder = "Ej: 10 o 10,5"
+      else if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) this.state.placeholder = "Diga o introduzca dato"
       var firstEmpty = this.state.savedData.findIndex(obj => obj.valor == null)
       if (firstEmpty==-1) return this.showMessage("Documento finalizado")
       return this.showMessage("Documento NO finalizado")
@@ -768,9 +749,7 @@ class PetitionScreen extends Component {
     async deleteDoc() {
       var chargeDocs = []
       this.state.list.forEach((i) => {
-        if (i.id != this.state.petitionID) {
-          chargeDocs.push(i)
-        }
+        if (i.id != this.state.petitionID) chargeDocs.push(i)
       })
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(chargeDocs))
       this.goBack()

@@ -38,7 +38,8 @@ class ResumeViewScreen extends Component {
         conexionDoc: [],
         conexionType: "",
         documentVoice: true,
-        payment: "Efectivo"
+        payment: "Efectivo",
+        wifi: true
       }
       this.init()
     }
@@ -89,6 +90,9 @@ class ResumeViewScreen extends Component {
       })
       await this.setState({not_loaded: false})
       await this.setState({ thereIsConexion: (this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))>-1) })
+      NetInfo.addEventListener(networkState => {
+        this.setState({ wifi: networkState.isConnected })
+      })
       /*var newID = this.state.petitionID+"_"+(this.state.imgs.length+1)
       this.state.imgs.push({
         id: newID,
@@ -240,27 +244,51 @@ class ResumeViewScreen extends Component {
 
     async uploadImages() {
 
-      var fileContent = 'sample text'; // As a sample, upload a text file.
-      var file = new Blob([fileContent], {type: 'text/plain'});
-      var metadata = {
-          'name': 'sampleName', // Filename at Google Drive
-          'mimeType': 'text/plain', // mimeType at Google Drive
-          'parents': ['### folder ID ###'], // Folder ID at Google Drive
-      };
+      /*var data = new FormData();
 
-      var accessToken = gapi.auth.getToken().access_token; // Here gapi is used for retrieving the access token.
-      var form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-      form.append('file', file);
+      data.append('photo', {
+          uri: photo_uri,
+          type: 'image/png',
+          name: 'photo'
+      });
+  
+      //build payload packet
+      var postData = {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'multipart/form-data',
+              'somevar': 'whatever you want to pass'
+          },
+          body: data,
+      }
+  
+       fetch(url, postData)
+          .then((response) => response.json())
+          .then((responseJson) => {
+  
+              console.log('responseJson',responseJson);
+              return responseJson;
+  
+          })
+          .catch((error) => {
+              
+              console.log('error',error);
+  
+          });*/
 
-      var xhr = new XMLHttpRequest();
-      xhr.open('post', 'https://drive.google.com/drive/folders/18AlOuBltEUNk_6_XdT2sLX0OjIPe0pcd?usp=sharing');
-      xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
-      xhr.responseType = 'json';
-      xhr.onload = () => {
-          console.log(xhr.response.id); // Retrieve uploaded file ID.
-      };
-      xhr.send(form);
+      /*let formData = new FormData();
+
+    formData.append('file', {
+            uri: profileImage.uri,
+            type: 'image/jpeg/jpg',
+            name: profileImage.fileName,
+            data: profileImage.data,
+          });
+
+        axios.post('http://192.156.0.22:3000/api/updateProfile', userDetail, {
+          headers: {'Content-Type': 'multipart/form-data'},
+        }).then(res => //)
+          .catch(err => //);*/
 
       /*var imageuri = this.state.imgs[0].uri
       var data = new FormData();
@@ -410,34 +438,20 @@ class ResumeViewScreen extends Component {
     async checkDoc() {
       var noFieldCompleted = this.state.doc.findIndex(obj => obj.valor == null && obj.obligatorio=="S")
       var thereIs = this.state.doc.findIndex(obj => obj.valor != null && obj.obligatorio=="S")
-      console.log("thereIs:"+thereIs)
-      console.log("noFieldCompleted:"+noFieldCompleted)
-      if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) {
-        return this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
-      } else if (this.state.cifValue.length==0) {
-        return this.showAlert("Atención", "Indica el NIF/CIF")
-      } else this.showAskDoc()
+      if (thereIs==-1 || (noFieldCompleted>-1 && thereIs>-1)) return this.showAlert("Atención", "Hay campos obligatorios que deben completarse")
+      else if (this.state.cifValue.length==0) return this.showAlert("Atención", "Indica el NIF/CIF")
+      else this.showAskDoc()
     }
 
     async askSaveDoc() {
-      if (this.state.documentVoice) {
-        this.checkDoc()
-      } else if (this.state.imgs.length>0) this.showAskDoc()
-      /*NetInfo.addEventListener(networkState => {
-        if (networkState.isConnected) {
-          if (this.state.documentVoice) {
-            this.checkDoc()
-          } else if (this.state.imgs.length>0) this.showAskDoc()
-        } else this.showAlert("Error", "No hay conexión a Internet")
-      })*/
+      if (this.state.documentVoice) this.checkDoc()
+      else if (this.state.imgs.length>0) this.showAskDoc()
     }
     
     async calculateData(index, porcentaje) {
       var importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
-      if (importe.includes(",")) {
-        importe = importe.replace(",",".")
-      }
+      if (importe.includes(",")) importe = importe.replace(",",".")
       var x = 100 + Number(porcentaje)
       var result = ( importe * 100 ) / x
       var base = Math.round(result * 100) / 100
@@ -621,11 +635,11 @@ class ResumeViewScreen extends Component {
               <Text style={styles.button}>Guardar y salir</Text>
             </TouchableOpacity>
           </View>
-          <View style={{textAlign:'center', paddingLeft: 30, paddingRight: 30 }}>
+          {this.state.wifi && <View style={{textAlign:'center', paddingLeft: 30, paddingRight: 30 }}>
             <TouchableOpacity onPress={() => this.askSaveDoc()} style={styles.sendButton}>
               <Text style={styles.button}>Enviar</Text>
             </TouchableOpacity>
-          </View>
+          </View>}
         </View>)
       }
 
@@ -647,6 +661,7 @@ class ResumeViewScreen extends Component {
               {this.checkBoxDoc()}
               {this.setControlVoice()}
             </View>
+            {!this.state.wifi && <Text style={styles.wifiText}>Para enviar el documento debe tener conexión a Internet</Text>}
             {this.setFootbar()}
             </ScrollView>  
           </View>
@@ -835,5 +850,14 @@ class ResumeViewScreen extends Component {
         paddingTop: 20,
         paddingLeft: 10,
         paddingRight: 10,
+      },
+      wifiText: {
+        textAlign:"center",
+        color: '#154360',
+        fontSize: RFPercentage(2.5),
+        width: "100%",
+        paddingLeft: 20,
+        paddingRight: 20,
+        fontWeight: 'bold',
       }
     })

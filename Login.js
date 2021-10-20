@@ -20,7 +20,8 @@ class LoginScreen extends Component {
         userid: "",
         hidePassword: true,
         errorMessage: "",
-        error: -1
+        error: -1,
+        wifi: true
       }
       this.init()
     }
@@ -34,6 +35,9 @@ class LoginScreen extends Component {
       })
       await AsyncStorage.getItem("password").then((value) => {
         if (value != null) this.setState({ password: value })
+      })
+      NetInfo.addEventListener(networkState => {
+        this.setState({ wifi: networkState.isConnected })
       })
     }
 
@@ -202,11 +206,12 @@ class LoginScreen extends Component {
             />)}    
             </TouchableOpacity>   
           </View>  
-          <View style={{alignSelf:"center"}}>
-          <TouchableOpacity onPress={() => this.login()} style={styles.appButtonContainer}>
-            <Text style={styles.appButtonText}>Entrar</Text>
-          </TouchableOpacity>  
-          </View>
+          {this.state.wifi && <View style={{alignSelf:"center"}}>
+            <TouchableOpacity onPress={() => this.login()} style={styles.appButtonContainer}>
+              <Text style={styles.appButtonText}>Entrar</Text>
+            </TouchableOpacity>  
+          </View>}
+          {!this.state.wifi && <Text style={styles.wifiText}>Para iniciar sesión debe tener Internet</Text>}
           <View style={{flex: 1, paddingTop:20}}><Text style={styles.errorText}>{this.state.errorMessage}</Text></View>
           {this.setFootbar()}
         </View>
@@ -280,4 +285,14 @@ const styles = StyleSheet.create({
       fontSize: RFPercentage(2.5),
       width: "100%",
     },
+    wifiText: {
+      textAlign:"center",
+      color: '#154360',
+      fontSize: RFPercentage(2.5),
+      width: "100%",
+      paddingLeft: 20,
+      paddingRight: 20,
+      paddingTop: 50,
+      fontWeight: 'bold',
+    }
 })
