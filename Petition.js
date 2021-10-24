@@ -39,7 +39,8 @@ class PetitionScreen extends Component {
         showResult: false,
         write_data: false,
         placeholder: "",
-        payment: "Efectivo"
+        payment: "Efectivo",
+        payments: []
       }
       this.init()
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -128,6 +129,24 @@ class PetitionScreen extends Component {
           this.setState({ list: JSON.parse(value) })
         }
       })  
+      var conexionIndex = this.state.savedData.findIndex(i=>i.idcampo.includes("conexion"))
+      if (conexionIndex>-1) {
+        var config = []
+        await AsyncStorage.getItem("allConfigs").then((value) => {
+          config = JSON.parse(JSON.stringify(value))
+        })
+        var array = JSON.parse(config)
+        array.forEach(c=> {
+          if (c.idcfg == this.state.savedData[conexionIndex].valor) {
+            var formapc = c.campos.findIndex(i=>i.idcampo.includes("formapc"))
+            if (formapc>-1) {
+              var newPayments = c.campos[formapc].valores.split(',')
+              this.setState({payments: newPayments})
+            }
+          }
+        });
+      }
+      console.log("payments:"+this.state.payments.length)
     }
   
     componentWillUnmount() {
@@ -686,8 +705,9 @@ class PetitionScreen extends Component {
           <Text style={styles.defaultDataTitle}>Forma de pago</Text>
           <View style={styles.changeTranscript}>
           <Picker selectedValue={this.state.payment} onValueChange={(itemValue) => this.setSelectedPayment(itemValue)}>
-          <Picker.Item label="Efectivo" value="Efectivo" />
-          <Picker.Item label="Tarjeta" value="Tarjeta" />
+          {this.state.payments.map((i) => {
+            return <Picker.Item label={i} value={i} key={i} />
+          })}
         </Picker>
         </View>
         </View>)
@@ -854,7 +874,6 @@ class PetitionScreen extends Component {
                 {this.documentState()}
                 {this.setVoiceControl()}
               </View>
-              
             </ScrollView>
             {this.setMenu()}
         </View>
@@ -873,7 +892,7 @@ class PetitionScreen extends Component {
         textAlignVertical: 'center',
       },
       navBarBackHeader: {
-        paddingTop: 50,
+        paddingTop: 20,
         paddingBottom: 20,
         alignItems: 'center',
         justifyContent: 'center',
@@ -1142,7 +1161,8 @@ class PetitionScreen extends Component {
         textAlign: "center",
         justifyContent: "center",
         width: "100%",
-        alignItems: "center"
+        alignItems: "center",
+        paddingBottom: 20
       },
       mainHeader: {
         padding: 10,

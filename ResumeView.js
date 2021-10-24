@@ -7,6 +7,11 @@ import { RFPercentage } from "react-native-responsive-fontsize";
 import RNFS from 'react-native-fs';
 import NetInfo from "@react-native-community/netinfo";
 import { Picker } from '@react-native-picker/picker';
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import {
+  GDrive,
+  MimeTypes
+} from "@robinbobin/react-native-google-drive-api-wrapper";
 
 class ResumeViewScreen extends Component {
   
@@ -34,11 +39,11 @@ class ResumeViewScreen extends Component {
         cifValue: "",
         not_loaded: true,
         thereIsConexion: false,
-        showConexion: false,
         conexionDoc: [],
         conexionType: "",
         documentVoice: true,
         payment: "Efectivo",
+        payments: [],
         wifi: true
       }
       this.init()
@@ -67,9 +72,6 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem(this.state.petitionID+".documentVoice").then((value) => {
         if (value != null) this.setState({ documentVoice: JSON.parse(value) })
       })
-      await AsyncStorage.getItem(this.state.petitionID+".showConexion").then((value) => {
-        if (value != null) this.setState({ showConexion: JSON.parse(value) })
-      })
       await AsyncStorage.getItem("type").then((value) => {
         this.setState({ type: value })
       })
@@ -89,7 +91,7 @@ class ResumeViewScreen extends Component {
         if (value != null) this.setState({ words: JSON.parse(value) })
       })
       await this.setState({not_loaded: false})
-      await this.setState({ thereIsConexion: (this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))>-1) })
+      await this.linkDoc()
       NetInfo.addEventListener(networkState => {
         this.setState({ wifi: networkState.isConnected })
       })
@@ -243,37 +245,51 @@ class ResumeViewScreen extends Component {
     }
 
     async uploadImages() {
+      GoogleSignin.configure({
+        scopes: ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.metadata'],
+        webClientId: '63946186542-vf8no0fl4lv14q8ks5s0m5rjtvlpnsib.apps.googleusercontent.com',
+        offlineAccess: true
+      });
+      await GoogleSignin.signIn();
 
+const gdrive = new GDrive();
+gdrive.accessToken = (await GoogleSignin.getTokens()).accessToken;
+
+console.log(await gdrive.files.list());
+
+const id = (await gdrive.files.newMultipartUploader()
+  .setData([1, 2, 3, 4, 5], MimeTypes.BINARY)
+  .setRequestBody({
+    name: "multipart_bin"
+  })
+  .execute()
+).id;
+
+console.log(await gdrive.files.getBinary(id));
       /*var data = new FormData();
-
       data.append('photo', {
-          uri: photo_uri,
+          uri: this.state.imgs[0].uri,
           type: 'image/png',
           name: 'photo'
       });
-  
       //build payload packet
       var postData = {
           method: 'POST',
           headers: {
-              'Content-Type': 'multipart/form-data',
-              'somevar': 'whatever you want to pass'
+            'Content-Type': 'multipart/form-data',
+            'somevar': 'whatever you want to pass'
           },
           body: data,
       }
-  
-       fetch(url, postData)
+      console.log(JSON.stringify(postData))
+       fetch("https://app.dicloud.es/trataimagen.asp", postData)
           .then((response) => response.json())
           .then((responseJson) => {
-  
-              console.log('responseJson',responseJson);
-              return responseJson;
-  
+            console.log('responseJson',responseJson);
+            return responseJson;
           })
-          .catch((error) => {
-              
-              console.log('error',error);
-  
+          .catch((error) => {  
+            console.log('error',error);
           });*/
 
       /*let formData = new FormData();
@@ -316,12 +332,14 @@ class ResumeViewScreen extends Component {
 
 
     async sentLinkedDoc() {
+      console.log("linkedoc:"+JSON.stringify(this.state.conexionDoc))
       var importe = ""
       var fecha = ""
       var fechaIndex = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("fecha"))
+      console.log("fechaIndex:"+fechaIndex)
       if (this.state.documentVoice) {
-        importe = this.state.conexionDoc.findIndex(obj => obj.idcampo.includes("importe"))
-        importe = this.state.conexionDoc[importe].valor
+        importe = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("importe"))
+        importe = this.state.conexionDoc.campos[importe].valor
         fecha = this.state.conexionDoc.campos[fechaIndex].valor
         var newDate = fecha.split("/")
         fecha = newDate[2]+"/"+newDate[1]+"/"+newDate[0]
@@ -340,18 +358,18 @@ class ResumeViewScreen extends Component {
       this.state.conexionDoc.img = this.state.imgs
       const requestOptions = { method: 'POST', body: JSON.stringify(this.state.conexionDoc) };
       console.log("Documento linkeado : " +requestOptions.body)
-      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") this.showAlert("Error", "Hubo un error al subir el documento")
-      }).catch((error) => {});
+      }).catch((error) => {});*/
     }
 
     async proceedSent() {
       if (this.state.imgs.length>0) await this.uploadImages()
-      //if (this.state.thereIsConexion) await this.linkDoc()
-      //await this.uploadDoc()
+      if (this.state.thereIsConexion) await this.sentLinkedDoc()
+      await this.uploadDoc()
     }
 
     async uploadDoc() {
@@ -378,15 +396,15 @@ class ResumeViewScreen extends Component {
       this.state.data.campos=this.state.doc
       this.state.data.img=this.state.imgs
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
-      console.log("uploaddoc:"+requestOptions.body)
-      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      console.log("Documento original:"+requestOptions.body)
+      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") {
           this.showAlert("Error", "Hubo un error al subir el documento")
         } else this.uploadSucceeded()
-      }).catch((error) => {});
+      }).catch((error) => {});*/
     }
 
     async showAlert (title, message) {
@@ -409,12 +427,10 @@ class ResumeViewScreen extends Component {
     }
 
     async showAskDoc(){
-      var message = "este documento"
-      if (this.state.showConexion) message = "estos documentos"
       const AsyncAlert = () => new Promise((resolve) => {
         Alert.alert(
           "Enviar contabilidad",
-          "¿Está seguro que desea enviar "+message+"?",
+          "¿Está seguro que desea enviar este documento?",
           [
             {
               text: 'Sí',
@@ -524,10 +540,10 @@ class ResumeViewScreen extends Component {
           <Picker
           selectedValue={this.state.payment}
           onValueChange={(itemValue) =>
-            this.setSelectedPayment(itemValue)
-          }>
-          <Picker.Item label="Efectivo" value="Efectivo" />
-          <Picker.Item label="Tarjeta" value="Tarjeta" />
+            this.setSelectedPayment(itemValue)}>
+            {this.state.payments.map((i) => {
+              return <Picker.Item label={i} value={i} key={i} />
+          })}
         </Picker>
         </View>
       </View>)} 
@@ -577,29 +593,31 @@ class ResumeViewScreen extends Component {
     }
 
     async linkDoc() {
-      var conexionID = this.state.doc.find(obj => obj.idcampo.includes("conexion")).xdefecto
-      var conexionType = "cobro"
-      var config = ""
-      if (this.state.type=="compra") {
-        conexionType = "pago"
+      var conexionIndex = this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))
+      await this.setState({ thereIsConexion: conexionIndex>-1 })
+      if (conexionIndex>-1) {
+        var config = []
+        await AsyncStorage.getItem("allConfigs").then((value) => {
+          config = JSON.parse(JSON.stringify(value))
+        })
+        var array = JSON.parse(config)
+        array.forEach(c=> {
+          if (c.idcfg == this.state.doc[conexionIndex].valor) {
+            this.setState({conexionDoc:c})
+            this.setState({conexionType:c.titulo})
+            var formapc = c.campos.findIndex(i=>i.idcampo.includes("formapc"))
+            if (formapc>-1) {
+              var newPayments = c.campos[formapc].valores.split(',')
+              this.setState({payments: newPayments})
+            }
+          }
+        });
       }
-      await AsyncStorage.getItem("allConfigs").then((value) => {
-        config = JSON.parse(JSON.stringify(value))
-      })
-      var array = JSON.parse(config)
-      array.forEach(i => {
-        if (i.tipo == conexionType && i.idcfg == conexionID) {
-          this.state.conexionDoc = i
-          this.setState({conexionType:i.titulo})
-        }
-      });
-      this.setState({ showConexion: true })
-      await AsyncStorage.setItem(this.state.petitionID+".conexionDoc", JSON.stringify(this.state.conexionDoc))
+      console.log("payments:"+this.state.payments.length)
       this.state.doc.forEach(i=> {
         var index = this.state.conexionDoc.campos.findIndex(obj=>obj.idcampo==i.idcampo)
         if (index > -1) this.state.conexionDoc.campos[index].valor = i.valor
       })
-      this.sentLinkedDoc()
     }
   
     async askSaveWord(msn, key, value) {
