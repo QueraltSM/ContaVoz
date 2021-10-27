@@ -4,14 +4,8 @@ import { createAppContainer } from 'react-navigation';
 import AsyncStorage from '@react-native-community/async-storage';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { RFPercentage } from "react-native-responsive-fontsize";
-import RNFS from 'react-native-fs';
 import NetInfo from "@react-native-community/netinfo";
 import { Picker } from '@react-native-picker/picker';
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import {
-  GDrive,
-  MimeTypes
-} from "@robinbobin/react-native-google-drive-api-wrapper";
 
 class ResumeViewScreen extends Component {
   
@@ -42,7 +36,7 @@ class ResumeViewScreen extends Component {
         conexionDoc: [],
         conexionType: "",
         documentVoice: true,
-        payment: "Efectivo",
+        payment: "",
         payments: [],
         wifi: true
       }
@@ -213,84 +207,26 @@ class ResumeViewScreen extends Component {
       this.props.navigation.push("PetitionHistory")
     }
 
-    /*async getBase64(j, uri) {
-      await RNFS.readFile(uri, 'base64')
-      .then(res =>{
-        this.state.imgs[j].urid = ""//res
-      })
-      const requestOptions = {
-        method: 'POST',
-        body: JSON.stringify({ imgs: this.state.imgs })
-       };
-      await fetch('https://app.dicloud.es/trataimagen.asp', requestOptions)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        console.log("respuesta del servidor = " + JSON.stringify(responseJson))
-      }).catch((error) => {
-        console.log("error: "+error)
-      });
-    }
-
-    async uploadImages() {
-      var j = 0
-      this.state.imgs.forEach(i => {
-        this.getBase64(j, i.uri)
-        j++;
-      })
-    }*/
-
     async setSelectedPayment(itemValue) {
       await this.setState({payment:itemValue})
       await AsyncStorage.setItem(this.state.petitionID+".payment", itemValue)
     }
 
     async uploadImages() {
-      GoogleSignin.configure({
-        scopes: ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.metadata'],
-        webClientId: '63946186542-vf8no0fl4lv14q8ks5s0m5rjtvlpnsib.apps.googleusercontent.com',
-        offlineAccess: true
-      });
-      await GoogleSignin.signIn();
-
-const gdrive = new GDrive();
-gdrive.accessToken = (await GoogleSignin.getTokens()).accessToken;
-
-console.log(await gdrive.files.list());
-
-const id = (await gdrive.files.newMultipartUploader()
-  .setData([1, 2, 3, 4, 5], MimeTypes.BINARY)
-  .setRequestBody({
-    name: "multipart_bin"
-  })
-  .execute()
-).id;
-
-console.log(await gdrive.files.getBinary(id));
-      /*var data = new FormData();
-      data.append('photo', {
-          uri: this.state.imgs[0].uri,
-          type: 'image/png',
-          name: 'photo'
-      });
-      //build payload packet
-      var postData = {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'somevar': 'whatever you want to pass'
-          },
-          body: data,
-      }
-      console.log(JSON.stringify(postData))
-       fetch("https://app.dicloud.es/trataimagen.asp", postData)
+      const requestOptions = {
+        method: 'POST',
+        headers: {'Content-Type': 'multipart/form-data', 'Accept': "application/json"}, 
+        body: JSON.stringify({ img: this.state.imgs })
+      };
+      console.log(JSON.stringify(requestOptions.body))
+      fetch("https://app.dicloud.es/trataimagen.asp", requestOptions)
           .then((response) => response.json())
           .then((responseJson) => {
             console.log('responseJson',responseJson);
-            return responseJson;
           })
           .catch((error) => {  
             console.log('error',error);
-          });*/
+          });
 
       /*let formData = new FormData();
 
@@ -332,11 +268,9 @@ console.log(await gdrive.files.getBinary(id));
 
 
     async sentLinkedDoc() {
-      console.log("linkedoc:"+JSON.stringify(this.state.conexionDoc))
       var importe = ""
       var fecha = ""
       var fechaIndex = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("fecha"))
-      console.log("fechaIndex:"+fechaIndex)
       if (this.state.documentVoice) {
         importe = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("importe"))
         importe = this.state.conexionDoc.campos[importe].valor
@@ -358,16 +292,16 @@ console.log(await gdrive.files.getBinary(id));
       this.state.conexionDoc.img = this.state.imgs
       const requestOptions = { method: 'POST', body: JSON.stringify(this.state.conexionDoc) };
       console.log("Documento linkeado : " +requestOptions.body)
-      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") this.showAlert("Error", "Hubo un error al subir el documento")
-      }).catch((error) => {});*/
+      }).catch((error) => {});
     }
 
     async proceedSent() {
-      if (this.state.imgs.length>0) await this.uploadImages()
+      //if (this.state.imgs.length>0) await this.uploadImages()
       if (this.state.thereIsConexion) await this.sentLinkedDoc()
       await this.uploadDoc()
     }
@@ -397,14 +331,14 @@ console.log(await gdrive.files.getBinary(id));
       this.state.data.img=this.state.imgs
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
       console.log("Documento original:"+requestOptions.body)
-      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") {
           this.showAlert("Error", "Hubo un error al subir el documento")
         } else this.uploadSucceeded()
-      }).catch((error) => {});*/
+      }).catch((error) => {});
     }
 
     async showAlert (title, message) {
@@ -587,10 +521,6 @@ console.log(await gdrive.files.getBinary(id));
         });
         await AsyncAlert();
     }
-  
-    async saveWord(key, value) {
-      await AsyncStorage.setItem(key, value)
-    }
 
     async linkDoc() {
       var conexionIndex = this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))
@@ -612,39 +542,12 @@ console.log(await gdrive.files.getBinary(id));
             }
           }
         });
+        this.state.doc.forEach(i=> {
+          var index = this.state.conexionDoc.campos.findIndex(obj=>obj.idcampo==i.idcampo)
+          if (index > -1) this.state.conexionDoc.campos[index].valor = i.valor
+        })
       }
-      console.log("payments:"+this.state.payments.length)
-      this.state.doc.forEach(i=> {
-        var index = this.state.conexionDoc.campos.findIndex(obj=>obj.idcampo==i.idcampo)
-        if (index > -1) this.state.conexionDoc.campos[index].valor = i.valor
-      })
     }
-  
-    async askSaveWord(msn, key, value) {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          "Atención",
-          "¿Desea guardar '" + value + "' como " + msn + "?",
-          [
-            {
-              text: 'Sí',
-              onPress: () => {
-                resolve(this.saveWord(key,value));
-              },
-            },
-            {
-              text: 'No',
-              onPress: () => {
-                resolve();
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-        await AsyncAlert();
-      }
-  
 
       setFootbar() {
         return (<View style={styles.navBarBackHeader}>

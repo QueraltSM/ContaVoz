@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Modal, Animated } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Animated } from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
@@ -39,7 +39,7 @@ class PetitionScreen extends Component {
         showResult: false,
         write_data: false,
         placeholder: "",
-        payment: "Efectivo",
+        payment: "",
         payments: []
       }
       this.init()
@@ -146,7 +146,6 @@ class PetitionScreen extends Component {
           }
         });
       }
-      console.log("payments:"+this.state.payments.length)
     }
   
     componentWillUnmount() {
@@ -255,7 +254,7 @@ class PetitionScreen extends Component {
           this.showAlert("Error", "El dato aportado no es numérico")
         } else {
           if (this.state.listenedData.includes(".")) this.setState({listenedData: this.state.listenedData.replace(".", ",")})
-          if (this.state.savedData[this.state.listenFlag].tipoexp=="N" && !this.state.listenedData.includes(",")) this.setState({ listenedData: this.state.listenedData + ",00" })
+          if (!this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje") && this.state.savedData[this.state.listenFlag].tipoexp=="N" && !this.state.listenedData.includes(",")) this.setState({ listenedData: this.state.listenedData + ",00" })
           this.setState({ interpretedData: this.state.listenedData.split(' ').join("").replace("/",".") })
           this.resetListening()
         }
@@ -560,8 +559,10 @@ class PetitionScreen extends Component {
 
     setModalButtons(){
       return (<View style={styles.modalNavBarButtons}>
-        {this.state.listenFlag>0 && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-        {this.state.listenFlag < this.state.savedData.length-1 && this.state.listenFlag>-1 && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag>0 && !this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(-2)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag < this.state.savedData.length-1 && this.state.listenFlag>-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag < this.state.savedData.length-2 && this.state.listenFlag>-1 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(2)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
       </View>)
     }
 
@@ -595,6 +596,8 @@ class PetitionScreen extends Component {
 
     async updateListen(value) {
       if (this.state.listenFlag < this.state.savedData.length-1) {
+        //if (value>0 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida")) await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value) })
+        //else if (value<0 && this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida")) await this.setState({ listenFlag: Number(this.state.listenFlag) - 1 })
         if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
         if (this.state.savedData[this.state.listenFlag].tipoexp=="E" && this.state.cifValue.length>0) await this.saveEnterprise()
         await this.setState({ interpretedData: "" })
@@ -610,6 +613,8 @@ class PetitionScreen extends Component {
           var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
           var importe = this.state.savedData[index].valor
           var porcentaje = this.state.savedData[this.state.listenFlag-2].valor
+          console.log("importe:"+importe)
+          console.log("porcentaje:"+porcentaje)
           if (importe==null) await this.setState({placeholder:"Debe introducir importe"})
           else if (porcentaje==null) await this.setState({placeholder:"Debe introducir porcentaje"})
           else await this.calculateResult()
@@ -625,9 +630,7 @@ class PetitionScreen extends Component {
   }
 
     setVoiceControl() {
-      if (JSON.parse(this.state.is_recording & this.state.listenFlag>=0 && this.state.listenFlag<=this.state.savedData.length-1)) {
-        return this.setVoiceControlView()
-      }
+      if (JSON.parse(this.state.is_recording & this.state.listenFlag>=0 && this.state.listenFlag<=this.state.savedData.length-1)) return this.setVoiceControlView()
       return this.setModalButtons()
     }
 
@@ -671,12 +674,26 @@ class PetitionScreen extends Component {
     }
 
     async calculateResult() {
-      var bases = this.state.savedData.filter(i => i.idcampo.includes("base"))
+      var bases = this.state.savedData.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
       var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
       var importe = this.state.savedData[index].valor
       importe = importe.replace(",",".")
       var result = ""
-      if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && bases.length == 1) {
+      if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && this.state.savedData[this.state.listenFlag].idcampo.includes("retencion")) {
+        var retencion = this.state.savedData[this.state.listenFlag-1].valor
+        var result = 0
+        result = 100 - Number(retencion)
+        result = importe*100/result
+          //result = Math.round(result/100)
+        this.saveCalculation(result)
+      } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedData[this.state.listenFlag].idcampo.includes("retencion")) {
+        console.log("cuota retencion")
+        var porcentaje = this.state.savedData[this.state.listenFlag-2].valor
+        var base = this.state.savedData[this.state.listenFlag-1].valor
+        result = Number(base)*Number(porcentaje)
+        result = Math.round(result/100)
+        this.saveCalculation(result)
+      } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && bases.length == 1) {
         var porcentaje =  this.state.savedData[this.state.listenFlag-1].valor
         var x = 100 + Number(porcentaje)
         result = ( importe * 100 ) / x
@@ -685,11 +702,11 @@ class PetitionScreen extends Component {
       } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
         var porcentaje =  this.state.savedData[this.state.listenFlag-2].valor
         var base = this.state.savedData[this.state.listenFlag-1].valor + ""
+        console.log("base:"+base+" porcentaje:"+porcentaje)
         if (base.includes(",")) base = base.replace(",",".") 
         var porcentaje = Number(this.state.savedData[this.state.listenFlag-2].valor) 
-        porcentaje = (importe*porcentaje) / 100
         result = Number(base)*Number(porcentaje)
-        result = Math.round(result * 100) / 100
+        result = Math.round(result/100)
         this.saveCalculation(result)
       }
     }
@@ -708,9 +725,7 @@ class PetitionScreen extends Component {
           {this.state.payments.map((i) => {
             return <Picker.Item label={i} value={i} key={i} />
           })}
-        </Picker>
-        </View>
-        </View>)
+        </Picker></View></View>)
       }
       return (<View style={styles.modalResult}>
         <Text style={styles.defaultDataTitle}>{this.state.savedData[this.state.listenFlag].titulo}</Text>
@@ -724,19 +739,17 @@ class PetitionScreen extends Component {
 
     showMessage = (message) => {
       if (this.state.savedData.length==0) return null
-      if (!this.state.is_recording) {
-        return(
-          <View style={styles.titleView}>
-            <Text style={styles.showHeader}>Adjunte imágenes, diga o introduzca los datos</Text>
-            {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].valor != "" && this.state.savedData[this.state.listenFlag-1].valor != null && <Text style={styles.showNextData}>Anterior {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()}: {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
-            <Text style={styles.stateDoc}>{message}</Text>
-            {this.setWrittenData()}
-            {this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
-            {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente forma de pago</Text>}
-          </View>
-        )
-      }
-      return null
+      if (this.state.is_recording) return null
+      return(<View style={styles.titleView}>
+          <Text style={styles.stateDoc}>{message}</Text>
+          <Text style={styles.showHeader}>Adjunte imágenes, diga o introduzca los datos</Text>
+          {this.state.listenFlag>0 && !this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida") && <Text style={styles.showNextData}>Anterior {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()} {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
+          {this.state.listenFlag>1 && this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida")  && <Text style={styles.showNextData}><Text style={styles.showNextData}>Anterior {this.state.savedData[this.state.listenFlag-2].titulo.toLowerCase()}</Text></Text>}
+          {this.setWrittenData()}
+          {this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
+          {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente forma de pago</Text>}
+          {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-2 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida")  && <Text style={styles.showNextData}><Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+2].titulo.toLowerCase()}</Text></Text>}
+        </View>)
     }
   
     async saveDocument() {
