@@ -40,7 +40,8 @@ class PetitionScreen extends Component {
         write_data: false,
         placeholder: "",
         payment: "",
-        payments: []
+        payments: [],
+        savedDataCopy: []
       }
       this.init()
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -106,6 +107,15 @@ class PetitionScreen extends Component {
         await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
         this.setState({ savedData: array })
       }
+
+      var savedDataCopy = []
+      this.state.savedData.forEach(i=> {
+        if (!i.idcampo.includes("porcentaje") && !i.idcampo.includes("base") && !i.idcampo.includes("cuota") 
+        && !i.idcampo.includes("retencion") && !i.idcampo.includes("contrapartida") && !i.idcampo.includes("conexion")) {
+          savedDataCopy.push(i)
+        }
+      })
+      this.setState({savedDataCopy: savedDataCopy})
       await AsyncStorage.getItem(this.state.petitionID+".cifValue").then((value) => {
         if (value != null) {
           this.setState({ cifValue: value })
@@ -129,23 +139,6 @@ class PetitionScreen extends Component {
           this.setState({ list: JSON.parse(value) })
         }
       })  
-      var conexionIndex = this.state.savedData.findIndex(i=>i.idcampo.includes("conexion"))
-      if (conexionIndex>-1) {
-        var config = []
-        await AsyncStorage.getItem("allConfigs").then((value) => {
-          config = JSON.parse(JSON.stringify(value))
-        })
-        var array = JSON.parse(config)
-        array.forEach(c=> {
-          if (c.idcfg == this.state.savedData[conexionIndex].valor) {
-            var formapc = c.campos.findIndex(i=>i.idcampo.includes("formapc"))
-            if (formapc>-1) {
-              var newPayments = c.campos[formapc].valores.split(',')
-              this.setState({payments: newPayments})
-            }
-          }
-        });
-      }
     }
   
     componentWillUnmount() {
@@ -559,10 +552,8 @@ class PetitionScreen extends Component {
 
     setModalButtons(){
       return (<View style={styles.modalNavBarButtons}>
-        {this.state.listenFlag>0 && !this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-        {this.state.listenFlag>0 && this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(-2)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-        {this.state.listenFlag < this.state.savedData.length-1 && this.state.listenFlag>-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
-        {this.state.listenFlag < this.state.savedData.length-2 && this.state.listenFlag>-1 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(2)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag>0 && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(-1)} style={styles.saveButtomModal}><Icon name='arrow-left' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
+        {this.state.listenFlag < this.state.savedDataCopy.length-1 && this.state.listenFlag>-1 && (<View style={{paddingRight: 20, paddingLeft: 20}}><TouchableOpacity onPress={() => this.updateListen(1)} style={styles.exitButtomModal}><Icon name='arrow-right' type='font-awesome' color='white' size={32}/></TouchableOpacity></View>)}
       </View>)
     }
 
@@ -589,20 +580,7 @@ class PetitionScreen extends Component {
       }
     }
 
-    async closeListen() {
-      this._stopRecognition(this)
-      this.setState({ is_recording: false })
-    }
-
-    async updateListen(value) {
-      if (this.state.listenFlag < this.state.savedData.length-1) {
-        //if (value>0 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida")) await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value) })
-        //else if (value<0 && this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida")) await this.setState({ listenFlag: Number(this.state.listenFlag) - 1 })
-        if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
-        if (this.state.savedData[this.state.listenFlag].tipoexp=="E" && this.state.cifValue.length>0) await this.saveEnterprise()
-        await this.setState({ interpretedData: "" })
-        await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value) })
-        if (this.state.savedData[this.state.listenFlag].idcampo.includes("base")) {
+    /*        if (this.state.savedData[this.state.listenFlag].idcampo.includes("base")) {
           var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
           var importe = this.state.savedData[index].valor
           var porcentaje = this.state.savedData[this.state.listenFlag-1].valor
@@ -618,7 +596,14 @@ class PetitionScreen extends Component {
           if (importe==null) await this.setState({placeholder:"Debe introducir importe"})
           else if (porcentaje==null) await this.setState({placeholder:"Debe introducir porcentaje"})
           else await this.calculateResult()
-      }
+      }*/ 
+
+    async updateListen(value) {
+      if (this.state.listenFlag < this.state.savedData.length-1) {
+      if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
+      if (this.state.savedData[this.state.listenFlag].tipoexp=="E" && this.state.cifValue.length>0) await this.saveEnterprise()
+      await this.setState({ interpretedData: "" })
+      await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value) })
       await this.setState({ savedData: this.state.savedData })
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
       await AsyncStorage.setItem(this.state.petitionID+".listenFlag", JSON.stringify(this.state.listenFlag))
@@ -627,10 +612,11 @@ class PetitionScreen extends Component {
       this.setState({ is_recording: false})
       await this.setState({ listenFlag: Number(this.state.listenFlag) - 1})
     }
+    await this.setState({ listenedData: "" })
   }
 
     setVoiceControl() {
-      if (JSON.parse(this.state.is_recording & this.state.listenFlag>=0 && this.state.listenFlag<=this.state.savedData.length-1)) return this.setVoiceControlView()
+      if (JSON.parse(this.state.is_recording & this.state.listenFlag>=0 && this.state.listenFlag<=this.state.savedDataCopy.length-1)) return this.setVoiceControlView()
       return this.setModalButtons()
     }
 
@@ -673,42 +659,51 @@ class PetitionScreen extends Component {
       await this.setState({ interpretedData: result })
     }
 
+    // si retencion impiesti=retten+%igic
+    // si no rettem=0
+    // baes imp=formula
+    // si hay impiesto = +baes imponibles 
+    async setBaseRetencion(){
+      var result = 0
+      var importeIndex = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
+      var importe = this.state.savedData[importeIndex].valor
+      if (importe.includes(",")) importe = importe.replace(",",".") 
+      var retencion = this.state.savedData[this.state.listenFlag-1].valor
+      result = 100 - Number(retencion) //+ porcentaje si hay igic = 920*100/92  base impo
+      result = importe*100/result
+      result = result.toFixed(2) + ""
+      this.saveCalculation(result)
+    }
+
+    async setBase() {
+      var result = 0
+      var importeIndex = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
+      var importe = this.state.savedData[importeIndex].valor
+      if (importe.includes(",")) importe = importe.replace(",",".") 
+      var porcentaje =  this.state.savedData[this.state.listenFlag-1].valor
+      var x = 100 + Number(porcentaje)
+      result = (importe*100)/x
+      result = Math.round(result * 100) / 100
+      result = result.toFixed(2) + ""
+      this.saveCalculation(result)
+    }
+
+    async setCuota() {
+      var result = 0
+      var porcentaje =  this.state.savedData[this.state.listenFlag-2].valor
+      var base = this.state.savedData[this.state.listenFlag-1].valor + ""
+      if (base.includes(",")) base = base.replace(",",".") 
+      result = Number(base)*Number(porcentaje)
+      result = Math.round(result/100)
+      result = result.toFixed(2) + ""
+      this.saveCalculation(result)
+    }
+
     async calculateResult() {
       var bases = this.state.savedData.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
-      var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
-      var importe = this.state.savedData[index].valor
-      importe = importe.replace(",",".")
-      var result = ""
-      if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && this.state.savedData[this.state.listenFlag].idcampo.includes("retencion")) {
-        var retencion = this.state.savedData[this.state.listenFlag-1].valor
-        var result = 0
-        result = 100 - Number(retencion)
-        result = importe*100/result
-          //result = Math.round(result/100)
-        this.saveCalculation(result)
-      } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedData[this.state.listenFlag].idcampo.includes("retencion")) {
-        console.log("cuota retencion")
-        var porcentaje = this.state.savedData[this.state.listenFlag-2].valor
-        var base = this.state.savedData[this.state.listenFlag-1].valor
-        result = Number(base)*Number(porcentaje)
-        result = Math.round(result/100)
-        this.saveCalculation(result)
-      } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && bases.length == 1) {
-        var porcentaje =  this.state.savedData[this.state.listenFlag-1].valor
-        var x = 100 + Number(porcentaje)
-        result = ( importe * 100 ) / x
-        result = Math.round(result * 100) / 100
-        this.saveCalculation(result)
-      } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
-        var porcentaje =  this.state.savedData[this.state.listenFlag-2].valor
-        var base = this.state.savedData[this.state.listenFlag-1].valor + ""
-        console.log("base:"+base+" porcentaje:"+porcentaje)
-        if (base.includes(",")) base = base.replace(",",".") 
-        var porcentaje = Number(this.state.savedData[this.state.listenFlag-2].valor) 
-        result = Number(base)*Number(porcentaje)
-        result = Math.round(result/100)
-        this.saveCalculation(result)
-      }
+      if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && this.state.savedData[this.state.listenFlag].idcampo.includes("retencion")) this.setBaseRetencion()
+      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && bases.length == 1) this.setBase()
+      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) this.setCuota()
     }
 
     async setSelectedPayment(itemValue) {
@@ -717,25 +712,22 @@ class PetitionScreen extends Component {
     }
 
     setWrittenData() {
-      if (this.state.savedData[this.state.listenFlag].idcampo.includes("conexion")) {
-        return (<View style={styles.modalResult}>
-          <Text style={styles.defaultDataTitle}>Forma de pago</Text>
-          <View style={styles.changeTranscript}>
-          <Picker selectedValue={this.state.payment} onValueChange={(itemValue) => this.setSelectedPayment(itemValue)}>
-          {this.state.payments.map((i) => {
-            return <Picker.Item label={i} value={i} key={i} />
-          })}
-        </Picker></View></View>)
-      }
+      if (this.state.savedDataCopy.length==0) return null
       return (<View style={styles.modalResult}>
-        <Text style={styles.defaultDataTitle}>{this.state.savedData[this.state.listenFlag].titulo}</Text>
-        <TextInput placeholder={this.state.placeholder} onSubmitEditing = {() => this.setListenedData()} blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedData[this.state.listenFlag].valor}</TextInput>
-        {this.state.savedData[this.state.listenFlag].tipoexp=="E" &&
+        <Text style={styles.defaultDataTitle}>{this.state.savedDataCopy[this.state.listenFlag].titulo}</Text>
+        <TextInput placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>
+        {this.state.savedDataCopy[this.state.listenFlag].tipoexp=="E" &&
           (<View><Text style={styles.defaultDataTitle}>CIF de la empresa</Text>
             <TextInput blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={cifValue => this.setState({cifValue})}>{this.state.cifValue}</TextInput>
           </View>)}
       </View>)
     }
+
+    /*
+      {this.state.listenFlag>0 && <Text style={styles.showNextData}>Anterior {this.state.savedDataCopy[this.state.listenFlag-1].titulo.toLowerCase()} {this.state.savedDataCopy[this.state.listenFlag-1].valor}</Text>}
+      {this.setWrittenData()}
+      {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedDataCopy.length-1 && <Text style={styles.showNextData}>Siguiente {this.state.savedDataCopy[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
+    */
 
     showMessage = (message) => {
       if (this.state.savedData.length==0) return null
@@ -743,12 +735,7 @@ class PetitionScreen extends Component {
       return(<View style={styles.titleView}>
           <Text style={styles.stateDoc}>{message}</Text>
           <Text style={styles.showHeader}>Adjunte imágenes, diga o introduzca los datos</Text>
-          {this.state.listenFlag>0 && !this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida") && <Text style={styles.showNextData}>Anterior {this.state.savedData[this.state.listenFlag-1].titulo.toLowerCase()} {this.state.savedData[this.state.listenFlag-1].valor}</Text>}
-          {this.state.listenFlag>1 && this.state.savedData[this.state.listenFlag-1].idcampo.includes("contrapartida")  && <Text style={styles.showNextData}><Text style={styles.showNextData}>Anterior {this.state.savedData[this.state.listenFlag-2].titulo.toLowerCase()}</Text></Text>}
           {this.setWrittenData()}
-          {this.state.listenFlag < this.state.savedData.length-1 && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && !this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida") && <Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
-          {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-1 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("conexion") && <Text style={styles.showNextData}>Siguiente forma de pago</Text>}
-          {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedData.length-2 && this.state.savedData[this.state.listenFlag+1].idcampo.includes("contrapartida")  && <Text style={styles.showNextData}><Text style={styles.showNextData}>Siguiente {this.state.savedData[this.state.listenFlag+2].titulo.toLowerCase()}</Text></Text>}
         </View>)
     }
   
@@ -762,6 +749,13 @@ class PetitionScreen extends Component {
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
     }
 
+    saveListenedData = async() => {
+      this.state.savedData[this.state.listenFlag].valor = this.state.listenedData
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
+      this.setState({savedData: this.state.savedData})
+      this.setState({listenedData: ""})
+    }
+
     documentState = () => {
       if (this.state.savedData[this.state.listenFlag].tipoexp == "E") this.state.placeholder = "Ej: Disoft Servicios Informáticos S.L."
       else if (this.state.savedData[this.state.listenFlag].tipoexp == "F") this.state.placeholder = "Ej: 1 de Enero, 1 de Enero de 2021 o 01/01/2021"
@@ -770,7 +764,8 @@ class PetitionScreen extends Component {
       else if (this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje")) this.state.placeholder = "Ej: 3 o 7"
       else if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedData[this.state.listenFlag].tipoexp == "N") this.state.placeholder = "Ej: 10 o 10,5"
       else if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) this.state.placeholder = "Diga o introduzca dato"
-      var firstEmpty = this.state.savedData.findIndex(obj => obj.valor == null)
+      if (this.state.listenedData.length>0) this.saveListenedData()
+      var firstEmpty = this.state.savedDataCopy.findIndex(obj => obj.valor == null)
       if (firstEmpty==-1) return this.showMessage("Documento finalizado")
       return this.showMessage("Documento NO finalizado")
     }
@@ -791,8 +786,7 @@ class PetitionScreen extends Component {
     askDeleteDoc = async () => {
       const AsyncAlert = () => new Promise((resolve) => {
         Alert.alert(
-          "Borrar documento",
-          "¿Está seguro que desea borrar permanentemente este documento?",
+          "Borrar documento", "¿Está seguro que desea borrar permanentemente este documento?",
           [
             {
               text: 'Sí',

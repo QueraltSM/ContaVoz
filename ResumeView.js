@@ -84,6 +84,7 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
         if (value != null) this.setState({ words: JSON.parse(value) })
       })
+      await this.calculateResult()
       await this.setState({not_loaded: false})
       await this.linkDoc()
       NetInfo.addEventListener(networkState => {
@@ -106,6 +107,39 @@ class ResumeViewScreen extends Component {
     goBack = () => {
       this.props.navigation.push("Petition")
       return true
+    }
+
+
+    async setResult(importe, i) {
+      var porcentaje = this.state.doc[i].valor
+      var result = 100 + Number(porcentaje)
+      result = (importe*100)/result
+      result = Math.round(result * 100) / 100
+      var base = result.toFixed(2) + ""
+      result = Number(base)*Number(porcentaje)
+      result = Math.round(result/100)
+      var cuota = result.toFixed(2) + ""
+      this.state.doc[i+1].valor = base
+      this.state.doc[i+2].valor = cuota
+      this.setState({doc: this.state.doc})
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+    }
+
+    async calculateResult() {
+      var index = this.state.doc.findIndex(i => i.idcampo.includes("importe"))
+      if (index > -1) {
+        var importe = this.state.doc[index].valor
+        if (importe != null) {
+          if (importe.includes(",")) importe = importe.replace(",",".") 
+          for (let i = index; i<this.state.doc.length; i++) {
+            if (this.state.doc[i].idcampo.includes("porcentaje")) {
+              this.setResult(importe, i)
+            }
+          }
+        }
+      } else {
+        console.log("tengo que poner placeholder orientativo")
+      }
     }
   
     async deleteDoc() {
@@ -419,9 +453,7 @@ class ResumeViewScreen extends Component {
         } else {
           var idcampo = this.state.doc[index].idcampo
           if (idcampo.includes("importe")) {
-            if (!this.state.interpretedData.includes(",") && !this.state.interpretedData.includes(".")) {
-              await this.setState({interpretedData: this.state.interpretedData + ",00" })
-            }
+            if (!this.state.interpretedData.includes(",") && !this.state.interpretedData.includes(".")) await this.setState({interpretedData: this.state.interpretedData + ",00" })
             this.state.doc[index].valor = this.state.interpretedData
             this.state.doc.filter(obj => obj.idcampo.includes("porcentaje")).forEach(i => {
               var item = this.state.doc.findIndex(obj => obj == i)
@@ -448,22 +480,29 @@ class ResumeViewScreen extends Component {
     }
 
     setInput(item, index) {
+      var importe = this.state.doc.findIndex(i=>i.idcampo.includes("importe"))
+      importe = this.state.doc[importe].valor
+      var porcentaje = null
+      if (item.idcampo.includes("base")) porcentaje = this.state.doc[index-1].valor
+      else if (item.idcampo.includes("cuota")) porcentaje = this.state.doc[index-2].valor
       if (item.idcampo.includes("cuenta")) return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("importe")) return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0,00" onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("fecha")) return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 01/01/2021" onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
+      if (importe==null && (item.idcampo.includes("base") || item.idcampo.includes("cuota"))) return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Debe introducir un importe" onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
+      if (porcentaje==null && (item.idcampo.includes("base") || item.idcampo.includes("cuota"))) return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Debe introducir un porcentaje" onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput>
       return <TextInput onSubmitEditing={() => { this.onSubmitText(index); }}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result})}>{this.state.doc[index].valor}</TextInput> 
     }
 
     setData = (item, index) => {
       return (<View style={{paddingBottom: 10}}>
-        {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && (<View>
+        {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && !item.idcampo.includes("contrapartida") && (<View>
         <Text style={styles.resumeText}>{item.titulo}{item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
           {this.setInput(item, index)}
         </View>
       </View>)}   
         {item.tipoexp.includes("E") && <View>
-        <Text style={styles.resumeText}>NIF/CIF*</Text>
+        <Text style={styles.resumeText}>CIF de la empresa*</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
         <TextInput onSubmitEditing={() => { this.onSubmitText(index); }} placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
         </View>
