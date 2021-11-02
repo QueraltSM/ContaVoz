@@ -6,6 +6,7 @@ import ImageZoom from 'react-native-image-pan-zoom';
 import { RFPercentage } from "react-native-responsive-fontsize";
 import NetInfo from "@react-native-community/netinfo";
 import { Picker } from '@react-native-picker/picker';
+import DatePicker from 'react-native-date-picker'
 
 class ResumeViewScreen extends Component {
   
@@ -39,7 +40,8 @@ class ResumeViewScreen extends Component {
         documentVoice: true,
         payment: "",
         payments: [],
-        wifi: true
+        wifi: true,
+        openDatePicker: false
       }
       this.init()
     }
@@ -260,43 +262,6 @@ class ResumeViewScreen extends Component {
           .catch((error) => {  
             console.log('error',error);
           });
-
-      /*let formData = new FormData();
-
-    formData.append('file', {
-            uri: profileImage.uri,
-            type: 'image/jpeg/jpg',
-            name: profileImage.fileName,
-            data: profileImage.data,
-          });
-
-        axios.post('http://192.156.0.22:3000/api/updateProfile', userDetail, {
-          headers: {'Content-Type': 'multipart/form-data'},
-        }).then(res => //)
-          .catch(err => //);*/
-
-      /*var imageuri = this.state.imgs[0].uri
-      var data = new FormData();
-      data.append("name", "Techup media");
-      data.append("profile_image", {
-        name: "image",
-        type: "image/png",
-        uri: Platform.OS === "android" ? imageuri : imageuri.replace("file://", "")});
-          console.log("imageuri:"+imageuri)
-            // Change file upload URL
-            var url = "https://drive.google.com/drive/u/0/folders/18AlOuBltEUNk_6_XdT2sLX0OjIPe0pcd";
-            let res = await fetch(url, {
-              method: "POST",
-              body: JSON.stringify({ img: data }),
-              headers: {
-                "Content-Type": "multipart/form-data",
-                Accept: "application/json"
-              }
-            }).then((responseJson) => {
-              console.log("ok:"+JSON.stringify(responseJson))
-            }).catch((error) => {
-              console.log("error:"+error)
-            });*/
     }
 
 
@@ -430,69 +395,39 @@ class ResumeViewScreen extends Component {
       if (this.state.documentVoice) this.checkDoc()
       else if (this.state.imgs.length>0) this.showAskDoc()
     }
-    
-    async calculateData() {
-      console.log("--calculateData--")
-      var index = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
-      var importe = this.state.doc[index].valor
-      if (importe != null) {
-        console.log("importe no es null")
-        if (importe.includes(",")) importe = importe.replace(",",".")
-        for (let i = index; i<this.state.doc.length; i++) {
-          if (this.state.doc[i].idcampo.includes("porcentaje")) {
-            var porcentaje = this.state.doc[i].valor 
-            var result = 100 + Number(porcentaje)
-            result = ( importe * 100 ) / result
-            var base = Math.round(result * 100) / 100
-            this.state.doc[i+1].valor = base 
-            var cuota = base*porcentaje
-            cuota = Math.round(cuota* 100) / 100
-            this.state.doc[i+2].valor = cuota
-          }
-        }
-        //this.setState({ doc: this.state.doc})
-        //await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
-      }
+
+    setDate = async (index, date) => {
+      var d = ("0" + (date.getDate())).slice(-2)+"/"+("0" + (date.getMonth() + 1)).slice(-2)+"/"+date.getFullYear()
+      this.state.doc[index].valor = d
+      this.setState({doc:this.state.doc})
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
     }
 
-    /*async onSubmitText(index) {
-      if (this.state.interpretedData != null) {
-        if (this.state.doc[index].obligatorio == "S" && this.state.interpretedData.length==0) {
-          this.state.doc[index].valor = ""
-        } else {
-          var idcampo = this.state.doc[index].idcampo
-          if (idcampo.includes("importe")) {
-            if (!this.state.interpretedData.includes(",") && !this.state.interpretedData.includes(".")) await this.setState({interpretedData: this.state.interpretedData + ",00" })
-            this.state.doc[index].valor = this.state.interpretedData
-            this.state.doc.filter(obj => obj.idcampo.includes("porcentaje")).forEach(i => {
-              var item = this.state.doc.findIndex(obj => obj == i)
-              this.setState({ doc: this.state.doc})
-              this.calculateData(item, this.state.doc[item].valor)
-            })
-          } else if (idcampo.includes("porcentaje")) {
-            this.calculateData(index, this.state.interpretedData)
-          } else if (idcampo.includes("fecha")) {
-            if (this.state.interpretedData.toLowerCase() == "hoy") {
-              this.state.doc[index].valor = ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear()
-            } else if (this.state.interpretedData.toLowerCase() == "ayer") {
-              var yesterday = new Date()
-              yesterday.setDate(new Date().getDate() - 1)
-              this.state.doc[index].valor = ("0" + (yesterday.getDate())).slice(-2)+ "/"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "/" + yesterday.getFullYear()
-            }
-          } else if (idcampo.includes("factura")) this.state.doc[index].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
-          else this.state.doc[index].valor = this.state.interpretedData
-        }
-      }
-      this.setState({ doc: this.state.doc})
-      await AsyncStorage.setItem(this.state.petitionID+".cifValue", this.state.cifValue)
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
-    }*/
+    openDatePicker = (value) => {
+      this.setState({openDatePicker: value})
+    }
+
+    setDatePicker(index) {
+      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder="Ej: 01/01/2021">{this.state.doc[index].valor}</TextInput></TouchableOpacity>
+      return <DatePicker
+      modal
+      mode="date"
+      open={this.state.openDatePicker}
+      date={new Date()}
+      onConfirm={(date) => {
+        this.openDatePicker(false)
+        this.setDate(index,date)
+      }}
+      onCancel={() => {
+        this.openDatePicker(false)
+      }}/>
+    }
 
     setInput(item, index) {
       var importe = this.state.doc.findIndex(i=>i.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
       if (item.idcampo.includes("cuenta")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      if (item.idcampo.includes("fecha")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 01/01/2021" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      if (item.idcampo.includes("fecha")) return this.setDatePicker(index)
       if (item.idcampo.includes("factura")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 1217 o F-1217" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("importe")) return <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0,00" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("porcentaje")) return <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 7 o 3" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
@@ -536,23 +471,14 @@ class ResumeViewScreen extends Component {
     }
 
     async saveDoc() {
-      console.log("saveDoc")
-      if (this.state.doc[this.state.interpretedIndex].idcampo.includes("importe") || this.state.doc[this.state.interpretedIndex].idcampo.includes("porcentaje")) this.calculateData()
-      else if (this.state.doc[this.state.interpretedIndex].idcampo.includes("fecha")) {
-      if (this.state.interpretedData.toLowerCase() == "hoy") this.state.doc[this.state.interpretedIndex].valor = ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear()
-      } else if (this.state.interpretedData.toLowerCase() == "ayer") {
-        var yesterday = new Date()
-        yesterday.setDate(new Date().getDate() - 1)
-        this.state.doc[this.state.interpretedIndex].valor = ("0" + (yesterday.getDate())).slice(-2)+ "/"+ ("0" + (yesterday.getMonth() + 1)).slice(-2) + "/" + yesterday.getFullYear()
-      } else if (this.state.doc[this.state.interpretedIndex].idcampo.includes("factura")) this.state.doc[this.state.interpretedIndex].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
-        this.setState({interpretedData: this.state.interpretedData})
-        this.state.doc[this.state.interpretedIndex].valor = this.state.interpretedData
-        await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
-        await this.setState({doc: this.state.doc})
-        await this.setState({interpretedData: ""})
-        await this.setState({interpretedIndex: -1})
-        console.log("dato interpretado = " + this.state.interpretedData)
-        await AsyncStorage.setItem(this.state.petitionID+".cifValue", this.state.cifValue)
+      if (this.state.doc[this.state.interpretedIndex].idcampo.includes("factura")) this.state.doc[this.state.interpretedIndex].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
+      this.setState({interpretedData: this.state.interpretedData})
+      this.state.doc[this.state.interpretedIndex].valor = this.state.interpretedData
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+      await this.setState({doc: this.state.doc})
+      await this.setState({interpretedData: ""})
+      await this.setState({interpretedIndex: -1})
+      await AsyncStorage.setItem(this.state.petitionID+".cifValue", this.state.cifValue)
     }
 
     setControlVoice(){
@@ -636,7 +562,6 @@ class ResumeViewScreen extends Component {
       }
 
       setTitle() {
-        console.log("size:"+this.state.interpretedData.length)
         if (this.state.interpretedData.length>0) this.saveDoc()
         return <View style={{backgroundColor: "#1A5276"}}>
         <Text style={styles.mainHeader}>{this.state.title}</Text>

@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, Image, TextInput, BackHandler, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Image, TextInput, BackHandler } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';

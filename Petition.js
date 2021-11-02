@@ -8,7 +8,7 @@ import * as ImagePicker from 'react-native-image-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
 import evaluate from 'words-to-numbers-es';
 import { RFPercentage } from "react-native-responsive-fontsize";
-import { Picker } from '@react-native-picker/picker';
+import DatePicker from 'react-native-date-picker'
 
 class PetitionScreen extends Component {
     
@@ -34,13 +34,13 @@ class PetitionScreen extends Component {
         saved: false,
         flag: 0,
         fadeAnimation: new Animated.Value(0),
-        hasStarted: false,
         listenFlag: 0,
         write_data: false,
         placeholder: "",
         payment: "",
         payments: [],
-        savedDataCopy: []
+        savedDataCopy: [],
+        openDatePicker: false
       }
       this.init()
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -544,28 +544,9 @@ class PetitionScreen extends Component {
       </View>)
     }
 
-    /*        if (this.state.savedData[this.state.listenFlag].idcampo.includes("base")) {
-          var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
-          var importe = this.state.savedData[index].valor
-          var porcentaje = this.state.savedData[this.state.listenFlag-1].valor
-          if (importe==null) await this.setState({placeholder:"Debe introducir importe"})
-          else if (porcentaje==null) await this.setState({placeholder:"Debe introducir porcentaje"})
-          else await this.calculateResult()
-        } else if (this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) {
-          var index = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
-          var importe = this.state.savedData[index].valor
-          var porcentaje = this.state.savedData[this.state.listenFlag-2].valor
-          console.log("importe:"+importe)
-          console.log("porcentaje:"+porcentaje)
-          if (importe==null) await this.setState({placeholder:"Debe introducir importe"})
-          else if (porcentaje==null) await this.setState({placeholder:"Debe introducir porcentaje"})
-          else await this.calculateResult()
-      }*/ 
-
     async updateListen(value) {
       if (this.state.listenFlag < this.state.savedData.length-1) {
       if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
-      if (this.state.savedData[this.state.listenFlag].tipoexp=="E" && this.state.cifValue.length>0) await this.saveEnterprise()
       await this.setState({ interpretedData: "" })
       await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value) })
       await this.setState({ savedData: this.state.savedData })
@@ -582,30 +563,6 @@ class PetitionScreen extends Component {
     setVoiceControl() {
       if (JSON.parse(this.state.is_recording & this.state.listenFlag>=0 && this.state.listenFlag<=this.state.savedDataCopy.length-1)) return this.setVoiceControlView()
       return this.setModalButtons()
-    }
-
-    async saveEnterprise() {
-      var sameKeywords = this.state.words.findIndex(item => item.keywords.toLowerCase().includes(this.state.savedData[this.state.listenFlag].escuchado.toLowerCase()))
-      if (this.state.interpretedData == "") await this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
-      if (sameKeywords>-1) {
-        this.setState({listenedData: this.state.interpretedData})
-        this.state.savedData[this.state.listenFlag].valor = this.state.words[sameKeywords].entity
-        await this.setState({ cif: this.state.words[sameKeywords].cifValue })
-        await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cif)
-      } else {
-        this.state.words.push({
-          keywords: this.state.savedData[this.state.listenFlag].escuchado,
-          entity: this.state.interpretedData,
-          cifValue: this.state.cifValue,
-          time: new Date().getTime()
-        })
-        this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
-      }
-      await this.setState({listenedData: this.state.interpretedData})
-      await this.setState({savedData: this.state.savedData})
-      await AsyncStorage.setItem(this.state.userid+".savedData", JSON.stringify(this.state.savedData))
-      await this.setState({ words: this.state.words })
-      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(this.state.words))
     }
 
     async resetListening() {
@@ -674,24 +631,48 @@ class PetitionScreen extends Component {
       await AsyncStorage.setItem(this.state.petitionID+".payment", itemValue)
     }
 
+    setDate = async (date) => {
+      var d = ("0" + (date.getDate())).slice(-2)+"/"+("0" + (date.getMonth() + 1)).slice(-2)+"/"+date.getFullYear()
+      this.state.savedData[this.state.listenFlag].valor = d
+      this.state.savedDataCopy[this.state.listenFlag].valor = d
+      this.setState({savedData:this.state.savedData})
+      this.setState({savedDataCopy:this.state.savedDataCopy})
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
+    }
+
+    openDatePicker = (value) => {
+      this.setState({openDatePicker: value})
+    }
+
+    setDatePicker() {
+      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder="Ej: 01/01/2021">{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity>
+      return <DatePicker
+      modal
+      mode="date"
+      open={this.state.openDatePicker}
+      date={new Date()}
+      onConfirm={(date) => {
+        this.openDatePicker(false)
+        this.setDate(date)
+      }}
+      onCancel={() => {
+        this.openDatePicker(false)
+      }}/>
+    }
+
     setWrittenData() {
       if (this.state.savedDataCopy.length==0) return null
       return (<View style={styles.modalResult}>
         <Text style={styles.defaultDataTitle}>{this.state.savedDataCopy[this.state.listenFlag].titulo}</Text>
+        {this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("fecha") && this.setDatePicker()}
         {this.state.savedDataCopy[this.state.listenFlag].tipoexp== "N" && <TextInput keyboardType='numeric' placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
-        {this.state.savedDataCopy[this.state.listenFlag].tipoexp!= "N" && <TextInput placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
+        {!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("fecha") && this.state.savedDataCopy[this.state.listenFlag].tipoexp!= "N" && <TextInput placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
         {this.state.savedDataCopy[this.state.listenFlag].tipoexp=="E" &&
           (<View><Text style={styles.defaultDataTitle}>CIF de la empresa</Text>
             <TextInput blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={cifValue => this.setState({cifValue})}>{this.state.cifValue}</TextInput>
           </View>)}
       </View>)
     }
-
-    /*
-      {this.state.listenFlag>0 && <Text style={styles.showNextData}>Anterior {this.state.savedDataCopy[this.state.listenFlag-1].titulo.toLowerCase()} {this.state.savedDataCopy[this.state.listenFlag-1].valor}</Text>}
-      {this.setWrittenData()}
-      {this.state.listenFlag>0 && this.state.listenFlag < this.state.savedDataCopy.length-1 && <Text style={styles.showNextData}>Siguiente {this.state.savedDataCopy[this.state.listenFlag+1].titulo.toLowerCase()}</Text>}
-    */
 
     showMessage = (message) => {
       if (this.state.savedData.length==0) return null
