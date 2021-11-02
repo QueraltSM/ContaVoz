@@ -36,7 +36,6 @@ class PetitionScreen extends Component {
         fadeAnimation: new Animated.Value(0),
         hasStarted: false,
         listenFlag: 0,
-        showResult: false,
         write_data: false,
         placeholder: "",
         payment: "",
@@ -421,30 +420,6 @@ class PetitionScreen extends Component {
         this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
       }
     }
-
-    async showEntity() {
-      this.setState({ showResult: true })
-      this.setState({ listenFlag: 0 })
-    }
-
-    async showDialogAlert(title, message) {
-      const AsyncAlert = () => new Promise((resolve) => {
-        Alert.alert(
-          title,
-          message,
-          [
-            {
-              text: 'Completar',
-              onPress: () => {
-                resolve(this.showEntity());
-              },
-            },
-          ],
-          { cancelable: false },
-        );
-        });
-      await AsyncAlert();
-    }
   
       async showAlert (title, message) {
         const AsyncAlert = () => new Promise((resolve) => {
@@ -558,26 +533,15 @@ class PetitionScreen extends Component {
     }
 
     setVoiceControlView() {
-      var lastSaved = Number(this.state.listenFlag) 
       this.fadeIn()
       return (<View style={styles.titleView}>
           <Animated.View style={[ { opacity: this.state.fadeAnimation, width:"90%" }]}>
-            {this.state.listenedData.length==0 && <Text style={styles.showListen}>Escuchando {this.state.savedData[lastSaved].titulo.toLowerCase()}</Text>}
+            {this.state.listenedData.length==0 && <Text style={styles.showListen}>Escuchando {this.state.savedData[this.state.listenFlag].titulo.toLowerCase()}</Text>}
           </Animated.View>
-          {this.state.listenedData.length>0 && <Text style={styles.showSubNextData}>Ha dicho {this.state.savedData[lastSaved].escuchado.toLowerCase()}</Text>}
+          {this.state.listenedData.length>0 && <Text style={styles.showSubNextData}>Ha dicho {this.state.savedData[this.state.listenFlag].escuchado.toLowerCase()}</Text>}
           {this.state.listenedData.length == 0 && <Text style={styles.infoListen}>Mantenga pulsado el micrófono y espere</Text>}
           {this.state.listenedData.length > 0 && <Text style={styles.infoListen}>Deje de pulsar el micrófono</Text>}
       </View>)
-    }
-
-    async editListen() {
-      await this.setState({ listenFlag: this.state.listenFlag - 1 })
-      await this.setState({ showResult: true })
-      if (this.state.savedData[this.state.listenFlag].escuchado.length>0) {
-        this.setState({ is_recording: false })
-      } else {
-        this.setState({ write_data: true })
-      }
     }
 
     /*        if (this.state.savedData[this.state.listenFlag].idcampo.includes("base")) {
@@ -622,10 +586,9 @@ class PetitionScreen extends Component {
 
     async saveEnterprise() {
       var sameKeywords = this.state.words.findIndex(item => item.keywords.toLowerCase().includes(this.state.savedData[this.state.listenFlag].escuchado.toLowerCase()))
-      if (this.state.interpretedData == "") {
-        await this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
-      }
+      if (this.state.interpretedData == "") await this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
       if (sameKeywords>-1) {
+        this.setState({listenedData: this.state.interpretedData})
         this.state.savedData[this.state.listenFlag].valor = this.state.words[sameKeywords].entity
         await this.setState({ cif: this.state.words[sameKeywords].cifValue })
         await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cif)
@@ -638,11 +601,11 @@ class PetitionScreen extends Component {
         })
         this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
       }
+      await this.setState({listenedData: this.state.interpretedData})
       await this.setState({savedData: this.state.savedData})
       await AsyncStorage.setItem(this.state.userid+".savedData", JSON.stringify(this.state.savedData))
       await this.setState({ words: this.state.words })
       await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(this.state.words))
-      await this.setState({showResult: false})
     }
 
     async resetListening() {
@@ -715,7 +678,8 @@ class PetitionScreen extends Component {
       if (this.state.savedDataCopy.length==0) return null
       return (<View style={styles.modalResult}>
         <Text style={styles.defaultDataTitle}>{this.state.savedDataCopy[this.state.listenFlag].titulo}</Text>
-        <TextInput placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>
+        {this.state.savedDataCopy[this.state.listenFlag].tipoexp== "N" && <TextInput keyboardType='numeric' placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
+        {this.state.savedDataCopy[this.state.listenFlag].tipoexp!= "N" && <TextInput placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
         {this.state.savedDataCopy[this.state.listenFlag].tipoexp=="E" &&
           (<View><Text style={styles.defaultDataTitle}>CIF de la empresa</Text>
             <TextInput blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={cifValue => this.setState({cifValue})}>{this.state.cifValue}</TextInput>
@@ -751,20 +715,21 @@ class PetitionScreen extends Component {
 
     saveListenedData = async() => {
       this.state.savedData[this.state.listenFlag].valor = this.state.listenedData
+      this.state.savedDataCopy[this.state.listenFlag].valor = this.state.listenedData
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
-      this.setState({savedData: this.state.savedData})
-      this.setState({listenedData: ""})
+      await this.setState({savedData: this.state.savedData})
+      await this.setState({listenedData: ""})
     }
 
     documentState = () => {
       if (this.state.savedData[this.state.listenFlag].tipoexp == "E") this.state.placeholder = "Ej: Disoft Servicios Informáticos S.L."
       else if (this.state.savedData[this.state.listenFlag].tipoexp == "F") this.state.placeholder = "Ej: 1 de Enero, 1 de Enero de 2021 o 01/01/2021"
-      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) this.state.placeholder = "Ej: 1217 o F/1217 o F-1217"
+      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) this.state.placeholder = "Ej: 1217 o F-1217"
       else if (this.state.savedData[this.state.listenFlag].idcampo.includes("importe")) this.state.placeholder = "Ej: 1070 o 1070,00"
       else if (this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje")) this.state.placeholder = "Ej: 3 o 7"
       else if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedData[this.state.listenFlag].tipoexp == "N") this.state.placeholder = "Ej: 10 o 10,5"
       else if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) this.state.placeholder = "Diga o introduzca dato"
-      if (this.state.listenedData.length>0) this.saveListenedData()
+      if (this.state.listenedData!=null && this.state.listenedData.length>0) this.saveListenedData()
       var firstEmpty = this.state.savedDataCopy.findIndex(obj => obj.valor == null)
       if (firstEmpty==-1) return this.showMessage("Documento finalizado")
       return this.showMessage("Documento NO finalizado")
@@ -807,6 +772,18 @@ class PetitionScreen extends Component {
         await AsyncAlert();
     }
 
+    docIsCompleted() {
+      var index = this.state.savedDataCopy.findIndex(i => i.valor == null)
+      var indexNotNull = this.state.savedDataCopy.findIndex(i => i.valor != null)
+      if (this.state.images.length>0 && indexNotNull==-1 && this.state.cifValue.length==0) return true 
+      if (index==-1 && this.state.cifValue.length>0) return true
+      return false
+    }
+
+    endDocument() {
+      this.showAlert("Error", "Debe finalizar el documento adjuntando imágenes o diciendo y completando los datos")
+    }
+
     setMenu() {
         return (
         <View style={styles.navBarBackHeader}>
@@ -847,13 +824,24 @@ class PetitionScreen extends Component {
               </TouchableOpacity>
               </View>
             }
-            {!this.state.is_recording &&
+            {!this.state.is_recording && this.docIsCompleted() &&
             (<View style={{ width: 70,textAlign:'center' }}>
               <TouchableOpacity onPress={() => this.seeDocument()}>
               <Icon
                 name='check-square'
                 type='font-awesome'
                 color='#5C9E7B'
+                size={40}
+              />
+              </TouchableOpacity>
+            </View>)}
+            {!this.state.is_recording && !this.docIsCompleted() &&
+            (<View style={{ width: 70,textAlign:'center' }}>
+              <TouchableOpacity onPress={() => this.endDocument()}>
+              <Icon
+                name='check-square'
+                type='font-awesome'
+                color='#8A8887'
                 size={40}
               />
               </TouchableOpacity>

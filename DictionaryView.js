@@ -20,9 +20,10 @@ class DictionaryViewScreen extends Component {
         showForm: false,
         showSeach: false,
         keyword: "",
-        isSearching: true,
+        isSearching: false,
         canSave: false,
-        message: "No hay entidades registradas"
+        message: "",
+        initWords: false
       };
       this.init()
     }
@@ -42,8 +43,8 @@ class DictionaryViewScreen extends Component {
       })
       await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
         if (value != null) this.setState({ words: JSON.parse(value).reverse() })
+        this.setState({ initWords: true })
       })
-      if (this.state.words != null) this.setState({isSearching: false})
     }
   
     async showAlert (title, message) {
@@ -101,6 +102,7 @@ class DictionaryViewScreen extends Component {
         this.setState({ keyword: "" })
         this.setState({ showForm: false })
         this.setState({ showSeach: false })
+        this.setState({ isSearching: false })
         this.setState({ message: "No hay entidades coincidentes" })
       }
     }
@@ -157,6 +159,7 @@ class DictionaryViewScreen extends Component {
 
     searchAction = (value) => {
       this.setState({showSeach: value})
+      this.setState({isSearching: value})
     }
   
     setAddWordBox() {
@@ -182,6 +185,14 @@ class DictionaryViewScreen extends Component {
       }
     }
   
+    setTitle() {
+      if (!this.state.initWords) return null
+      if (this.state.words.length > 0) this.state.message = "Diccionario de entidades"
+      if (this.state.words.length == 0 && !this.state.showSeach && !this.state.showForm) this.state.message = "No hay entidades registradas"
+      if (this.state.showSeach) this.state.message = "Búsqueda de entidades"
+      if (this.state.showForm) this.state.message = "Registrar una entidad"
+    }
+
     setMenu() {
       return(
         <View style={{backgroundColor:"#FFF"}}>
@@ -333,18 +344,10 @@ class DictionaryViewScreen extends Component {
   }
 
     setWords() {
-      if (!this.state.isSearching && this.state.words.length > 0 && !this.state.showSeach && !this.state.showForm) {
-        return (
-          <View style={styles.resumeView}>
-            {this.setFlatList()}
-        </View>
-        )
-      } else if (!this.state.isSearching && !this.state.showSeach && !this.state.showForm) {
-        return (<View style={styles.resumeView}>
-          <Text style={styles.showTitle}>{this.state.message}</Text>
-          </View>)
-      }
-      return null
+      return <View style={styles.resumeView}>
+      <Text style={styles.showTitle}>{this.state.message}</Text>
+      {!this.state.isSearching && this.state.words.length > 0 && !this.state.showSeach && !this.state.showForm && this.setFlatList()}
+      </View>
     }
   
     render() {
@@ -352,11 +355,12 @@ class DictionaryViewScreen extends Component {
         <View style={{flex: 1}}>
           <ScrollView style={{backgroundColor: "#fff"}}>
           {this.setMenu()}
+          {this.setTitle()}
           <View>
             {this.setMenuButtons()}
+            {this.setWords()}
             {this.setAddWordBox()}
             {this.setSeachBox()}
-            {this.setWords()}
           </View>
           </ScrollView>
         </View>
@@ -370,7 +374,6 @@ class DictionaryViewScreen extends Component {
     resumeView: {
       paddingTop: 20,
       paddingLeft:20,
-      paddingBottom: 30,
       paddingRight: 10,
       backgroundColor: "#FFF",
       width:"100%",
