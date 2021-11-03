@@ -105,6 +105,7 @@ class PetitionScreen extends Component {
         })
         await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
         this.setState({ savedData: array })
+        this.setState({fulldate: "Ej: " + ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear()})
       }
 
       var savedDataCopy = []
@@ -645,19 +646,16 @@ class PetitionScreen extends Component {
     }
 
     setDatePicker() {
-      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder="Ej: 01/01/2021">{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity>
-      return <DatePicker
-      modal
-      mode="date"
-      open={this.state.openDatePicker}
-      date={new Date()}
+      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity>
+      return <View><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity><DatePicker
+      modal mode="date" title="Selecciona fecha" confirmText="OK" cancelText="Cancelar" open={this.state.openDatePicker} date={new Date()}
       onConfirm={(date) => {
         this.openDatePicker(false)
         this.setDate(date)
       }}
       onCancel={() => {
         this.openDatePicker(false)
-      }}/>
+      }}/></View>
     }
 
     setWrittenData() {
@@ -704,7 +702,7 @@ class PetitionScreen extends Component {
 
     documentState = () => {
       if (this.state.savedData[this.state.listenFlag].tipoexp == "E") this.state.placeholder = "Ej: Disoft Servicios Informáticos S.L."
-      else if (this.state.savedData[this.state.listenFlag].tipoexp == "F") this.state.placeholder = "Ej: 1 de Enero, 1 de Enero de 2021 o 01/01/2021"
+      else if (this.state.savedData[this.state.listenFlag].tipoexp == "F") this.state.placeholder = this.state.fulldate
       else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) this.state.placeholder = "Ej: 1217 o F-1217"
       else if (this.state.savedData[this.state.listenFlag].idcampo.includes("importe")) this.state.placeholder = "Ej: 1070 o 1070,00"
       else if (this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje")) this.state.placeholder = "Ej: 3 o 7"
@@ -762,7 +760,7 @@ class PetitionScreen extends Component {
     }
 
     endDocument() {
-      this.showAlert("Error", "Debe finalizar el documento adjuntando imágenes o diciendo y completando los datos")
+      this.showAlert("Error", "Debe finalizar el documento adjuntando imágenes o completando el documento de voz")
     }
 
     setMenu() {

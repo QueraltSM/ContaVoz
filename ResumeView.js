@@ -87,7 +87,7 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
         if (value != null) this.setState({ words: JSON.parse(value) })
       })
-      await this.calculateResult()
+      this.setState({fulldate: "Ej: " + ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear()})
       await this.setState({not_loaded: false})
       await this.linkDoc()
       NetInfo.addEventListener(networkState => {
@@ -114,30 +114,39 @@ class ResumeViewScreen extends Component {
 
 
     async setResult(importe, i) {
-      var porcentaje = this.state.doc[i].valor
-      var result = 100 + Number(porcentaje)
-      result = (importe*100)/result
-      result = Math.round(result * 100) / 100
-      var base = result.toFixed(2) + ""
-      result = Number(base)*Number(porcentaje)
-      result = Math.round(result/100)
-      var cuota = result.toFixed(2) + ""
-      this.state.doc[i+1].valor = base
-      this.state.doc[i+2].valor = cuota
-      this.setState({doc: this.state.doc})
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+      var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
+      if (bases.length==1) {
+        var porcentaje = this.state.doc[i].valor
+        var result = 100 + Number(porcentaje)
+        result = (importe*100)/result
+        result = Math.round(result * 100) / 100
+        var base = result.toFixed(2) + ""
+        result = Number(base)*Number(porcentaje)
+        result = Math.round(result/100)
+        var cuota = result.toFixed(2) + ""
+        this.state.doc[i+1].valor = base
+        this.state.doc[i+2].valor = cuota
+        this.setState({doc: this.state.doc})
+        await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+      } else {
+        var porcentaje = this.state.doc[i].valor
+        var base = this.state.doc[i+1].valor
+        var result = (base*porcentaje)/100
+        var cuota = result.toFixed(2) + ""
+        this.state.doc[i+2].valor = cuota
+        this.setState({doc: this.state.doc})
+        await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+      }
     }
 
     async calculateResult() {
       var index = this.state.doc.findIndex(i => i.idcampo.includes("importe"))
-      if (index > -1) {
-        var importe = this.state.doc[index].valor
-        if (importe != null) {
-          if (importe.includes(",")) importe = importe.replace(",",".") 
-          for (let i = index; i<this.state.doc.length; i++) {
-            if (this.state.doc[i].idcampo.includes("porcentaje")) {
-              this.setResult(importe, i)
-            }
+      var importe = this.state.doc[index].valor
+      if (importe != null) {
+        if (importe.includes(",")) importe = importe.replace(",",".") 
+        for (let i = index; i<this.state.doc.length; i++) {
+          if (this.state.doc[i].idcampo.includes("porcentaje") && this.state.doc[i].valor != null) {
+            this.setResult(importe, i)
           }
         }
       }
@@ -159,9 +168,7 @@ class ResumeViewScreen extends Component {
     async goHome() {
       var list = []
       await AsyncStorage.getItem(this.state.petitionType).then((value) => {
-        if (value != null) {
-          list = JSON.parse(value) 
-        }
+        if (value != null) list = JSON.parse(value) 
       })
       var index = list.findIndex(obj => JSON.stringify(obj.id) == this.state.petitionID)
       list[index].doc = this.state.doc
@@ -408,8 +415,8 @@ class ResumeViewScreen extends Component {
     }
 
     setDatePicker(index) {
-      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder="Ej: 01/01/2021">{this.state.doc[index].valor}</TextInput></TouchableOpacity>
-      return <DatePicker
+      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.doc[index].valor}</TextInput></TouchableOpacity>
+      return <View><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.doc[index].valor}</TextInput></TouchableOpacity><DatePicker
       modal
       mode="date"
       open={this.state.openDatePicker}
@@ -420,17 +427,29 @@ class ResumeViewScreen extends Component {
       }}
       onCancel={() => {
         this.openDatePicker(false)
-      }}/>
+      }}/></View> 
     }
 
     setInput(item, index) {
+      // 1 impuesto formula
+      // 2 impuestos base la meto a mano, cuota = base * porcentaje
       var importe = this.state.doc.findIndex(i=>i.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
+      var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
       if (item.idcampo.includes("cuenta")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("fecha")) return this.setDatePicker(index)
       if (item.idcampo.includes("factura")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 1217 o F-1217" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("importe")) return <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0,00" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      if (item.idcampo.includes("porcentaje")) return <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 7 o 3" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      if (item.idcampo.includes("porcentaje")) return <View style={{width:"100%"}}>
+      <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 7 o 3" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      {item.valor != null && bases.length==1 && this.state.doc[index+1].valor == null && this.state.doc[index+2].valor == null && <TouchableOpacity onPressIn={() => this.calculateResult()}><Text style={styles.calculateButton} >Obtener {this.state.doc[index+1].titulo.toLowerCase()} y {this.state.doc[index+2].titulo.toLowerCase()}</Text></TouchableOpacity>}
+      {item.valor == null && bases.length==1 && <TouchableOpacity><Text style={styles.notCalculateButton}>Introduzca {this.state.doc[index].titulo.toLowerCase()} para calcular {this.state.doc[index+1].titulo.toLowerCase()} y {this.state.doc[index+2].titulo.toLowerCase()}</Text></TouchableOpacity>}
+      </View>
+      if (item.idcampo.includes("base") && item.valor != null) return <View style={{width:"100%"}}>
+      <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 7 o 3" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      {this.state.doc[index-1].valor != null && bases.length>1 && this.state.doc[index+1].valor == null && <TouchableOpacity onPressIn={() => this.calculateResult()}><Text style={styles.calculateButton} >Obtener {this.state.doc[index+1].titulo.toLowerCase()}</Text></TouchableOpacity>}
+      {this.state.doc[index-1].valor == null && bases.length>1 && <TouchableOpacity><Text style={styles.notCalculateButton}>Introduzca {this.state.doc[index-1].titulo.toLowerCase()} para calcular {this.state.doc[index+1].titulo.toLowerCase()}</Text></TouchableOpacity>}
+      </View>
       return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput> 
     }
 
@@ -441,8 +460,8 @@ class ResumeViewScreen extends Component {
       if (importe == null && item.idcampo.includes("base")) return null 
       if (importe == null && item.idcampo.includes("cuota")) return null 
       if (importe == null && item.idcampo.includes("retencion")) return null 
-      if (importe != null && item.idcampo.includes("base") && this.state.doc[index-1].valor == null) return null
-      if (importe != null && item.idcampo.includes("cuota") && this.state.doc[index-2].valor == null) return null
+      if (importe != null && item.idcampo.includes("base") && item.valor == null) return null
+      if (importe != null && item.idcampo.includes("cuota") && item.valor == null) return null
       if (item.idcampo.includes("contrapartida")) return null
       return (<View style={{paddingBottom: 10}}>
         {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && !item.idcampo.includes("contrapartida") && (<View>
@@ -472,12 +491,11 @@ class ResumeViewScreen extends Component {
 
     async saveDoc() {
       if (this.state.doc[this.state.interpretedIndex].idcampo.includes("factura")) this.state.doc[this.state.interpretedIndex].valor = this.state.interpretedData.toUpperCase().split(' ').join("")
-      this.setState({interpretedData: this.state.interpretedData})
       this.state.doc[this.state.interpretedIndex].valor = this.state.interpretedData
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
-      await this.setState({doc: this.state.doc})
       await this.setState({interpretedData: ""})
       await this.setState({interpretedIndex: -1})
+      await this.setState({doc: this.state.doc})
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
       await AsyncStorage.setItem(this.state.petitionID+".cifValue", this.state.cifValue)
     }
 
@@ -668,6 +686,19 @@ class ResumeViewScreen extends Component {
         flex: 1,
         backgroundColor:"#FFF",
         width:"100%"
+      },
+      calculateButton: {
+        paddingTop: 10,
+        fontWeight: 'bold',
+        fontSize: RFPercentage(2.5),
+        color: "#509080"
+      },
+      notCalculateButton: {
+        paddingTop: 10,
+        paddingBottom: 10,
+        fontWeight: 'bold',
+        fontSize: RFPercentage(2.5),
+        color: "#8A8887"
       },
       resumeView: {
         paddingTop: 20,
