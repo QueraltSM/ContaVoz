@@ -231,7 +231,7 @@ class MainScreen extends Component {
           <Text style={styles.mainHeader}>{this.state.fullname}</Text>
           {this.setOptions()}
           <TouchableOpacity onPress={() => this.openDisoftWeb()}>
-            <Text style={styles.mainSubHeader}>© Disoft Servicios Informáticos S.L.</Text>
+            <Text style={styles.mainSubHeader}>© Disoft Servicios Informáticos S.L. {new Date().getFullYear()}</Text>
           </TouchableOpacity>
         </View></View>);
     }

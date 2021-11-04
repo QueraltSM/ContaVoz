@@ -537,15 +537,16 @@ class PetitionScreen extends Component {
       this.fadeIn()
       return (<View style={styles.titleView}>
           <Animated.View style={[ { opacity: this.state.fadeAnimation, width:"90%" }]}>
-            {this.state.listenedData.length==0 && <Text style={styles.showListen}>Escuchando {this.state.savedData[this.state.listenFlag].titulo.toLowerCase()}</Text>}
+            {this.state.listenedData.length==0 && <Text style={styles.showListen}>Escuchando {this.state.savedDataCopy[this.state.listenFlag].titulo.toLowerCase()}</Text>}
           </Animated.View>
-          {this.state.listenedData.length>0 && <Text style={styles.showSubNextData}>Ha dicho {this.state.savedData[this.state.listenFlag].escuchado.toLowerCase()}</Text>}
+          {this.state.listenedData.length>0 && <Text style={styles.showSubNextData}>Ha dicho {this.state.savedDataCopy[this.state.listenFlag].escuchado.toLowerCase()}</Text>}
           {this.state.listenedData.length == 0 && <Text style={styles.infoListen}>Mantenga pulsado el micrófono y espere</Text>}
           {this.state.listenedData.length > 0 && <Text style={styles.infoListen}>Deje de pulsar el micrófono</Text>}
       </View>)
     }
 
     async updateListen(value) {
+      await this.setState({ listenedData: "" })
       if (this.state.listenFlag < this.state.savedData.length-1) {
       if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
       await this.setState({ interpretedData: "" })
@@ -558,7 +559,6 @@ class PetitionScreen extends Component {
       this.setState({ is_recording: false})
       await this.setState({ listenFlag: Number(this.state.listenFlag) - 1})
     }
-    await this.setState({ listenedData: "" })
   }
 
     setVoiceControl() {
@@ -697,24 +697,25 @@ class PetitionScreen extends Component {
       this.state.savedDataCopy[this.state.listenFlag].valor = this.state.listenedData
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
       await this.setState({savedData: this.state.savedData})
-      await this.setState({listenedData: ""})
+      if (!this.state.is_recording) await this.setState({listenedData: ""})
     }
 
     documentState = () => {
-      if (this.state.savedData[this.state.listenFlag].tipoexp == "E") this.state.placeholder = "Ej: Disoft Servicios Informáticos S.L."
-      else if (this.state.savedData[this.state.listenFlag].tipoexp == "F") this.state.placeholder = this.state.fulldate
-      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) this.state.placeholder = "Ej: 1217 o F-1217"
-      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("importe")) this.state.placeholder = "Ej: 1070 o 1070,00"
-      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje")) this.state.placeholder = "Ej: 3 o 7"
-      else if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedData[this.state.listenFlag].tipoexp == "N") this.state.placeholder = "Ej: 10 o 10,5"
-      else if (!this.state.savedData[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) this.state.placeholder = "Diga o introduzca dato"
+      if (this.state.savedDataCopy.length==0) return null
+      if (this.state.savedDataCopy[this.state.listenFlag].tipoexp == "E") this.state.placeholder = "Ej: Disoft Servicios Informáticos S.L."
+      else if (this.state.savedDataCopy[this.state.listenFlag].tipoexp == "F") this.state.placeholder = this.state.fulldate
+      else if (this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("factura")) this.state.placeholder = "Ej: 1217 o F-1217"
+      else if (this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("importe")) this.state.placeholder = "Ej: 1070 o 1070,00"
+      else if (this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("porcentaje")) this.state.placeholder = "Ej: 3 o 7"
+      else if (!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedDataCopy[this.state.listenFlag].tipoexp == "N") this.state.placeholder = "Ej: 10 o 10,5"
+      else if (!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("cuota")) this.state.placeholder = "Diga o introduzca dato"
       if (this.state.listenedData!=null && this.state.listenedData.length>0) this.saveListenedData()
-      var firstEmpty = this.state.savedDataCopy.findIndex(obj => obj.valor == null)
-      if (firstEmpty==-1) return this.showMessage("Documento finalizado")
+      if (this.docIsCompleted()) return this.showMessage("Documento finalizado")
       return this.showMessage("Documento NO finalizado")
     }
   
-    seeDocument = () => {
+    seeDocument = async () => {
+      if (this.state.cifValue.length>0) await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cifValue) 
       this.props.navigation.push('ResumeView')
     }
 

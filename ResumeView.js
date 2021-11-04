@@ -112,6 +112,32 @@ class ResumeViewScreen extends Component {
       return true
     }
 
+    async setResultRetencion(importe, i) {
+      var porcentaje = this.state.doc[i].valor
+      var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
+      var result = 0
+      if (bases.length>0) { // si no hay IGIC es la suma de las bases
+        for (let i = 0; i<bases.length; i++) {
+          console.log("todas las bases son: " + JSON.stringify(bases[i]))
+          result += Number(bases[i].valor)
+        }
+        var base = result
+        var cuota = (base*porcentaje)/100
+        cuota = cuota.toFixed(2) + ""
+        this.state.doc[i+1].valor = base
+        this.state.doc[i+2].valor = cuota
+
+      } else { // x=100-%retencion; x=importe*100/x
+        var x = (100-porcentaje)/100
+        var base = (importe*100)/x
+        var cuota = (base*porcentaje)/100
+        cuota = cuota.toFixed(2) + ""
+        this.state.doc[i+1].valor = base
+        this.state.doc[i+2].valor = cuota
+      }
+      this.setState({doc: this.state.doc})
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+    }
 
     async setResult(importe, i) {
       var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
@@ -126,29 +152,25 @@ class ResumeViewScreen extends Component {
         var cuota = result.toFixed(2) + ""
         this.state.doc[i+1].valor = base
         this.state.doc[i+2].valor = cuota
-        this.setState({doc: this.state.doc})
-        await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
       } else {
         var porcentaje = this.state.doc[i].valor
         var base = this.state.doc[i+1].valor
         var result = (base*porcentaje)/100
         var cuota = result.toFixed(2) + ""
         this.state.doc[i+2].valor = cuota
-        this.setState({doc: this.state.doc})
-        await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
       }
+      this.setState({doc: this.state.doc})
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
     }
 
     async calculateResult() {
       var index = this.state.doc.findIndex(i => i.idcampo.includes("importe"))
       var importe = this.state.doc[index].valor
-      if (importe != null) {
-        if (importe.includes(",")) importe = importe.replace(",",".") 
-        for (let i = index; i<this.state.doc.length; i++) {
-          if (this.state.doc[i].idcampo.includes("porcentaje") && this.state.doc[i].valor != null) {
-            this.setResult(importe, i)
-          }
-        }
+      if (importe.includes(",")) importe = importe.replace(",",".") 
+      for (let i = index; i<this.state.doc.length; i++) {
+        if (this.state.doc[i].idcampo.includes("porcentaje") && !this.state.doc[i].idcampo.includes("retencion") && this.state.doc[i].valor != null) this.setResult(importe, i) // calculos SIN retenciones
+        if (this.state.doc[i].idcampo.includes("porcentaje") && this.state.doc[i].idcampo.includes("retencion") && this.state.doc[i].valor != null) this.setResultRetencion(importe, i) // calculos CON retenciones
+        
       }
     }
   
@@ -431,8 +453,10 @@ class ResumeViewScreen extends Component {
     }
 
     setInput(item, index) {
-      // 1 impuesto formula
-      // 2 impuestos base la meto a mano, cuota = base * porcentaje
+      // NO RETENCIONES 1 impuesto formula
+      // NO RETENCIONES 2 impuestos base la meto a mano, cuota = base * porcentaje
+      // SI RETENCIONES si hay impuestos suma de las bases
+      // SI RETENCIONES si no hay impuestos formula
       var importe = this.state.doc.findIndex(i=>i.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
       var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
@@ -440,6 +464,7 @@ class ResumeViewScreen extends Component {
       if (item.idcampo.includes("fecha")) return this.setDatePicker(index)
       if (item.idcampo.includes("factura")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 1217 o F-1217" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("importe")) return <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0,00" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      
       if (item.idcampo.includes("porcentaje")) return <View style={{width:"100%"}}>
       <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 7 o 3" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       {item.valor != null && bases.length==1 && this.state.doc[index+1].valor == null && this.state.doc[index+2].valor == null && <TouchableOpacity onPressIn={() => this.calculateResult()}><Text style={styles.calculateButton} >Obtener {this.state.doc[index+1].titulo.toLowerCase()} y {this.state.doc[index+2].titulo.toLowerCase()}</Text></TouchableOpacity>}
