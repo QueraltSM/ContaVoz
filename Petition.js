@@ -40,7 +40,8 @@ class PetitionScreen extends Component {
         payment: "",
         payments: [],
         savedDataCopy: [],
-        openDatePicker: false
+        openDatePicker: false,
+        fulldate: "Ej: " + ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear() + ""
       }
       this.init()
       Voice.onSpeechStart = this.onSpeechStart.bind(this);
@@ -104,8 +105,7 @@ class PetitionScreen extends Component {
           })
         })
         await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
-        this.setState({ savedData: array })
-        this.setState({fulldate: "Ej: " + ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear()})
+        await this.setState({ savedData: array })
       }
 
       var savedDataCopy = []
