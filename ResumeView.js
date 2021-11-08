@@ -120,12 +120,14 @@ class ResumeViewScreen extends Component {
     }
 
     async setResultRetencion(importe, porcentaje,i) {
+      console.log("HAY RETENCIONES."+porcentaje)
       var base = 0
       var cuota = 0
       var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
       if (bases.length>1) { // Retenciones con más de 1 impuesto
+        base = bases[0].valor
         bases.forEach(i => {
-          base += Number(i.valor)
+          base = Number(i.valor) + base
         })
       } else { // Retenciones con 1 impuesto
         var impuesto =  this.state.doc.filter(i => i.idcampo.includes("porcentaje") && !i.idcampo.includes("retencion"))
@@ -133,7 +135,7 @@ class ResumeViewScreen extends Component {
         base = (importe*100)/x
       }
       cuota = (base*porcentaje)/100
-      base = base.toFixed(2) + ""
+      base = parseFloat(base).toFixed(2) + ""
       cuota = cuota.toFixed(2) + "" 
       this.state.doc[i+1].valor = base
       this.state.doc[i+2].valor = cuota
@@ -142,26 +144,40 @@ class ResumeViewScreen extends Component {
     }
 
     async setResult(importe, porcentaje,i) {
-      var base = 0
+      var base = this.state.doc[i+1].valor + ""
+      if (base !="null" && base.includes(",")) {
+        base = base.replace(",",".") 
+        base = Number(base)
+      }
       var cuota = 0
-      var x = 100 + Number(porcentaje)
-      base = (importe*100)/x
-      base = Math.round(base * 100) / 100
-      cuota = (base*porcentaje)/100
-      base = base.toFixed(2) + ""
-      cuota = cuota.toFixed(2) + "" 
-      this.state.doc[i+1].valor = base
-      this.state.doc[i+2].valor = cuota
-      this.setState({doc: this.state.doc})
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+      var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
+      if (bases.length==1) { 
+        var x = 100 + Number(porcentaje)
+        base = (importe*100)/x
+        base = Math.round(base * 100) / 100
+      }
+       if (base != "null") {
+        cuota = (base*porcentaje)/100
+        cuota = cuota.toFixed(2) + "" 
+        base = parseFloat(base).toFixed(2) + ""
+        console.log("base2:"+base)
+        console.log("cuota2:"+cuota) 
+        this.state.doc[i+1].valor = base
+        this.state.doc[i+2].valor = cuota
+        this.setState({doc: this.state.doc})
+        await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+      }
     }
 
     async calculateResult(item, i) {
       var index = this.state.doc.findIndex(i => i.idcampo.includes("importe"))
+      var thereIsRetenciones = this.state.doc.findIndex(i => i.idcampo.includes("retencion"))
+      var porcentaje = item.valor
+      if (thereIsRetenciones>-1) porcentaje = this.state.doc[thereIsRetenciones].valor
       var importe = this.state.doc[index].valor
-      if (importe.includes(",")) importe = importe.replace(",",".") 
-      if (!item.idcampo.includes("retencion")) this.setResult(importe, item.valor, i) // calculos SIN retenciones
-      if (item.idcampo.includes("retencion")) this.setResultRetencion(importe, item.valor, i) // calculos CON retenciones
+      if (importe != null && importe.includes(",")) importe = importe.replace(",",".") 
+      if (importe!=null && porcentaje!=null && thereIsRetenciones==-1) this.setResult(importe, porcentaje, i) // calculos SIN retenciones
+      else if (importe!=null && porcentaje!=null && thereIsRetenciones>-1) this.setResultRetencion(importe, porcentaje, i) // calculos CON retenciones
     }
   
     async deleteDoc() {
@@ -262,6 +278,9 @@ class ResumeViewScreen extends Component {
     }
 
     async setSelectedPayment(itemValue) {
+      var index = this.state.conexionDoc.campos.findIndex(i=>i.idcampo.includes("formapc"))
+      this.state.conexionDoc.campos[index].valores = itemValue
+      await this.setState({conexionDoc:this.state.conexionDoc})
       await this.setState({payment:itemValue})
       await AsyncStorage.setItem(this.state.petitionID+".payment", itemValue)
     }
@@ -309,12 +328,12 @@ class ResumeViewScreen extends Component {
       this.state.conexionDoc.img = this.state.imgs
       const requestOptions = { method: 'POST', body: JSON.stringify(this.state.conexionDoc) };
       console.log("Documento linkeado : " +requestOptions.body)
-      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") this.showAlert("Error", "Hubo un error al subir el documento")
-      }).catch((error) => {});
+      }).catch((error) => {});*/
     }
 
     async proceedSent() {
@@ -348,14 +367,14 @@ class ResumeViewScreen extends Component {
       this.state.data.img=this.state.imgs
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
       console.log("Documento original:"+requestOptions.body)
-      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") {
           this.showAlert("Error", "Hubo un error al subir el documento")
         } else this.uploadSucceeded()
-      }).catch((error) => {});
+      }).catch((error) => {});*/
     }
 
     async showAlert (title, message) {
@@ -402,8 +421,18 @@ class ResumeViewScreen extends Component {
       await AsyncAlert();
     }
 
+    async saveDocument() {
+      var list = []
+      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
+        if (value != null) list = JSON.parse(value) 
+      })
+      var index = list.findIndex(obj => JSON.stringify(obj.id) == this.state.petitionID)
+      list[index].savedData = this.state.doc
+      await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
+    }
+
     docIsCompleted() {
-      var index = this.state.doc.findIndex(i => i.valor == null)
+      var index = this.state.doc.findIndex(i => i.valor == null && i.obligatorio == "S")
       var indexNotNull = this.state.doc.findIndex(i => i.valor != null)
       if (this.state.imgs.length>0 && indexNotNull==-1 && this.state.cifValue.length==0) return true 
       if (index==-1 && this.state.cifValue.length>0) return true
@@ -448,12 +477,13 @@ class ResumeViewScreen extends Component {
     }
 
     setInput(item, index) {
-      // NO RETENCIONES 1 impuesto formula
-      // NO RETENCIONES 2 impuestos base la meto a mano, cuota = base * porcentaje
-      // SI RETENCIONES si hay impuestos suma de las bases
-      // SI RETENCIONES si no hay impuestos formula
       var importe = this.state.doc.findIndex(i=>i.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
+      var message = "Calcular "
+      if (item.idcampo.includes("porcentaje")) {
+        if (this.state.doc[index+1].valor == null) message += this.state.doc[index+1].titulo.toLowerCase() + " "
+        if (this.state.doc[index+2].valor == null) message += this.state.doc[index+2].titulo.toLowerCase() + " "
+      }
       if (item.idcampo.includes("cuenta")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("fecha")) return this.setDatePicker(index)
       if (item.idcampo.includes("factura")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 1217 o F-1217" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
@@ -462,7 +492,7 @@ class ResumeViewScreen extends Component {
       if (item.idcampo.includes("cuota")) return <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("porcentaje")) return <View style={{width:"100%"}}>
       <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 7 o 3" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      <TouchableOpacity onPressIn={() => this.calculateResult(item, index)}><Text style={styles.calculateButton}>Calcular {this.state.doc[index+1].titulo.toLowerCase()} y {this.state.doc[index+2].titulo.toLowerCase()}</Text></TouchableOpacity>
+      <TouchableOpacity onPressIn={() => this.calculateResult(item, index)}><Text style={styles.calculateButton}>{message}</Text></TouchableOpacity>
       </View>
       return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput> 
     }
@@ -470,13 +500,8 @@ class ResumeViewScreen extends Component {
     setData = (item, index) => {
       var importe = this.state.doc.findIndex(i=>i.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
-      if (importe == null && item.idcampo.includes("porcentaje")) return null 
-      if (importe == null && item.idcampo.includes("base")) return null 
-      if (importe == null && item.idcampo.includes("cuota")) return null 
-      if (importe == null && item.idcampo.includes("retencion")) return null 
-      if (item.idcampo.includes("contrapartida")) return null
       return (<View style={{paddingBottom: 10}}>
-        {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && !item.idcampo.includes("contrapartida") && (<View>
+        {this.state.doc.length > 0 && !item.idcampo.includes("conexion") && !item.idcampo.includes("formapc") && (<View>
         <Text style={styles.resumeText}>{item.titulo}{item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>{this.setInput(item, index)}</View></View>)}   
         {item.tipoexp.includes("E") && <View>
@@ -485,7 +510,7 @@ class ResumeViewScreen extends Component {
         <TextInput placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
         </View>
       </View>}
-      {this.state.doc.length > 0 && item.idcampo.includes("conexion") && (<View>
+      {this.state.doc.length > 0 && (item.idcampo.includes("formapc") || item.idcampo.includes("conexion")) && (<View>
         <Text style={styles.resumeText}>{item.titulo}{item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={styles.pickerView}>
           <Picker
@@ -509,6 +534,7 @@ class ResumeViewScreen extends Component {
       await this.setState({doc: this.state.doc})
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
       await AsyncStorage.setItem(this.state.petitionID+".cifValue", this.state.cifValue)
+      await this.saveDocument()
     }
 
     setControlVoice(){
@@ -551,6 +577,7 @@ class ResumeViewScreen extends Component {
 
     async linkDoc() {
       var conexionIndex = this.state.doc.findIndex(i=>i.idcampo.includes("conexion"))
+      var formapc = this.state.doc.findIndex(i=>i.idcampo.includes("formapc"))
       await this.setState({ thereIsConexion: conexionIndex>-1 })
       if (conexionIndex>-1) {
         var config = []
@@ -573,6 +600,9 @@ class ResumeViewScreen extends Component {
           var index = this.state.conexionDoc.campos.findIndex(obj=>obj.idcampo==i.idcampo)
           if (index > -1) this.state.conexionDoc.campos[index].valor = i.valor
         })
+      } else if (formapc>-1) {
+        var newPayments = this.state.doc[formapc].valor.split(',')
+        this.setState({payments: newPayments})
       }
     }
 

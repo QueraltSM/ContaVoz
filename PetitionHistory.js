@@ -71,7 +71,7 @@ class PetitionHistoryScreen extends Component {
     }
 
     setData (item) {
-      var firstEmpty = item.savedData.findIndex(obj => obj.valor == null && obj.obligatorio == "S")
+      var firstEmpty = item.savedData.findIndex(obj => obj.valor == null && obj.solicitado == "S")
       var imagesContent ="darkgray"
       var microContent ="darkgray"
       if (item.images.length > 0) imagesContent = "#56A494"

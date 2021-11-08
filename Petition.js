@@ -9,6 +9,7 @@ import ImageZoom from 'react-native-image-pan-zoom';
 import evaluate from 'words-to-numbers-es';
 import { RFPercentage } from "react-native-responsive-fontsize";
 import DatePicker from 'react-native-date-picker'
+import { Picker } from '@react-native-picker/picker';
 
 class PetitionScreen extends Component {
     
@@ -79,6 +80,7 @@ class PetitionScreen extends Component {
       await AsyncStorage.getItem(this.state.petitionID+".savedData").then((value) => {
         if (value != null) this.setState({ savedData: JSON.parse(value) })
       })
+      this.setState({savedData:this.state.savedData})
       if (this.state.savedData.length == 0) {
         var array = []
         this.state.data.forEach((i) => {
@@ -101,21 +103,23 @@ class PetitionScreen extends Component {
             xdefecto: i.xdefecto,
             obligatorio: i.obligatorio,
             escuchado: "",
+            solicitado: i.solicitado,
             valor: result
           })
         })
         await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(array))
         await this.setState({ savedData: array })
       }
-
       var savedDataCopy = []
       this.state.savedData.forEach(i=> {
-        if (!i.idcampo.includes("porcentaje") && !i.idcampo.includes("base") && !i.idcampo.includes("cuota") 
-        && !i.idcampo.includes("retencion") && !i.idcampo.includes("contrapartida") && !i.idcampo.includes("conexion")) {
-          savedDataCopy.push(i)
-        }
+        if (i.solicitado == "S" && !i.idcampo.includes("conexion")) savedDataCopy.push(i)
       })
       this.setState({savedDataCopy: savedDataCopy})
+      var formapc = this.state.savedDataCopy.findIndex(i=>i.idcampo.includes("formapc"))
+      if (formapc>-1) {
+        var newPayments = this.state.savedDataCopy[formapc].valor.split(',')
+        this.setState({payments: newPayments})
+      }
       await AsyncStorage.getItem(this.state.petitionID+".cifValue").then((value) => {
         if (value != null) {
           this.setState({ cifValue: value })
@@ -323,7 +327,7 @@ class PetitionScreen extends Component {
     async _stopRecognition(e) {
       await this.setState({ is_recording: false })
       try {
-        if (this.state.listenedData.length>0) await this.updateListen(1)
+        if (this.state.listenedData.length>0 && this.state.listenFlag < this.state.savedDataCopy.length) await this.updateListen(1)
         await Voice.stop()
       } catch (e) {}
     }
@@ -545,20 +549,30 @@ class PetitionScreen extends Component {
       </View>)
     }
 
+    async updateSavedData() {
+      for (let i = 0; i<this.state.savedData.length;i++) {
+        if (this.state.savedData[i].idcampo == this.state.savedDataCopy[this.state.listenFlag].idcampo) {
+          this.state.savedData[i].valor = this.state.savedDataCopy[this.state.listenFlag].valor
+        }
+      }
+      await this.setState({ savedData: this.state.savedData })
+      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
+    }
+
     async updateListen(value) {
       await this.setState({ listenedData: "" })
-      if (this.state.listenFlag < this.state.savedData.length-1) {
+      if (this.state.listenFlag < this.state.savedDataCopy.length-1) {
       if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
       await this.setState({ interpretedData: "" })
       await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value) })
-      await this.setState({ savedData: this.state.savedData })
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
+      this.updateSavedData()
       await AsyncStorage.setItem(this.state.petitionID+".listenFlag", JSON.stringify(this.state.listenFlag))
       if (this.state.cifValue.length>0) await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cifValue) 
-    } else {
+    } else if (value<0) {
       this.setState({ is_recording: false})
       await this.setState({ listenFlag: Number(this.state.listenFlag) - 1})
     }
+    await this.saveDocument()
   }
 
     setVoiceControl() {
@@ -569,9 +583,7 @@ class PetitionScreen extends Component {
     async resetListening() {
       this.state.savedData[this.state.listenFlag].escuchado = this.state.listenedData
       this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
-      this.setState({savedData: this.state.savedData})
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
-      await this.saveDocument()
+      this.updateSavedData()
     }
 
     async saveCalculation(result) {
@@ -636,9 +648,8 @@ class PetitionScreen extends Component {
       var d = ("0" + (date.getDate())).slice(-2)+"/"+("0" + (date.getMonth() + 1)).slice(-2)+"/"+date.getFullYear()
       this.state.savedData[this.state.listenFlag].valor = d
       this.state.savedDataCopy[this.state.listenFlag].valor = d
-      this.setState({savedData:this.state.savedData})
       this.setState({savedDataCopy:this.state.savedDataCopy})
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
+      this.updateSavedData()
     }
 
     openDatePicker = (value) => {
@@ -662,13 +673,25 @@ class PetitionScreen extends Component {
       if (this.state.savedDataCopy.length==0) return null
       return (<View style={styles.modalResult}>
         <Text style={styles.defaultDataTitle}>{this.state.savedDataCopy[this.state.listenFlag].titulo}</Text>
-        {this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("fecha") && this.setDatePicker()}
-        {this.state.savedDataCopy[this.state.listenFlag].tipoexp== "N" && <TextInput keyboardType='numeric' placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
-        {!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("fecha") && this.state.savedDataCopy[this.state.listenFlag].tipoexp!= "N" && <TextInput placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
+        {!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("formapc") && this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("fecha") && this.setDatePicker()}
+        {!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("formapc") && this.state.savedDataCopy[this.state.listenFlag].tipoexp== "N" && <TextInput keyboardType='numeric' placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
+        {!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("formapc") && !this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("fecha") && this.state.savedDataCopy[this.state.listenFlag].tipoexp!= "N" && <TextInput placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
         {this.state.savedDataCopy[this.state.listenFlag].tipoexp=="E" &&
           (<View><Text style={styles.defaultDataTitle}>CIF de la empresa</Text>
             <TextInput blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={cifValue => this.setState({cifValue})}>{this.state.cifValue}</TextInput>
           </View>)}
+        {this.state.savedDataCopy.length > 0 && this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("formapc") && (<View>
+        <View style={styles.pickerView}>
+          <Picker
+          selectedValue={this.state.payment}
+          onValueChange={(itemValue) =>
+            this.setSelectedPayment(itemValue)}>
+            {this.state.payments.map((i) => {
+              return <Picker.Item label={i} value={i} key={i} />
+          })}
+        </Picker>
+        </View>
+      </View>)}
       </View>)
     }
 
@@ -677,7 +700,7 @@ class PetitionScreen extends Component {
       if (this.state.is_recording) return null
       return(<View style={styles.titleView}>
           <Text style={styles.stateDoc}>{message}</Text>
-          <Text style={styles.showHeader}>Adjunte imágenes, diga o introduzca los datos</Text>
+          <Text style={styles.showHeader}>Adjunte imágenes, diga o introduzca datos</Text>
           {this.setWrittenData()}
         </View>)
     }
@@ -695,8 +718,7 @@ class PetitionScreen extends Component {
     saveListenedData = async() => {
       this.state.savedData[this.state.listenFlag].valor = this.state.listenedData
       this.state.savedDataCopy[this.state.listenFlag].valor = this.state.listenedData
-      await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
-      await this.setState({savedData: this.state.savedData})
+      this.updateSavedData()
       if (!this.state.is_recording) await this.setState({listenedData: ""})
     }
 
@@ -710,8 +732,8 @@ class PetitionScreen extends Component {
       else if (!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedDataCopy[this.state.listenFlag].tipoexp == "N") this.state.placeholder = "Ej: 10 o 10,5"
       else if (!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("cuota")) this.state.placeholder = "Diga o introduzca dato"
       if (this.state.listenedData!=null && this.state.listenedData.length>0) this.saveListenedData()
-      if (this.docIsCompleted()) return this.showMessage("Documento finalizado")
-      return this.showMessage("Documento NO finalizado")
+      if (this.docIsCompleted()) return this.showMessage("Documento con datos solicitados completo")
+      return this.showMessage("Documento no finalizado")
     }
   
     seeDocument = async () => {
@@ -942,7 +964,7 @@ class PetitionScreen extends Component {
         textAlign: 'center',
         color: '#922B21',
         fontWeight: 'bold',
-        fontSize: RFPercentage(3),
+        fontSize: RFPercentage(3.2),
         width: "100%",
       },
       showTitle:{
@@ -1003,6 +1025,15 @@ class PetitionScreen extends Component {
         width: "100%",
         paddingTop: 20,
         fontWeight: 'bold'
+      },
+      pickerView: {
+        color: '#000',
+        fontSize: RFPercentage(2.5),
+        textAlign:"center",
+        width:"100%",
+        borderWidth: 0.5,
+        borderColor: "darkgray",
+        borderRadius: 20
       },
       centeredView: {
         flex: 1,
