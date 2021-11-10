@@ -11,19 +11,21 @@ class DictionaryViewScreen extends Component {
       this.state = {
         userid: "",
         words: [],
+        copyWords: [],
         addKeywords: "",
         addEntity: "",
         addCIF: "",
-        updateKeywords: undefined,
-        updateEntity: undefined,
-        updateCIF: undefined,
+        updateKeywords: "",
+        updateEntity: "",
+        updateCIF: "",
         showForm: false,
         showSeach: false,
         keyword: "",
         isSearching: false,
         canSave: false,
         message: "",
-        initWords: false
+        initWords: false,
+        listIndex: -1
       };
       this.init()
     }
@@ -45,6 +47,7 @@ class DictionaryViewScreen extends Component {
         if (value != null) this.setState({ words: JSON.parse(value).reverse() })
         this.setState({ initWords: true })
       })
+      this.setState({copyWords: this.state.words})
     }
   
     async showAlert (title, message) {
@@ -108,44 +111,29 @@ class DictionaryViewScreen extends Component {
     }
 
     async updateAllWords() {
-      this.showAlert("Proceso completado", "Se han guardado los datos")
-      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(this.state.words))
+      this.showAlert("Proceso completado", "Se han actualizado los datos")
+      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(this.state.copyWords))
       this.reset()
     }
 
-    async updateWord(index,type) {
-      if (type==0) {
-        if (this.state.updateEntity == "") {
-          this.setState({ canSave: false }) 
-          this.showAlert("Error", "Debe añadir la entidad")
-        } else {
-          this.setState({ canSave: true }) 
-          this.state.words[index].entity = this.state.updateEntity
-        }
-      } else if (type==1) {
-        if (this.state.updateCIF == "")  {
-          this.setState({ canSave: false }) 
-          this.showAlert("Error", "Debe añadir el CIF") 
-        } else {
-          this.setState({ canSave: true })
-          this.state.words[index].cifValue = this.state.updateCIF
-        }
+    updateWord = async (index) => {
+      if (index==0) {
+        this.state.copyWords[index].entity = this.state.updateEntity
+        await this.setState({updateEntity:""})
+      } else if (index==1) {
+        this.state.copyWords[index].cifValue = this.state.updateCIF
+        await this.setState({updateCIF:""})
       } else {
-        if (this.state.updateKeywords == "") { 
-          this.setState({ canSave: false })
-          this.showAlert("Error", "Debe añadir al menos una palabra clave") 
-        } else {
-          this.setState({ canSave: true })
-          this.state.words[index].keywords = this.state.updateKeywords
-        }
+        this.state.copyWords[index].keywords = this.state.updateKeywords
+        await this.setState({updateKeywords:""})
       }
     }
 
-    reset() {
-      this.setState({updateEntity: undefined})
-      this.setState({updateKeywords: undefined})
-      this.setState({updateCIF: undefined})
-      this.props.navigation.push("DictionaryView")
+    async reset() {
+      await this.setState({updateEntity: ""})
+      await this.setState({updateKeywords: ""})
+      await this.setState({updateCIF: ""})
+      await this.props.navigation.push("DictionaryView")
     }
 
     _addWord = async () => {
@@ -185,8 +173,11 @@ class DictionaryViewScreen extends Component {
       }
     }
   
-    setTitle() {
+    setTitle = () => {
       if (!this.state.initWords) return null
+      if (this.state.updateEntity.length>0) this.updateWord(0) 
+      if (this.state.updateCIF.length>0) this.updateWord(1) 
+      if (this.state.updateKeywords.length>0) this.updateWord(2)
       if (this.state.words.length > 0) this.state.message = "Diccionario de entidades"
       if (this.state.words.length == 0 && !this.state.showSeach && !this.state.showForm) this.state.message = "No hay entidades registradas"
       if (this.state.showSeach) this.state.message = "Búsqueda de entidades"
@@ -272,8 +263,8 @@ class DictionaryViewScreen extends Component {
               size={35}
             />
           </TouchableOpacity>}
-          {this.state.canSave && !this.state.showForm && !this.state.showSeach && <Icon name='search' type='font-awesome' color='white' size={35} />}
-          {this.state.canSave && !this.state.showForm && !this.state.showSeach && <TouchableOpacity onPress={() => this.updateAllWords()}>
+          {!this.state.showForm  && <Icon name='search' type='font-awesome' color='white' size={35} />}
+          {!this.state.showForm  && <TouchableOpacity onPress={() => this.updateAllWords()}>
             <Icon
               name='save'
               type='font-awesome'
@@ -314,18 +305,18 @@ class DictionaryViewScreen extends Component {
         <View style={styles.wordsBox}>
           <View style={styles.dictionaryValues}>
             <View style={styles.dictionaryContent}>
-              <TextInput onSubmitEditing={() => { this.updateWord(index, 0); }} style={styles.boldText} blurOnSubmit={true} multiline={true} onChangeText={(updateEntity) => this.setState({updateEntity: updateEntity})}>{item.entity}</TextInput>
+              <TextInput style={styles.boldText} blurOnSubmit={true} multiline={true} onChangeText={(updateEntity) => this.setState({updateEntity: updateEntity, listIndex: index})}>{item.entity}</TextInput>
             </View>
           </View>
           <View style={styles.dictionaryValues}>
             <View style={styles.dictionaryContent}>
               <Text style={styles.boldText}>CIF</Text>
-              <TextInput onSubmitEditing={() => { this.updateWord(index, 1); }} style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateCIF) => this.setState({updateCIF: updateCIF})}>{item.cifValue} </TextInput>
+              <TextInput style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateCIF) => this.setState({updateCIF: updateCIF, listIndex: index})}>{item.cifValue} </TextInput>
             </View>
           </View>
           <View style={styles.dictionaryValues}>
             <View style={styles.dictionaryContent}>
-              <Text style={styles.boldText}>Palabras clave</Text><TextInput onSubmitEditing={() => { this.updateWord(index, 2); }} style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateKeywords) => this.state.updateKeywords=updateKeywords}>{item.keywords}</TextInput>
+              <Text style={styles.boldText}>Palabras clave</Text><TextInput style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateKeywords) => this.setState({updateKeywords: updateKeywords, listIndex: index})}>{item.keywords}</TextInput>
             </View>
            </View>
           <View style={styles.dictionaryValuesActions}>

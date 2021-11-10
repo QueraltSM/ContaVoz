@@ -262,23 +262,41 @@ class PetitionScreen extends Component {
       }
     }
 
-    async saveCIF(cif){
-      await this.setState({cifValue: cif})
-      await AsyncStorage.setItem(this.state.petitionID+".cifValue", cif)
+    async saveWords() {
+      await this.setState({words:this.state.words})
+      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(this.state.words))
     }
 
-    setFixedData() {
+    async saveCIF(cif){
+      var valor = this.state.savedDataCopy[0].valor
+      var index=this.state.words.findIndex(i=>i.keywords.toLowerCase().includes(valor) || i.entity.toLowerCase().includes(valor))
+      this.state.words[index].cifValue = this.state.cifValue
+      await this.setState({cifValue: cif})
+      await AsyncStorage.setItem(this.state.petitionID+".cifValue", cif)
+      this.saveWords()
+    }
+
+    async setFixedData() {
       var listenedData = this.state.listenedData.toLowerCase()
       var sameKeywords = this.state.words.findIndex(obj => obj.keywords.toLowerCase().includes(listenedData))
       var sameEntity = this.state.words.findIndex(obj => obj.entity.toLowerCase().includes(listenedData))
+      console.log("sameKeywords:"+sameKeywords+ " and sameEntity:"+sameEntity)
       if (sameKeywords > -1) {
         this.setState({ interpretedData: this.state.words[sameKeywords].entity })
         this.saveCIF(this.state.words[sameKeywords].cifValue)
       } else if (sameEntity > -1) {
         this.setState({ interpretedData: this.state.words[sameEntity].entity })
         this.saveCIF(this.state.words[sameEntity].cifValue)
-      } else {
+      } else if (sameKeywords==-1 && sameEntity==-1) {
+        console.log("ENTRO")
         this.setState({ interpretedData: this.state.listenedData })
+        this.state.words.push({
+          keywords: listenedData,
+          entity: this.state.interpretedData,
+          cifValue: "",
+          time: new Date().getTime()
+        })
+        this.saveWords()
         this.saveCIF("")
       }
       this.resetListening()
@@ -327,7 +345,7 @@ class PetitionScreen extends Component {
     async _stopRecognition(e) {
       await this.setState({ is_recording: false })
       try {
-        if (this.state.listenedData.length>0 && this.state.listenFlag < this.state.savedDataCopy.length) await this.updateListen(1)
+        if (this.state.savedDataCopy[this.state.listenFlag].escuchado.length>0) await this.updateListen(1)
         await Voice.stop()
       } catch (e) {}
     }
@@ -551,23 +569,21 @@ class PetitionScreen extends Component {
 
     async updateSavedData() {
       for (let i = 0; i<this.state.savedData.length;i++) {
-        if (this.state.savedData[i].idcampo == this.state.savedDataCopy[this.state.listenFlag].idcampo) {
-          this.state.savedData[i].valor = this.state.savedDataCopy[this.state.listenFlag].valor
-        }
+        if (this.state.savedData[i].idcampo == this.state.savedDataCopy[this.state.listenFlag].idcampo) this.state.savedData[i].valor = this.state.savedDataCopy[this.state.listenFlag].valor
       }
-      await this.setState({ savedData: this.state.savedData })
+      await this.setState({savedData: this.state.savedData})
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.savedData))
     }
 
     async updateListen(value) {
+      this.updateSavedData()
       await this.setState({ listenedData: "" })
       if (this.state.listenFlag < this.state.savedDataCopy.length-1) {
       if (this.state.interpretedData.length>0) this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
       await this.setState({ interpretedData: "" })
       await this.setState({ listenFlag: Number(this.state.listenFlag) + Number(value) })
-      this.updateSavedData()
       await AsyncStorage.setItem(this.state.petitionID+".listenFlag", JSON.stringify(this.state.listenFlag))
-      if (this.state.cifValue.length>0) await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cifValue) 
+      if (this.state.cifValue.length>0) this.saveCIF(this.state.cifValue)
     } else if (value<0) {
       this.setState({ is_recording: false})
       await this.setState({ listenFlag: Number(this.state.listenFlag) - 1})
@@ -585,60 +601,7 @@ class PetitionScreen extends Component {
       this.state.savedData[this.state.listenFlag].valor = this.state.interpretedData
       this.updateSavedData()
     }
-
-    async saveCalculation(result) {
-      this.state.savedData[this.state.listenFlag].escuchado = result
-      this.state.savedData[this.state.listenFlag].valor = result
-      await this.setState({ interpretedData: result })
-    }
-
-    // si retencion impiesti=retten+%igic
-    // si no rettem=0
-    // baes imp=formula
-    // si hay impiesto = +baes imponibles 
-    async setBaseRetencion(){
-      var result = 0
-      var importeIndex = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
-      var importe = this.state.savedData[importeIndex].valor
-      if (importe.includes(",")) importe = importe.replace(",",".") 
-      var retencion = this.state.savedData[this.state.listenFlag-1].valor
-      result = 100 - Number(retencion) //+ porcentaje si hay igic = 920*100/92  base impo
-      result = importe*100/result
-      result = result.toFixed(2) + ""
-      this.saveCalculation(result)
-    }
-
-    async setBase() {
-      var result = 0
-      var importeIndex = this.state.savedData.findIndex(obj => obj.idcampo.includes("importe"))
-      var importe = this.state.savedData[importeIndex].valor
-      if (importe.includes(",")) importe = importe.replace(",",".") 
-      var porcentaje =  this.state.savedData[this.state.listenFlag-1].valor
-      var x = 100 + Number(porcentaje)
-      result = (importe*100)/x
-      result = Math.round(result * 100) / 100
-      result = result.toFixed(2) + ""
-      this.saveCalculation(result)
-    }
-
-    async setCuota() {
-      var result = 0
-      var porcentaje =  this.state.savedData[this.state.listenFlag-2].valor
-      var base = this.state.savedData[this.state.listenFlag-1].valor + ""
-      if (base.includes(",")) base = base.replace(",",".") 
-      result = Number(base)*Number(porcentaje)
-      result = Math.round(result/100)
-      result = result.toFixed(2) + ""
-      this.saveCalculation(result)
-    }
-
-    async calculateResult() {
-      var bases = this.state.savedData.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
-      if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && this.state.savedData[this.state.listenFlag].idcampo.includes("retencion")) this.setBaseRetencion()
-      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("base") && bases.length == 1) this.setBase()
-      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("cuota")) this.setCuota()
-    }
-
+    
     async setSelectedPayment(itemValue) {
       await this.setState({payment:itemValue})
       await AsyncStorage.setItem(this.state.petitionID+".payment", itemValue)
@@ -718,7 +681,7 @@ class PetitionScreen extends Component {
     saveListenedData = async() => {
       this.state.savedData[this.state.listenFlag].valor = this.state.listenedData
       this.state.savedDataCopy[this.state.listenFlag].valor = this.state.listenedData
-      this.updateSavedData()
+      this.state.savedDataCopy[this.state.listenFlag].escuchado = this.state.listenedData
       if (!this.state.is_recording) await this.setState({listenedData: ""})
     }
 
@@ -733,10 +696,17 @@ class PetitionScreen extends Component {
       else if (!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("cuota")) this.state.placeholder = "Diga o introduzca dato"
       if (this.state.listenedData!=null && this.state.listenedData.length>0) this.saveListenedData()
       if (this.docIsCompleted()) return this.showMessage("Documento con datos solicitados completo")
-      return this.showMessage("Documento no finalizado")
+      var msg = ""
+      for (let i = 0; i<this.state.savedDataCopy.length;i++) {
+        if (this.state.savedDataCopy[i].tipoexp == "E" && this.state.savedDataCopy[i].valor == null) msg += this.state.savedDataCopy[i].titulo.toLowerCase() + ", "
+        if (this.state.savedDataCopy[i].tipoexp == "E" && this.state.cifValue.length==0) msg += "CIF, "
+        if (this.state.savedDataCopy[i].tipoexp != "E" && this.state.savedDataCopy[i].valor == null) msg += this.state.savedDataCopy[i].titulo.toLowerCase() + ", "
+      }
+      return this.showMessage("Datos incompletos: " + msg.slice(0, -2))
     }
   
     seeDocument = async () => {
+      this.updateListen(0)
       if (this.state.cifValue.length>0) await AsyncStorage.setItem(this.state.petitionID+".cifValue",this.state.cifValue) 
       this.props.navigation.push('ResumeView')
     }

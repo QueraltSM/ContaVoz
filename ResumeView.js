@@ -328,12 +328,12 @@ class ResumeViewScreen extends Component {
       this.state.conexionDoc.img = this.state.imgs
       const requestOptions = { method: 'POST', body: JSON.stringify(this.state.conexionDoc) };
       console.log("Documento linkeado : " +requestOptions.body)
-      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") this.showAlert("Error", "Hubo un error al subir el documento")
-      }).catch((error) => {});*/
+      }).catch((error) => {});
     }
 
     async proceedSent() {
@@ -367,14 +367,14 @@ class ResumeViewScreen extends Component {
       this.state.data.img=this.state.imgs
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
       console.log("Documento original:"+requestOptions.body)
-      /*fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") {
           this.showAlert("Error", "Hubo un error al subir el documento")
         } else this.uploadSucceeded()
-      }).catch((error) => {});*/
+      }).catch((error) => {});
     }
 
     async showAlert (title, message) {
