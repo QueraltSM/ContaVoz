@@ -26,4 +26,6 @@ target 'ContaVoz' do
 
   pod 'RNCPicker', :path => '../node_modules/@react-native-picker/picker'
 
+  pod 'react-native-app-auth', :path => '../node_modules/react-native-app-auth'
+
 end

@@ -161,9 +161,12 @@ class PetitionScreen extends Component {
         });
       };
 
-    async showDateError() {
-      this.setState({is_recording:false})
-      await this.showAlert("Fecha errónea", "La fecha '" + this.state.listenedData.toLowerCase() + "' es incorrecta")
+    async dataError(msg) {
+      await this.setState({listenedData: ""})
+      await this.showAlert("Error", msg)
+      this.state.savedDataCopy[this.state.listenFlag].valor = null
+      this.state.savedDataCopy[this.state.listenFlag].escuchado = ""
+      await this.setState({savedDataCopy: this.state.savedDataCopy})
     }
 
     setFixedDate() {
@@ -214,7 +217,7 @@ class PetitionScreen extends Component {
           var d = ("0" + day).slice(-2)
           var m = ("0" + indexM).slice(-2)
           if (months[indexM-1].last < day) {
-            this.showDateError()
+            this.dataError("la fecha que ha dicho es incorrecta")
           } else {
             var year = /[0-9]{4}/
             if (year.test(this.state.listenedData)) {
@@ -237,7 +240,7 @@ class PetitionScreen extends Component {
             this.setState({ interpretedData: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
           }
         } else {
-          this.showDateError()
+          this.dataError("la fecha que ha dicho es incorrecta")
         }
       }
       this.resetListening()
@@ -248,7 +251,7 @@ class PetitionScreen extends Component {
       var number = evaluate(this.state.listenedData);
       if (number==0) {
         if (isNaN(this.state.listenedData)) {
-          this.showAlert("Error", "El dato aportado no es numérico")
+          this.dataError("El dato que ha dicho no es numérico")
         } else {
           if (this.state.listenedData.includes(".")) this.setState({listenedData: this.state.listenedData.replace(".", ",")})
           if (!this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje") && this.state.savedData[this.state.listenFlag].tipoexp=="N" && !this.state.listenedData.includes(",")) this.setState({ listenedData: this.state.listenedData + ",00" })
@@ -270,17 +273,18 @@ class PetitionScreen extends Component {
     async saveCIF(cif){
       var valor = this.state.savedDataCopy[0].valor
       var index=this.state.words.findIndex(i=>i.keywords.toLowerCase().includes(valor) || i.entity.toLowerCase().includes(valor))
-      this.state.words[index].cifValue = this.state.cifValue
+      if (index>-1) {
+        this.state.words[index].cifValue = this.state.cifValue
+        this.saveWords()
+      }
       await this.setState({cifValue: cif})
       await AsyncStorage.setItem(this.state.petitionID+".cifValue", cif)
-      this.saveWords()
     }
 
     async setFixedData() {
       var listenedData = this.state.listenedData.toLowerCase()
       var sameKeywords = this.state.words.findIndex(obj => obj.keywords.toLowerCase().includes(listenedData))
       var sameEntity = this.state.words.findIndex(obj => obj.entity.toLowerCase().includes(listenedData))
-      console.log("sameKeywords:"+sameKeywords+ " and sameEntity:"+sameEntity)
       if (sameKeywords > -1) {
         this.setState({ interpretedData: this.state.words[sameKeywords].entity })
         this.saveCIF(this.state.words[sameKeywords].cifValue)
@@ -288,7 +292,6 @@ class PetitionScreen extends Component {
         this.setState({ interpretedData: this.state.words[sameEntity].entity })
         this.saveCIF(this.state.words[sameEntity].cifValue)
       } else if (sameKeywords==-1 && sameEntity==-1) {
-        console.log("ENTRO")
         this.setState({ interpretedData: this.state.listenedData })
         this.state.words.push({
           keywords: listenedData,
@@ -304,11 +307,11 @@ class PetitionScreen extends Component {
 
     async setListenedData() {
       if (this.state.interpretedData.length==0 && this.state.listenedData.length>0) await this.setState({interpretedData: this.state.listenedData}) 
-      if (this.state.savedData[this.state.listenFlag].tipoexp == "F") this.setFixedDate()
-      else if (this.state.savedData[this.state.listenFlag].tipoexp == "N") this.setFixedNumber()
-      else if (this.state.savedData[this.state.listenFlag].tipoexp == "E") this.setFixedData()
+      if (this.state.savedData[this.state.listenFlag].tipoexp == "F") await this.setFixedDate()
+      else if (this.state.savedData[this.state.listenFlag].tipoexp == "N") await this.setFixedNumber()
+      else if (this.state.savedData[this.state.listenFlag].tipoexp == "E") await this.setFixedData()
       else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) await this.setState({interpretedData: this.state.interpretedData.toUpperCase()}) 
-      this.resetListening()
+      await this.resetListening()
     }
   
     onSpeechResults(e) {
@@ -337,7 +340,7 @@ class PetitionScreen extends Component {
         this.setState({is_recording: true })
         if (this.state.savedData[this.state.listenFlag].valor != null) this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
         try {
-          await Voice.start('es');
+          await Voice.start('es-ES');
         } catch (e) {}
       }
     }
@@ -439,9 +442,7 @@ class PetitionScreen extends Component {
             this.saveImages()
           }
         })
-      } else {
-        this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
-      }
+      } else this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
     }
   
       async showAlert (title, message) {
@@ -679,9 +680,10 @@ class PetitionScreen extends Component {
     }
 
     saveListenedData = async() => {
-      this.state.savedData[this.state.listenFlag].valor = this.state.listenedData
-      this.state.savedDataCopy[this.state.listenFlag].valor = this.state.listenedData
-      this.state.savedDataCopy[this.state.listenFlag].escuchado = this.state.listenedData
+      if (!this.state.is_recording) {
+        this.state.savedDataCopy[this.state.listenFlag].valor = this.state.listenedData
+        this.state.savedDataCopy[this.state.listenFlag].escuchado = this.state.listenedData
+      }
       if (!this.state.is_recording) await this.setState({listenedData: ""})
     }
 

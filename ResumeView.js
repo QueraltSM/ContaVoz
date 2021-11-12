@@ -7,6 +7,7 @@ import { RFPercentage } from "react-native-responsive-fontsize";
 import NetInfo from "@react-native-community/netinfo";
 import { Picker } from '@react-native-picker/picker';
 import DatePicker from 'react-native-date-picker'
+import { authorize } from 'react-native-app-auth';
 
 class ResumeViewScreen extends Component {
   
@@ -119,31 +120,47 @@ class ResumeViewScreen extends Component {
       }
     }
 
-    async setResultRetencion(importe, porcentaje,i) {
-      console.log("HAY RETENCIONES."+porcentaje)
-      var base = 0
-      var cuota = 0
-      var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
-      if (bases.length>1) { // Retenciones con más de 1 impuesto
-        base = bases[0].valor
-        bases.forEach(i => {
-          base = Number(i.valor) + base
-        })
-      } else { // Retenciones con 1 impuesto
-        var impuesto =  this.state.doc.filter(i => i.idcampo.includes("porcentaje") && !i.idcampo.includes("retencion"))
-        var x = 100-(porcentaje-impuesto[0].valor)
-        base = (importe*100)/x
-      }
-      cuota = (base*porcentaje)/100
-      base = parseFloat(base).toFixed(2) + ""
+    async setCuota(porcentaje, base, i) {
+      var cuota = (base*porcentaje)/100
       cuota = cuota.toFixed(2) + "" 
-      this.state.doc[i+1].valor = base
       this.state.doc[i+2].valor = cuota
       this.setState({doc: this.state.doc})
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
     }
 
+    async setResultRetencion(importe, porcentajeImpuesto, porcentajeRetencion,i) {
+      var x = 100-(porcentajeRetencion-porcentajeImpuesto)
+      console.log("HAY RETENCIONES")
+      console.log(JSON.stringify(this.state.doc[i+1].valor))
+      var base = 0
+      var cuota = 0
+      var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
+      if (bases.length>1) { // Retenciones con más de 1 impuesto
+        if (this.state.doc[i].idcampo.includes("retencion")) {
+          bases.forEach(i => {
+            base = Number(i.valor) + base
+          })
+        } else if (this.state.doc[i+1].valor!=null) base = this.state.doc[i+1].valor
+        
+      } else {
+        if (!this.state.doc[i].idcampo.includes("retencion")) {
+          base = (importe*100)/x // Retenciones con 1 impuesto
+        } else {
+          // cuando hay 1 impuesto, baseretencion = base
+          var baseret = this.state.doc.find(i=>i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
+          base = baseret.valor
+        }
+      }
+      console.log(this.state.doc[i].idcampo + " base es: "+base)
+      cuota = (base*this.state.doc[i-2].valor)/100
+      base = parseFloat(base).toFixed(2) + ""
+      this.state.doc[i+1].valor = base
+      if (this.state.doc[i].idcampo.includes("retencion")) this.setCuota(porcentajeRetencion,base,i)
+      else this.setCuota(porcentajeImpuesto, base, i)
+    }
+
     async setResult(importe, porcentaje,i) {
+      console.log("SIN RETENCIONES")
       var base = this.state.doc[i+1].valor + ""
       if (base !="null" && base.includes(",")) {
         base = base.replace(",",".") 
@@ -160,24 +177,23 @@ class ResumeViewScreen extends Component {
         cuota = (base*porcentaje)/100
         cuota = cuota.toFixed(2) + "" 
         base = parseFloat(base).toFixed(2) + ""
-        console.log("base2:"+base)
-        console.log("cuota2:"+cuota) 
         this.state.doc[i+1].valor = base
-        this.state.doc[i+2].valor = cuota
-        this.setState({doc: this.state.doc})
-        await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
+        await this.setCuota(base, porcentaje, i)
       }
     }
 
     async calculateResult(item, i) {
       var index = this.state.doc.findIndex(i => i.idcampo.includes("importe"))
       var thereIsRetenciones = this.state.doc.findIndex(i => i.idcampo.includes("retencion"))
-      var porcentaje = item.valor
-      if (thereIsRetenciones>-1) porcentaje = this.state.doc[thereIsRetenciones].valor
+      var porcentajeImpuesto = item.valor
+      var porcentajeRetencion = 0
+      if (thereIsRetenciones>-1) porcentajeRetencion = this.state.doc[thereIsRetenciones].valor
+      console.log("porcentajeImpuesto:"+porcentajeImpuesto)
+      console.log("porcentajeRetencion:"+porcentajeRetencion)
       var importe = this.state.doc[index].valor
       if (importe != null && importe.includes(",")) importe = importe.replace(",",".") 
-      if (importe!=null && porcentaje!=null && thereIsRetenciones==-1) this.setResult(importe, porcentaje, i) // calculos SIN retenciones
-      else if (importe!=null && porcentaje!=null && thereIsRetenciones>-1) this.setResultRetencion(importe, porcentaje, i) // calculos CON retenciones
+      if (importe!=null && porcentajeImpuesto!=null && thereIsRetenciones==-1) this.setResult(importe, porcentajeImpuesto, i) // calculos SIN retenciones
+      else if (importe!=null && porcentajeImpuesto!=null && thereIsRetenciones>-1) this.setResultRetencion(importe, porcentajeImpuesto, porcentajeRetencion, i) // calculos CON retenciones
     }
   
     async deleteDoc() {
@@ -286,7 +302,34 @@ class ResumeViewScreen extends Component {
     }
 
     async uploadImages() {
-      const requestOptions = {
+      // Google's OAuth 2.0 endpoint for requesting an access token
+  var oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+
+  // Create <form> element to submit parameters to OAuth 2.0 endpoint.
+  var form = React.createElement('form');
+  form.setAttribute('method', 'GET'); // Send as a GET request.
+  form.setAttribute('action', oauth2Endpoint);
+  // Parameters to pass to OAuth 2.0 endpoint.
+  var params = {'client_id': 'YOUR_CLIENT_ID',
+                'redirect_uri': 'YOUR_REDIRECT_URI',
+                'response_type': 'token',
+                'scope': 'https://www.googleapis.com/auth/drive.metadata.readonly',
+                'include_granted_scopes': 'true',
+                'state': 'pass-through value'};
+
+  // Add form parameters as hidden input values.
+  for (var p in params) {
+    var input = React.createElement('input');
+    input.setAttribute('type', 'hidden');
+    input.setAttribute('name', p);
+    input.setAttribute('value', params[p]);
+    form.appendChild(input);
+  }
+
+  // Add form to page and submit it to open the OAuth 2.0 endpoint.
+  React.body.appendChild(form);
+  form.submit();
+      /*const requestOptions = {
         method: 'POST',
         headers: {'Content-Type': 'multipart/form-data', 'Accept': "application/json"}, 
         body: JSON.stringify({ img: this.state.imgs })
@@ -299,7 +342,7 @@ class ResumeViewScreen extends Component {
           })
           .catch((error) => {  
             console.log('error',error);
-          });
+          });*/
     }
 
 
@@ -337,9 +380,9 @@ class ResumeViewScreen extends Component {
     }
 
     async proceedSent() {
-      //if (this.state.imgs.length>0) await this.uploadImages()
-      if (this.state.thereIsConexion) await this.sentLinkedDoc()
-      await this.uploadDoc()
+      if (this.state.imgs.length>0) await this.uploadImages()
+      //if (this.state.thereIsConexion) await this.sentLinkedDoc()
+      //await this.uploadDoc()
     }
 
     async uploadDoc() {

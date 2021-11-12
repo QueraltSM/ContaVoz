@@ -50,6 +50,7 @@ class LoginScreen extends Component {
     }
   
     handleError = (error_code) => {
+      console.log("handleError:"+error_code)
       var error = ""
       switch(error_code) {
         case "1":
@@ -116,8 +117,7 @@ class LoginScreen extends Component {
   
     login = async () => {
       await NetInfo.addEventListener(networkState => {
-        if (networkState.isConnected && this.state.error<0) {
-          this.setState({ error: 0 })
+        if (networkState.isConnected) {
           if (this.state.company.length>0 && this.state.user.length>0 && this.state.password.length>0) {
             const requestOptions = {
               method: 'POST',
@@ -134,14 +134,14 @@ class LoginScreen extends Component {
                   this.setState({userid: JSON.parse(JSON.stringify(responseJson.id))})
                   this.saveUser()
                 } else {
-                  this.handleError(error)
+                  this.handleError(this.state.error )
                 }
               }).catch(() => {});
           } else {
             this.setState({errorMessage: "Complete todos los campos" })
           }
         } else {
-          this.setState({errorMessage: "No tiene conexión a Internet" })
+          this.setState({wifi: false})
         }
       })
     }
