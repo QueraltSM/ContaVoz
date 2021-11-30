@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, TextInput, BackHandler } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, TextInput, BackHandler, SafeAreaView } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
@@ -178,6 +178,7 @@ class LoginScreen extends Component {
     
     render() {
       return (
+        <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
         <View style={ styles.container }>            
           <View style={{paddingBottom: 20, alignSelf:"center"}}>
           <Image
@@ -215,6 +216,7 @@ class LoginScreen extends Component {
           <View style={{flex: 1, paddingTop:20}}><Text style={styles.errorText}>{this.state.errorMessage}</Text></View>
           {this.setFootbar()}
         </View>
+        </SafeAreaView>
       );
     } 
   }

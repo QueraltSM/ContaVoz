@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollView, Alert } from 'react-native';
+import {StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollView, Alert, SafeAreaView } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import AsyncStorage from '@react-native-community/async-storage';
 import { Icon } from 'react-native-elements'
@@ -64,14 +64,14 @@ class PetitionListScreen extends Component {
 
     setData (item, index) {
       return (<TouchableOpacity onPress={() => this.openDocument(item, index)}>
-        <Text style={styles.registeredDocuments}>{this.state.lists[index]>0 && <Text style={styles.documentsCount}> {this.state.lists[index]} </Text>} {item.titulo}</Text>
+        <Text style={styles.registeredDocuments}>{this.state.lists[index]>0 && <Text style={styles.documentsCount}> {this.state.lists[index]} </Text>} {item.titulo} </Text>
         </TouchableOpacity>)
     }
 
     setMenu() {
       return(<View style={styles.navBarHeader}>
-        <Text style={styles.mainHeader}>Seleccione tipo de documento</Text>
-        <Icon name={this.state.icon} type='font-awesome' color='white' size={20} />
+        <Text style={styles.mainHeader}>Seleccione documento</Text>
+        <Icon name={this.state.icon} type='font-awesome' color='black' size={30} />
       </View>
       )
     }
@@ -145,6 +145,7 @@ class PetitionListScreen extends Component {
     render () {
       if (!this.state.loaded) return null
       return (
+        <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
         <View style={styles.container}>
           {this.setMenu()}
           <ScrollView 
@@ -167,7 +168,7 @@ class PetitionListScreen extends Component {
           </View>
           </ScrollView>   
         {this.setFootbar()}
-      </View>);
+      </View></SafeAreaView>);
     }
   }
   
@@ -183,27 +184,29 @@ class PetitionListScreen extends Component {
     navBarHeader: {
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor:"#1A5276", 
-      flexDirection:'row', 
-      textAlignVertical: 'center',
-      width:"100%"
+      backgroundColor:"white", 
+      flexDirection:'row',
+      textAlign: 'center',
+      width: "100%",
+      paddingLeft:10,
+      paddingRight:10
     },
     voiceControlView: {
         flex: 1,
         backgroundColor: "#FFF",
         paddingTop: 10,
         alignContent: "center",
-        alignSelf: "center",
+        alignSelf: "center"
       },
       registeredDocuments: {
-        fontSize: RFPercentage(2.5),
-        textAlign: "center",
+        fontSize: RFPercentage(3),
+        textAlign: "left",
         color: "#1A5276",
         fontWeight: 'bold',
         paddingTop: 10,
         paddingBottom: 10,
-        paddingLeft: 20,
-        paddingRight: 20
+        paddingLeft: 10,
+        paddingRight: 10,
       },
       showTitle:{
         textAlign: 'center',
@@ -244,7 +247,8 @@ class PetitionListScreen extends Component {
         alignItems: 'center',
         textAlign: "center",
         fontWeight: "bold",
-        color: "#FFF",
-        fontSize: 20,
+        color: "black",
+        fontSize: RFPercentage(3),
+        paddingTop: 20
       },
 })

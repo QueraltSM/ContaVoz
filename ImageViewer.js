@@ -1,10 +1,11 @@
 import React, {Component} from 'react';
-import {StyleSheet, View, Alert, Image, BackHandler, Dimensions, PermissionsAndroid} from 'react-native';
+import {StyleSheet, View, Alert, Image, BackHandler, Dimensions, PermissionsAndroid, SafeAreaView, Text} from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import * as ImagePicker from 'react-native-image-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
+import { RFPercentage } from "react-native-responsive-fontsize";
 
 class ImageViewerScreen extends Component {
 
@@ -73,42 +74,29 @@ class ImageViewerScreen extends Component {
     }
   
     takePhoto = async() =>{
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA,
-          {
-            title: "ContaVoz",
-            message:"Se necesita acceder a su cámara",
-            buttonNegative: "Cancelar",
-            buttonPositive: "Aceptar"
-          }
-        );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          let options = {
-            title: 'Hacer una foto',
-            quality: 0.5,
-            aspect:[4,3],
-            customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
-            storageOptions: {
-              skipBackup: true,
-              path: 'images',
-              privateDirectory: true,
-            },
-            includeBase64: false
-          };
-          if (this.state.images.length <= 9) {
-            ImagePicker.launchCamera(options, (response) => {
-              if (response.didCancel || response.error || response.customButton) {
-              } else {
-                var uri = JSON.stringify(response.assets[0]["uri"])
-                this.updateImage(uri.replace(/['"]+/g, ''), "")
-              }
-            })
+      let options = {
+        title: 'Hacer una foto',
+        quality: 0.5,
+        aspect:[4,3],
+        customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
+        storageOptions: {
+          skipBackup: true,
+          path: 'images',
+          privateDirectory: true,
+        },
+        includeBase64: false
+      };
+      if (this.state.images.length <= 9) {
+        ImagePicker.launchCamera(options, (response) => {
+          if (response.didCancel || response.error || response.customButton) {
           } else {
-            this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
+            var uri = JSON.stringify(response.assets[0]["uri"])
+            this.updateImage(uri.replace(/['"]+/g, ''), "")
           }
-        }
-      } catch (err) {}
+        })
+      } else {
+        this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
+      }
     }
   
     goGallery = async () => {
@@ -198,21 +186,15 @@ class ImageViewerScreen extends Component {
     }
   
     setImageZoom() {
-      return (
-        <ImageZoom
-        cropWidth={Dimensions.get('window').width}
-        cropHeight={Dimensions.get('window').height}
-        imageWidth={Dimensions.get('window').width}
-        imageHeight={Dimensions.get('window').height}>
-        <Image
+      return (<Image
           source={{
             uri: this.state.image.uri
           }}
           resizeMode="contain"
+          
           key={this.state.image}
           style={{ width: "100%", height: "100%" }}
         />
-        </ImageZoom>
       )
     }
 
@@ -221,45 +203,45 @@ class ImageViewerScreen extends Component {
       <Icon
           name='camera'
           type='font-awesome'
-          color='#FFF'
+          color='#154360'
           size={40}
           onPress={this.takePhoto}
         />
         <Icon
           name='plus'
           type='font-awesome'
-          color='#154360'
+          color='white'
           size={35}
         />
         <Icon
           name='plus'
           type='font-awesome'
-          color='#154360'
+          color='white'
           size={35}
         />
         <Icon
           name='image'
           type='font-awesome'
-          color='#FFF'
+          color='#154360'
           size={40}
           onPress={this.goGallery}
         />
         <Icon
           name='plus'
           type='font-awesome'
-          color='#154360'
+          color='white'
           size={35}
         />
         <Icon
           name='plus'
           type='font-awesome'
-          color='#154360'
+          color='white'
           size={35}
         />
         <Icon
           name='trash'
           type='font-awesome'
-          color='#FFF'
+          color='#154360'
           size={40}
           onPress={this._delete}
         />
@@ -268,12 +250,13 @@ class ImageViewerScreen extends Component {
   
     render () {
       return (
+        <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
         <View style={styles.imageView}>
           <View style={styles.selectedImageView}>
           {this.setImageZoom()}
         </View>
           {this.setFootbar()}
-        </View>
+        </View></SafeAreaView>
       );
     }
   }
@@ -283,20 +266,36 @@ class ImageViewerScreen extends Component {
   const styles = StyleSheet.create({
     imageView: {
         flex: 1,
-        backgroundColor:"#154360",
+        backgroundColor:"white",
       },
       selectedImageView: {
         flex: 1,
-        alignItems: 'center',
-        textAlign: "center",
-        backgroundColor: "#154360",
       },
       darkFootBar: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor:"#154360", 
+        backgroundColor:"white", 
         flexDirection:'row', 
         textAlignVertical: 'center',
         height: 60
+      },
+      navBarHeader: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor:"white", 
+        flexDirection:'row',
+        textAlign: 'center',
+        width: "100%",
+        paddingLeft:10,
+        paddingRight:10
+      },
+      mainHeader: {
+        padding: 10,
+        alignItems: 'center',
+        textAlign: "center",
+        fontWeight: "bold",
+        color: "black",
+        fontSize: RFPercentage(3),
+        paddingTop: 20
       },
     })

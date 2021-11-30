@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Animated } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Animated, SafeAreaView } from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
@@ -310,34 +310,43 @@ class PetitionScreen extends Component {
       if (this.state.savedData[this.state.listenFlag].tipoexp == "F") await this.setFixedDate()
       else if (this.state.savedData[this.state.listenFlag].tipoexp == "N") await this.setFixedNumber()
       else if (this.state.savedData[this.state.listenFlag].tipoexp == "E") await this.setFixedData()
-      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) await this.setState({interpretedData: this.state.interpretedData.toUpperCase()}) 
+      else if (this.state.savedData[this.state.listenFlag].idcampo.includes("factura")) await this.setFixedDoc()
       await this.resetListening()
+    }
+
+    async setFixedDoc() {
+      if (this.state.listenedData.includes(":")) await this.setState({listenedData: this.state.listenedData.split(':').join("")}) 
+      if (this.state.listenedData.includes("/")) await this.setState({listenedData: this.state.listenedData.split('/').join("")}) 
+      if (this.state.listenedData.includes("-")) await this.setState({listenedData: this.state.listenedData.split('-').join("")}) 
+      await this.setState({interpretedData: this.state.listenedData.toUpperCase()}) 
     }
   
     onSpeechResults(e) {
-      var res = e.value + ""
-      var word = res.split(",")
-      this.setState({listenedData: word[0]});
-      if (this.state.savedData[this.state.listenFlag].idcampo=="factura") this.setState({listenedData:this.state.listenedData.toUpperCase().split(' ').join("")})
-      if (this.state.savedData[this.state.listenFlag].tipoexp == "E") {
-        var sameKeywords = this.state.words.findIndex(item => item.keywords.toLowerCase().includes(this.state.listenedData.toLowerCase()))
-        if (sameKeywords>-1) {
-          this.state.savedData[this.state.listenFlag].valor = this.state.words[sameKeywords].entity
-          this.setState({ cif: this.state.words[sameKeywords].cifValue })
-        } 
+      if (this.state.is_recording) {
+        var res = e.value + ""
+        var word = res.split(",")
+        this.setState({listenedData: word[0]});
+        if (this.state.savedData[this.state.listenFlag].idcampo=="factura") this.setState({listenedData:this.state.listenedData.toUpperCase().split(' ').join("")})
+        if (this.state.savedData[this.state.listenFlag].tipoexp == "E") {
+          var sameKeywords = this.state.words.findIndex(item => item.keywords.toLowerCase().includes(this.state.listenedData.toLowerCase()))
+          if (sameKeywords>-1) {
+            this.state.savedData[this.state.listenFlag].valor = this.state.words[sameKeywords].entity
+            this.setState({ cif: this.state.words[sameKeywords].cifValue })
+          } 
+        }
+        if (this.state.savedData[this.state.listenFlag].tipoexp != "1" && this.state.savedData[this.state.listenFlag].tipoexp != "E" && this.state.savedData[this.state.listenFlag].tipoexp != "F") {
+          this.setState({listenedData:this.state.listenedData.split(' ').join("")})
+        }
+        this.setListenedData()
       }
-      if (this.state.savedData[this.state.listenFlag].tipoexp != "1" && this.state.savedData[this.state.listenFlag].tipoexp != "E" && this.state.savedData[this.state.listenFlag].tipoexp != "F") {
-        this.setState({listenedData:this.state.listenedData.split(' ').join("")})
-      }
-      this.setListenedData()
     }
   
     async _startRecognition(e) {
-      this.setState({ listenedData: "" })
-      this.setState({ interpretedData: "" })
-      this.setState({ recognized: '', started: '', results: []});
-      if (this.state.listenFlag<this.state.savedData.length) {
-        this.setState({is_recording: true })
+      await this.setState({ listenedData: "" })
+      await this.setState({ interpretedData: "" })
+      await this.setState({ recognized: '', started: '', results: []});
+      await this.setState({is_recording: true })
+      if (this.state.listenFlag<this.state.savedDataCopy.length) {
         if (this.state.savedData[this.state.listenFlag].valor != null) this.setState({ interpretedData: this.state.savedData[this.state.listenFlag].valor })
         try {
           await Voice.start('es-ES');
@@ -359,46 +368,37 @@ class PetitionScreen extends Component {
     }
 
      takePhoto = async() =>{
-        try {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.CAMERA, { title: "ContaVoz", message:"Necesitamos permisos para acceder a su cámara", buttonNegative: "Cancelar", buttonPositive: "Aceptar" }
-          );
-          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            let options = {
-              title: 'Hacer una foto',
-              quality: 0.5,
-              aspect:[4,3],
-              customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
-              storageOptions: {
-                skipBackup: true,
-                path: 'images',
-                privateDirectory: true,
-              },
-              includeBase64: false
-            };
-            if (this.state.images.length <= 9) {
-              ImagePicker.launchCamera(options, (response) => {
-                if (response.didCancel || response.error || response.customButton) {
-                } else {
-                  var arrayImages = this.state.images
-                  var uri = JSON.stringify(response.assets[0]["uri"])
-                  var newID = this.state.petitionID+"_"+(this.state.images.length+1)
-                  arrayImages.push({
-                    id: newID,
-                    nombre: newID,
-                    id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
-                    urid: "1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR",
-                    uri: uri.replace(/['"]+/g, '')
-                  })
-                  this.setState({images: arrayImages})
-                  this.saveImages()
-                }
-              })
-            } else {
-              this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
-            }
+      let options = {
+        title: 'Hacer una foto',
+        quality: 0.5,
+        aspect:[4,3],
+        customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
+        storageOptions: {
+          skipBackup: true,
+          path: 'images',
+          privateDirectory: true,
+        },
+        includeBase64: false
+      };
+      if (this.state.images.length <= 9) {
+        ImagePicker.launchCamera(options, (response) => {
+          if (response.didCancel || response.error || response.customButton) {
+          } else {
+            var arrayImages = this.state.images
+            var uri = JSON.stringify(response.assets[0]["uri"])
+            var newID = this.state.petitionID+"_"+(this.state.images.length+1)
+            arrayImages.push({
+              id: newID,
+              nombre: newID,
+              id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
+              urid: "1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR",
+              uri: uri.replace(/['"]+/g, '')
+            })
+            this.setState({images: arrayImages})
+            this.saveImages()
           }
-        } catch (err) {}
+        })
+      } else this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
     }
   
     async saveImages() {
@@ -621,9 +621,9 @@ class PetitionScreen extends Component {
     }
 
     setDatePicker() {
-      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity>
-      return <View><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity><DatePicker
-      modal mode="date" title="Selecciona fecha" confirmText="OK" cancelText="Cancelar" open={this.state.openDatePicker} date={new Date()}
+      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity>
+      return <View><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity>
+      <DatePicker modal mode="date" title="Selecciona fecha" confirmText="OK" cancelText="Cancelar" open={this.state.openDatePicker} date={new Date()}
       onConfirm={(date) => {
         this.openDatePicker(false)
         this.setDate(date)
@@ -642,7 +642,7 @@ class PetitionScreen extends Component {
         {!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("formapc") && !this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("fecha") && this.state.savedDataCopy[this.state.listenFlag].tipoexp!= "N" && <TextInput placeholder={this.state.placeholder}  blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={listenedData => this.setState({listenedData: listenedData})}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput>}
         {this.state.savedDataCopy[this.state.listenFlag].tipoexp=="E" &&
           (<View><Text style={styles.defaultDataTitle}>CIF de la empresa</Text>
-            <TextInput blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={cifValue => this.setState({cifValue})}>{this.state.cifValue}</TextInput>
+            <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} multiline={true} placeholder="CIF no registrado" style={styles.changeTranscript} onChangeText={cifValue => this.setState({cifValue})}>{this.state.cifValue}</TextInput>
           </View>)}
         {this.state.savedDataCopy.length > 0 && this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("formapc") && (<View>
         <View style={styles.pickerView}>
@@ -659,11 +659,10 @@ class PetitionScreen extends Component {
       </View>)
     }
 
-    showMessage = (message) => {
+    showMessage = () => {
       if (this.state.savedData.length==0) return null
       if (this.state.is_recording) return null
       return(<View style={styles.titleView}>
-          <Text style={styles.stateDoc}>{message}</Text>
           <Text style={styles.showHeader}>Adjunte imágenes, diga o introduzca datos</Text>
           {this.setWrittenData()}
         </View>)
@@ -692,19 +691,12 @@ class PetitionScreen extends Component {
       if (this.state.savedDataCopy[this.state.listenFlag].tipoexp == "E") this.state.placeholder = "Ej: Disoft Servicios Informáticos S.L."
       else if (this.state.savedDataCopy[this.state.listenFlag].tipoexp == "F") this.state.placeholder = this.state.fulldate
       else if (this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("factura")) this.state.placeholder = "Ej: 1217 o F-1217"
-      else if (this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("importe")) this.state.placeholder = "Ej: 1070 o 1070,00"
+      else if (this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("importe")) this.state.placeholder = "Los decimales se dicen con punto"
       else if (this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("porcentaje")) this.state.placeholder = "Ej: 3 o 7"
       else if (!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("cuota") && this.state.savedDataCopy[this.state.listenFlag].tipoexp == "N") this.state.placeholder = "Ej: 10 o 10,5"
       else if (!this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("base") &&  !this.state.savedDataCopy[this.state.listenFlag].idcampo.includes("cuota")) this.state.placeholder = "Diga o introduzca dato"
       if (this.state.listenedData!=null && this.state.listenedData.length>0) this.saveListenedData()
-      if (this.docIsCompleted()) return this.showMessage("Documento con datos solicitados completo")
-      var msg = ""
-      for (let i = 0; i<this.state.savedDataCopy.length;i++) {
-        if (this.state.savedDataCopy[i].tipoexp == "E" && this.state.savedDataCopy[i].valor == null) msg += this.state.savedDataCopy[i].titulo.toLowerCase() + ", "
-        if (this.state.savedDataCopy[i].tipoexp == "E" && this.state.cifValue.length==0) msg += "CIF, "
-        if (this.state.savedDataCopy[i].tipoexp != "E" && this.state.savedDataCopy[i].valor == null) msg += this.state.savedDataCopy[i].titulo.toLowerCase() + ", "
-      }
-      return this.showMessage("Datos incompletos: " + msg.slice(0, -2))
+      return this.showMessage()
     }
   
     seeDocument = async () => {
@@ -749,8 +741,8 @@ class PetitionScreen extends Component {
     docIsCompleted() {
       var index = this.state.savedDataCopy.findIndex(i => i.valor == null)
       var indexNotNull = this.state.savedDataCopy.findIndex(i => i.valor != null)
-      if (this.state.images.length>0 && indexNotNull==-1 && this.state.cifValue.length==0) return true 
-      if (index==-1 && this.state.cifValue.length>0) return true
+      if (this.state.images.length>0 && indexNotNull==-1) return true 
+      if (index==-1) return true
       return false
     }
 
@@ -798,24 +790,13 @@ class PetitionScreen extends Component {
               </TouchableOpacity>
               </View>
             }
-            {!this.state.is_recording && this.docIsCompleted() &&
+            {!this.state.is_recording &&
             (<View style={{ width: 70,textAlign:'center' }}>
               <TouchableOpacity onPress={() => this.seeDocument()}>
               <Icon
                 name='check-square'
                 type='font-awesome'
                 color='#5C9E7B'
-                size={40}
-              />
-              </TouchableOpacity>
-            </View>)}
-            {!this.state.is_recording && !this.docIsCompleted() &&
-            (<View style={{ width: 70,textAlign:'center' }}>
-              <TouchableOpacity onPress={() => this.endDocument()}>
-              <Icon
-                name='check-square'
-                type='font-awesome'
-                color='#8A8887'
                 size={40}
               />
               </TouchableOpacity>
@@ -827,6 +808,7 @@ class PetitionScreen extends Component {
     render () {
       if (this.state.savedData.length==0) return null
       return (
+        <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
         <View style={{ flex: 1 }}>
             <View style={styles.navBarHeader}>
               <Text style={styles.mainHeader}>{this.state.title}</Text>
@@ -846,6 +828,7 @@ class PetitionScreen extends Component {
             </ScrollView>
             {this.setMenu()}
         </View>
+        </SafeAreaView>
       );
     }
   }
@@ -856,7 +839,7 @@ class PetitionScreen extends Component {
       navBarHeader: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor:"#1A5276", 
+        backgroundColor:"white", 
         flexDirection:'row', 
         textAlignVertical: 'center',
       },
@@ -939,14 +922,6 @@ class PetitionScreen extends Component {
         fontSize: RFPercentage(3.2),
         width: "100%",
       },
-      showTitle:{
-        paddingTop: 20,
-        textAlign: 'center',
-        color: '#154360',
-        fontWeight: 'bold',
-        fontSize: RFPercentage(3),
-        width: "100%",
-      },
       defaultDataTitle: {
         paddingTop: 20,
         textAlign: 'center',
@@ -954,8 +929,7 @@ class PetitionScreen extends Component {
         fontWeight: 'bold',
         fontSize: RFPercentage(3),
         width: "100%",
-        paddingBottom: 10,
-        textDecorationLine: 'underline'
+        paddingBottom: 10
       },
       showListen:{
         textAlign: 'center',
@@ -1073,7 +1047,8 @@ class PetitionScreen extends Component {
         width:"100%",
         borderWidth: 0.5,
         borderColor: "darkgray",
-        borderRadius: 20
+        borderRadius: 20,
+        padding: 10
       },
       resumeText: {
         fontSize: RFPercentage(3),
@@ -1112,7 +1087,6 @@ class PetitionScreen extends Component {
         textAlign: "center",
         fontWeight: 'bold',
         color: "#2E8B57",
-        fontWeight: 'bold',
       },
       exitNewValue: {
         fontSize: 20,
@@ -1147,8 +1121,9 @@ class PetitionScreen extends Component {
         alignItems: 'center',
         textAlign: "center",
         fontWeight: "bold",
-        color: "#FFF",
-        fontSize: 20,
+        color: "black",
+        fontSize: RFPercentage(4),
+        paddingTop: 20
       },
       roundButton: {
         width: 20,
@@ -1159,6 +1134,7 @@ class PetitionScreen extends Component {
         borderRadius: 50,
         borderWidth:2,
         borderColor: '#1A5276',
+        paddingTop: 20
       },
       focusRoundButton: {
         width: 20,

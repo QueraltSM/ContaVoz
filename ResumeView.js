@@ -1,13 +1,12 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions, CheckBox} from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions, CheckBox, SafeAreaView} from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import AsyncStorage from '@react-native-community/async-storage';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { RFPercentage } from "react-native-responsive-fontsize";
 import NetInfo from "@react-native-community/netinfo";
 import { Picker } from '@react-native-picker/picker';
-import DatePicker from 'react-native-date-picker'
-import { authorize } from 'react-native-app-auth';
+import DatePicker from 'react-native-date-picker';
 
 class ResumeViewScreen extends Component {
   
@@ -130,8 +129,6 @@ class ResumeViewScreen extends Component {
 
     async setResultRetencion(importe, porcentajeImpuesto, porcentajeRetencion,i) {
       var x = 100-(porcentajeRetencion-porcentajeImpuesto)
-      console.log("HAY RETENCIONES")
-      console.log(JSON.stringify(this.state.doc[i+1].valor))
       var base = 0
       var cuota = 0
       var bases = this.state.doc.filter(i => i.idcampo.includes("base") && !i.idcampo.includes("retencion"))
@@ -151,7 +148,6 @@ class ResumeViewScreen extends Component {
           base = baseret.valor
         }
       }
-      console.log(this.state.doc[i].idcampo + " base es: "+base)
       cuota = (base*this.state.doc[i-2].valor)/100
       base = parseFloat(base).toFixed(2) + ""
       this.state.doc[i+1].valor = base
@@ -160,7 +156,6 @@ class ResumeViewScreen extends Component {
     }
 
     async setResult(importe, porcentaje,i) {
-      console.log("SIN RETENCIONES")
       var base = this.state.doc[i+1].valor + ""
       if (base !="null" && base.includes(",")) {
         base = base.replace(",",".") 
@@ -188,8 +183,6 @@ class ResumeViewScreen extends Component {
       var porcentajeImpuesto = item.valor
       var porcentajeRetencion = 0
       if (thereIsRetenciones>-1) porcentajeRetencion = this.state.doc[thereIsRetenciones].valor
-      console.log("porcentajeImpuesto:"+porcentajeImpuesto)
-      console.log("porcentajeRetencion:"+porcentajeRetencion)
       var importe = this.state.doc[index].valor
       if (importe != null && importe.includes(",")) importe = importe.replace(",",".") 
       if (importe!=null && porcentajeImpuesto!=null && thereIsRetenciones==-1) this.setResult(importe, porcentajeImpuesto, i) // calculos SIN retenciones
@@ -302,39 +295,12 @@ class ResumeViewScreen extends Component {
     }
 
     async uploadImages() {
-      // Google's OAuth 2.0 endpoint for requesting an access token
-  var oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
-
-  // Create <form> element to submit parameters to OAuth 2.0 endpoint.
-  var form = React.createElement('form');
-  form.setAttribute('method', 'GET'); // Send as a GET request.
-  form.setAttribute('action', oauth2Endpoint);
-  // Parameters to pass to OAuth 2.0 endpoint.
-  var params = {'client_id': 'YOUR_CLIENT_ID',
-                'redirect_uri': 'YOUR_REDIRECT_URI',
-                'response_type': 'token',
-                'scope': 'https://www.googleapis.com/auth/drive.metadata.readonly',
-                'include_granted_scopes': 'true',
-                'state': 'pass-through value'};
-
-  // Add form parameters as hidden input values.
-  for (var p in params) {
-    var input = React.createElement('input');
-    input.setAttribute('type', 'hidden');
-    input.setAttribute('name', p);
-    input.setAttribute('value', params[p]);
-    form.appendChild(input);
-  }
-
-  // Add form to page and submit it to open the OAuth 2.0 endpoint.
-  React.body.appendChild(form);
-  form.submit();
-      /*const requestOptions = {
+      const requestOptions = {
         method: 'POST',
         headers: {'Content-Type': 'multipart/form-data', 'Accept': "application/json"}, 
         body: JSON.stringify({ img: this.state.imgs })
       };
-      console.log(JSON.stringify(requestOptions.body))
+      //console.log(JSON.stringify(requestOptions))
       fetch("https://app.dicloud.es/trataimagen.asp", requestOptions)
           .then((response) => response.json())
           .then((responseJson) => {
@@ -342,7 +308,7 @@ class ResumeViewScreen extends Component {
           })
           .catch((error) => {  
             console.log('error',error);
-          });*/
+          });
     }
 
 
@@ -381,8 +347,8 @@ class ResumeViewScreen extends Component {
 
     async proceedSent() {
       if (this.state.imgs.length>0) await this.uploadImages()
-      //if (this.state.thereIsConexion) await this.sentLinkedDoc()
-      //await this.uploadDoc()
+      if (this.state.thereIsConexion) await this.sentLinkedDoc()
+      await this.uploadDoc()
     }
 
     async uploadDoc() {
@@ -504,8 +470,8 @@ class ResumeViewScreen extends Component {
     }
 
     setDatePicker(index) {
-      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.doc[index].valor}</TextInput></TouchableOpacity>
-      return <View><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.doc[index].valor}</TextInput></TouchableOpacity><DatePicker
+      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.doc[index].valor}</TextInput></TouchableOpacity>
+      return <View><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.doc[index].valor}</TextInput></TouchableOpacity><DatePicker
       modal
       mode="date"
       open={this.state.openDatePicker}
@@ -522,22 +488,17 @@ class ResumeViewScreen extends Component {
     setInput(item, index) {
       var importe = this.state.doc.findIndex(i=>i.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
-      var message = "Calcular "
-      if (item.idcampo.includes("porcentaje")) {
-        if (this.state.doc[index+1].valor == null) message += this.state.doc[index+1].titulo.toLowerCase() + " "
-        if (this.state.doc[index+2].valor == null) message += this.state.doc[index+2].titulo.toLowerCase() + " "
-      }
-      if (item.idcampo.includes("cuenta")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      if (item.idcampo.includes("cuenta")) return <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("fecha")) return this.setDatePicker(index)
-      if (item.idcampo.includes("factura")) return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 1217 o F-1217" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      if (item.idcampo.includes("importe")) return <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0,00" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      if (item.idcampo.includes("base")) return <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      if (item.idcampo.includes("cuota")) return <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      if (item.idcampo.includes("factura")) return <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 1217 o F-1217" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      if (item.idcampo.includes("importe")) return <TextInput placeholderTextColor="darkgray" keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0,00" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      if (item.idcampo.includes("base")) return <TextInput placeholderTextColor="darkgray" keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      if (item.idcampo.includes("cuota")) return <TextInput placeholderTextColor="darkgray" keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("porcentaje")) return <View style={{width:"100%"}}>
-      <TextInput keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 7 o 3" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      <TouchableOpacity onPressIn={() => this.calculateResult(item, index)}><Text style={styles.calculateButton}>{message}</Text></TouchableOpacity>
+      <TextInput placeholderTextColor="darkgray" keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 7 o 3" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      <TouchableOpacity onPressIn={() => this.calculateResult(item, index)}><Text style={styles.calculateButton}>Calcular resultados</Text></TouchableOpacity>
       </View>
-      return <TextInput blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput> 
+      return <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput> 
     }
 
     setData = (item, index) => {
@@ -550,7 +511,7 @@ class ResumeViewScreen extends Component {
         {item.tipoexp.includes("E") && <View>
         <Text style={styles.resumeText}>CIF de la empresa*</Text>
         <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
+        <TextInput placeholderTextColor="darkgray" placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
         </View>
       </View>}
       {this.state.doc.length > 0 && (item.idcampo.includes("formapc") || item.idcampo.includes("conexion")) && (<View>
@@ -666,15 +627,15 @@ class ResumeViewScreen extends Component {
 
       setTitle() {
         if (this.state.interpretedData.length>0) this.saveDoc()
-        return <View style={{backgroundColor: "#1A5276"}}>
+        return <View style={styles.navBarHeader}>
         <Text style={styles.mainHeader}>{this.state.title}</Text>
       </View>
       }
 
       render () {
         if (this.state.not_loaded) return null
-
         return (
+          <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
           <View style={{flex: 1, backgroundColor:"#FFF" }}>
             <ScrollView 
               showsVerticalScrollIndicator ={false}
@@ -691,7 +652,7 @@ class ResumeViewScreen extends Component {
             {!this.state.wifi && <Text style={styles.wifiText}>Para enviar el documento debe tener conexión a Internet</Text>}
             {this.setFootbar()}
             </ScrollView>  
-          </View>
+          </View></SafeAreaView>
         );
       }
     }
@@ -794,9 +755,9 @@ class ResumeViewScreen extends Component {
       },
       resumeText: {
         fontSize: RFPercentage(3),
-        textAlign: "justify",
+        textAlign: "left",
         paddingTop: 20,
-        color: "#000",
+        color: "#154360",
         fontWeight: 'bold',
         width:"90%"
       },
@@ -815,6 +776,7 @@ class ResumeViewScreen extends Component {
         borderWidth: 0.5,
         borderColor: "darkgray",
         borderRadius: 20,
+        padding: 10
       },
       pickerView: {
         color: '#000',
@@ -830,8 +792,9 @@ class ResumeViewScreen extends Component {
         alignItems: 'center',
         textAlign: "center",
         fontWeight: "bold",
-        color: "#FFF",
-        fontSize: 20,
+        color: "black",
+        fontSize: RFPercentage(3),
+        paddingTop: 20
       },
       saveButton: {
         fontSize: 20,
@@ -899,5 +862,15 @@ class ResumeViewScreen extends Component {
         paddingLeft: 20,
         paddingRight: 20,
         fontWeight: 'bold',
-      }
+      },
+      navBarHeader: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor:"white", 
+        flexDirection:'row',
+        textAlign: 'center',
+        width: "100%",
+        paddingLeft:10,
+        paddingRight:10
+      },
     })

@@ -36,8 +36,21 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Necesitamos permisos para acceder a su cámara</string>
+	<string>ContaVoz requiere su permiso para utilizar la cámara para sacar fotos</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ContaVoz requiere su permiso para utilizar el micrófono para capturar su voz</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ContaVoz requiere su permiso para acceder a su galería para adjuntar fotos</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>ContaVoz requiere su permiso para utilizar el micrófono para capturar su voz</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
 	<key>UILaunchStoryboardName</key>
+	<string>SplashScreen</string>
+	<key>UIMainStoryboardFile</key>
 	<string>SplashScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>

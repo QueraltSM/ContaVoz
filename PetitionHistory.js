@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollView, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, BackHandler, ScrollView, Alert, SafeAreaView } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
@@ -76,11 +76,11 @@ class PetitionHistoryScreen extends Component {
       var microContent ="darkgray"
       if (item.images.length > 0) imagesContent = "#56A494"
       if (item.savedData.length > 0 && firstEmpty==-1) microContent = "#56A494"
-      return <View style={{ flexDirection: "row", alignItems:"center", justifyContent:"center" }}><Text style={styles.registeredDocuments}>{item.title} </Text><Icon name='image' type='font-awesome' color={imagesContent} size={25} style={{ paddingRight: 15 }} /><Icon name='check' type='font-awesome' color={microContent} size={25} /></View>
+      return <View style={{ flexDirection: "row", alignItems:"center", justifyContent:"center" }}><Text style={styles.registeredDocuments}>{item.title} </Text><Icon name='image' type='font-awesome' color={imagesContent} size={30} style={{ paddingRight: 15 }} /><Icon name='check' type='font-awesome' color={microContent} size={30} /></View>
     }
 
     setList() {
-      if (this.state.list.length==0) return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay documentos pendientes</Text></View>)
+      if (this.state.list.length==0) return (<View style={styles.voiceControlView}><Text style={styles.registeredDocuments}>No hay registros</Text></View>)
       return (<View style={styles.voiceControlView}>
         <FlatList vertical showsVerticalScrollIndicator={false}
           data={ this.state.list.sort((a,b) => a.id < b.id) } 
@@ -92,7 +92,7 @@ class PetitionHistoryScreen extends Component {
     setMenu() {
       return(<View style={styles.navBarHeader}>
         <Text style={styles.mainHeader}>Documentos pendientes</Text>
-        <Icon name={this.state.icon} type='font-awesome' color='white' size={20} />
+        <Icon name={this.state.icon} type='font-awesome' color='black' size={30} />
       </View>
       )
     }
@@ -176,8 +176,9 @@ class PetitionHistoryScreen extends Component {
     render () {
       if (this.state.userid.length == 0) return null
       return (
+        <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
         <View style={styles.container}>
-          {this.setMenu()}
+        {this.setMenu()}
           <ScrollView
             showsVerticalScrollIndicator ={false}
             showsHorizontalScrollIndicator={false}
@@ -189,6 +190,7 @@ class PetitionHistoryScreen extends Component {
           </ScrollView>   
           {this.setFootbar()}
         </View>
+        </SafeAreaView>
       );
     }
   }
@@ -205,10 +207,12 @@ class PetitionHistoryScreen extends Component {
       navBarHeader: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor:"#1A5276", 
-        flexDirection:'row', 
-        textAlignVertical: 'center',
-        width:"100%"
+        backgroundColor:"white", 
+        flexDirection:'row',
+        textAlign: 'center',
+        width: "100%",
+        paddingLeft:10,
+        paddingRight:10
       },
       voiceControlView: {
         flex: 1,
@@ -218,14 +222,14 @@ class PetitionHistoryScreen extends Component {
         alignSelf: "center",
       },
       registeredDocuments: {
-        fontSize: RFPercentage(2.5),
+        fontSize: RFPercentage(3),
         textAlign: "center",
         color: "#1A5276",
         fontWeight: 'bold',
         paddingTop: 10,
         paddingBottom: 10,
         paddingLeft: 10,
-        paddingRight: 10
+        paddingRight: 10,
       },
       navBarBackHeader: {
         alignItems: 'center',
@@ -249,7 +253,8 @@ class PetitionHistoryScreen extends Component {
         alignItems: 'center',
         textAlign: "center",
         fontWeight: "bold",
-        color: "#FFF",
-        fontSize: 20,
+        color: "black",
+        fontSize: RFPercentage(3),
+        paddingTop: 20
       },
 })

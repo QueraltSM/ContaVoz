@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, Linking } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Linking, SafeAreaView } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
@@ -218,6 +218,7 @@ class MainScreen extends Component {
     render () {
       if (this.state.fullname.length == 0) return null
       return (
+        <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
         <View style={styles.container}>
         <View style={styles.mainView}> 
           <View style={styles.accountingView}>
@@ -233,7 +234,7 @@ class MainScreen extends Component {
           <TouchableOpacity onPress={() => this.openDisoftWeb()}>
             <Text style={styles.mainSubHeader}>© Disoft Servicios Informáticos S.L. {new Date().getFullYear()}</Text>
           </TouchableOpacity>
-        </View></View>);
+        </View></View></SafeAreaView>);
     }
   }
 

@@ -6,6 +6,8 @@ import android.net.Uri;
 
 import com.facebook.react.PackageList;
 import com.facebook.react.ReactApplication;
+import com.henninghall.date_picker.DatePickerPackage;
+import com.henninghall.date_picker.DatePickerPackage;
 import com.rnappauth.RNAppAuthPackage;
 import com.reactnativecommunity.picker.RNCPickerPackage;
 import com.rnfs.RNFSPackage;

@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, BackHandler, FlatList, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, BackHandler, FlatList, ScrollView, SafeAreaView } from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
@@ -156,11 +156,11 @@ class DictionaryViewScreen extends Component {
           <View>
           <View style={styles.dictionaryView}>
             <Text style={styles.resumeText}>Nombre de la entidad</Text>
-            <TextInput blurOnSubmit={true} value={this.state.addEntity} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={addEntity => this.setState({addEntity})}></TextInput>
+            <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} value={this.state.addEntity} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={addEntity => this.setState({addEntity})}></TextInput>
             <View style={{flexDirection:"row", alignItems:"center"}}><Text style={styles.resumeText}> Palabras clave</Text></View>
-            <TextInput blurOnSubmit={true} value={this.state.addKeywords} multiline={true} style={styles.changeTranscript} placeholder="Palabras que identifican a la empresa. Ej: Disoft, Mi empresa, Fifo" onChangeText={addKeywords => this.setState({addKeywords})}></TextInput>
+            <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} value={this.state.addKeywords} multiline={true} style={styles.changeTranscript} placeholder="Palabras que identifican a la empresa. Ej: Disoft, Mi empresa, Fifo" onChangeText={addKeywords => this.setState({addKeywords})}></TextInput>
             <Text style={styles.resumeText}>CIF de la entidad</Text>
-            <TextInput blurOnSubmit={true} value={this.state.addCIF} multiline={true} style={styles.changeTranscript} placeholder="Ej: B35222249" onChangeText={addCIF => this.setState({addCIF})}></TextInput>
+            <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} value={this.state.addCIF} multiline={true} style={styles.changeTranscript} placeholder="Ej: B35222249" onChangeText={addCIF => this.setState({addCIF})}></TextInput>
             <Text style={styles.transcript}></Text>
           </View>
           <View style={{flexDirection:"row", justifyContent:"center"}}>
@@ -285,7 +285,7 @@ class DictionaryViewScreen extends Component {
       if (this.state.showSeach) {
         return (<View><View style={styles.dictionaryView}>
           <Text style = { styles.resumeText }>Buscar entidad</Text>
-          <TextInput blurOnSubmit={true} multiline={true} style = { styles.changeTranscript } placeholder="Ej: Disoft, B35222249, Fifo" onChangeText={(keyword) => this.setState({keyword: keyword})}  
+          <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} multiline={true} style = { styles.changeTranscript } placeholder="Ej: Disoft, B35222249, Fifo" onChangeText={(keyword) => this.setState({keyword: keyword})}  
            value={this.state.keyword}/> 
           <Text style={styles.transcript}></Text>
          </View>
@@ -305,18 +305,18 @@ class DictionaryViewScreen extends Component {
         <View style={styles.wordsBox}>
           <View style={styles.dictionaryValues}>
             <View style={styles.dictionaryContent}>
-              <TextInput style={styles.boldText} blurOnSubmit={true} multiline={true} onChangeText={(updateEntity) => this.setState({updateEntity: updateEntity, listIndex: index})}>{item.entity}</TextInput>
+              <TextInput placeholderTextColor="darkgray" style={styles.boldText} blurOnSubmit={true} multiline={true} onChangeText={(updateEntity) => this.setState({updateEntity: updateEntity, listIndex: index})}>{item.entity}</TextInput>
             </View>
           </View>
           <View style={styles.dictionaryValues}>
             <View style={styles.dictionaryContent}>
               <Text style={styles.boldText}>CIF</Text>
-              <TextInput style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateCIF) => this.setState({updateCIF: updateCIF, listIndex: index})}>{item.cifValue} </TextInput>
+              <TextInput placeholderTextColor="darkgray" style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateCIF) => this.setState({updateCIF: updateCIF, listIndex: index})}>{item.cifValue} </TextInput>
             </View>
           </View>
           <View style={styles.dictionaryValues}>
             <View style={styles.dictionaryContent}>
-              <Text style={styles.boldText}>Palabras clave</Text><TextInput style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateKeywords) => this.setState({updateKeywords: updateKeywords, listIndex: index})}>{item.keywords}</TextInput>
+              <Text style={styles.boldText}>Palabras clave</Text><TextInput placeholderTextColor="darkgray" style={styles.text} blurOnSubmit={true} multiline={true} onChangeText={(updateKeywords) => this.setState({updateKeywords: updateKeywords, listIndex: index})}>{item.keywords}</TextInput>
             </View>
            </View>
           <View style={styles.dictionaryValuesActions}>
@@ -343,6 +343,7 @@ class DictionaryViewScreen extends Component {
   
     render() {
       return (
+        <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
         <View style={{flex: 1}}>
           <ScrollView style={{backgroundColor: "#fff"}}>
           {this.setMenu()}
@@ -355,6 +356,7 @@ class DictionaryViewScreen extends Component {
           </View>
           </ScrollView>
         </View>
+        </SafeAreaView>
       );
     }
   }
@@ -394,12 +396,14 @@ class DictionaryViewScreen extends Component {
         borderColor: "darkgray",
         borderRadius: 20,
         paddingLeft: 10,
-        paddingRight: 10
+        paddingRight: 10,
+        padding: 10
       },
       transcript: {
         color: '#000',
         fontSize: 20,
         width: "95%",
+        padding: 10
       },
       mainHeader: {
         paddingTop: 20,
@@ -485,6 +489,7 @@ class DictionaryViewScreen extends Component {
         textAlign:"center",
         fontSize: RFPercentage(2),
         fontWeight:"bold",
+        padding: 10
       },
       exitForm: {
         fontSize: RFPercentage(3),
