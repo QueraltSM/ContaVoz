@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, BackHandler, ScrollView, Dimensions, PermissionsAndroid, Animated, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, BackHandler, ScrollView, Dimensions, Animated, SafeAreaView } from 'react-native';
 import Voice from 'react-native-voice';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
@@ -67,6 +67,9 @@ class PetitionScreen extends Component {
       await AsyncStorage.getItem("petitionID").then((value) => {
         this.setState({ petitionID: JSON.parse(value).id })
       })
+      await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
+        if (value != null) this.setState({ images: JSON.parse(value) })
+      })
       await AsyncStorage.getItem("data").then((value) => {
         this.setState({ title: JSON.parse(value).titulo }) 
         this.setState({ data: JSON.parse(value).campos })  
@@ -129,14 +132,7 @@ class PetitionScreen extends Component {
         if (value != null) this.setState({ payment: value })
       })
       await AsyncStorage.getItem(this.state.userid+".words").then((value) => {
-        if (value != null) {
-          this.setState({ words: JSON.parse(value) })
-        }
-      })
-      await AsyncStorage.getItem(this.state.petitionID+".images").then((value) => {
-        if (value != null) {
-          this.setState({ images: JSON.parse(value) })
-        }
+        if (value != null) this.setState({ words: JSON.parse(value) })
       })
       await AsyncStorage.getItem(this.state.petitionType).then((value) => {
         if (value != null) {
@@ -367,11 +363,26 @@ class PetitionScreen extends Component {
       return (<View style={{ width: 70,textAlign:'center' }}><TouchableOpacity onPressIn={this._startRecognition.bind(this)}><Icon name='microphone' type='font-awesome' color='#1A5276' size={40} /></TouchableOpacity></View>)
     }
 
+    async saveResponseAsImage(response) {
+      var arrayImages = this.state.images
+      var uri = JSON.stringify(response.assets[0]["uri"])
+      var newID = this.state.petitionID+"-"+(this.state.images.length+1)
+      arrayImages.push({
+        id: newID,
+        nombre: newID,
+        uri: uri.replace(/['"]+/g, '')
+      })
+      await this.setState({images: arrayImages})
+      await this.saveImages()
+    }
+
      takePhoto = async() =>{
       let options = {
         title: 'Hacer una foto',
         quality: 0.5,
         aspect:[4,3],
+        maxWidth: 750,
+        maxHeight: 1334,
         customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
         storageOptions: {
           skipBackup: true,
@@ -383,30 +394,17 @@ class PetitionScreen extends Component {
       if (this.state.images.length <= 9) {
         ImagePicker.launchCamera(options, (response) => {
           if (response.didCancel || response.error || response.customButton) {
-          } else {
-            var arrayImages = this.state.images
-            var uri = JSON.stringify(response.assets[0]["uri"])
-            var newID = this.state.petitionID+"_"+(this.state.images.length+1)
-            arrayImages.push({
-              id: newID,
-              nombre: newID,
-              id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
-              urid: "1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR",
-              uri: uri.replace(/['"]+/g, '')
-            })
-            this.setState({images: arrayImages})
-            this.saveImages()
-          }
+          } else this.saveResponseAsImage(response)
         })
       } else this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
     }
   
     async saveImages() {
       var list = []
-      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
+      await AsyncStorage.getItem(this.state.petitionType + "").then((value) => {
         if (value != null) list = JSON.parse(value) 
       })
-      var index = list.findIndex(obj => JSON.stringify(obj.id) == this.state.petitionID)
+      var index = list.findIndex(obj => obj.id == this.state.petitionID)
       list[index].images = this.state.images
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
       await AsyncStorage.setItem(this.state.petitionID+".images", JSON.stringify(this.state.images))
@@ -419,6 +417,9 @@ class PetitionScreen extends Component {
           { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
         ],
         includeBase64: false,
+        aspect:[4,3],
+        maxWidth: 750,
+        maxHeight: 1334,
         storageOptions: {
           skipBackup: true,
           path: 'images',
@@ -427,20 +428,7 @@ class PetitionScreen extends Component {
       if (this.state.images.length <= 9) {
         ImagePicker.launchImageLibrary(options, (response) => {
           if (response.didCancel || response.error || response.customButton) {
-          } else {
-            var arrayImages = this.state.images
-            var uri = JSON.stringify(response.assets[0]["uri"])
-            var newID = this.state.petitionID+"_"+(this.state.images.length+1)
-            arrayImages.push({
-              id: newID,
-              nombre: newID,
-              id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
-              urid: "1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR",
-              uri: uri.replace(/['"]+/g, '')
-            })
-            this.setState({images: arrayImages})
-            this.saveImages()
-          }
+          } else this.saveResponseAsImage(response)
         })
       } else this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
     }
@@ -1043,12 +1031,12 @@ class PetitionScreen extends Component {
       changeTranscript: {
         color: '#000',
         fontSize: RFPercentage(2.5),
-        textAlign:"center",
+        textAlign:"left",
         width:"100%",
         borderWidth: 0.5,
         borderColor: "darkgray",
-        borderRadius: 20,
-        padding: 10
+        borderRadius: 15,
+        paddingLeft: 5,
       },
       resumeText: {
         fontSize: RFPercentage(3),
@@ -1095,7 +1083,7 @@ class PetitionScreen extends Component {
         fontWeight: 'bold',
       },
       titleView: {
-        paddingTop: 20,
+        paddingTop: 10,
         paddingBottom: 20,
         textAlign:"center",
         width:"80%",
@@ -1131,10 +1119,9 @@ class PetitionScreen extends Component {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 6,
-        borderRadius: 50,
+        borderRadius:20*0.125*0.5,
         borderWidth:2,
         borderColor: '#1A5276',
-        paddingTop: 20
       },
       focusRoundButton: {
         width: 20,
@@ -1142,7 +1129,7 @@ class PetitionScreen extends Component {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 6,
-        borderRadius: 50,
+        borderRadius:20*0.125*0.5,
         backgroundColor: '#1A5276',
         borderWidth:2,
         borderColor: '#1A5276',

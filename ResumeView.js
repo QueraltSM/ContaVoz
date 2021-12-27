@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions, CheckBox, SafeAreaView} from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, TextInput, Image, FlatList, BackHandler, ScrollView, Dimensions, SafeAreaView} from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import AsyncStorage from '@react-native-community/async-storage';
 import ImageZoom from 'react-native-image-pan-zoom';
@@ -7,6 +7,8 @@ import { RFPercentage } from "react-native-responsive-fontsize";
 import NetInfo from "@react-native-community/netinfo";
 import { Picker } from '@react-native-picker/picker';
 import DatePicker from 'react-native-date-picker';
+import { CheckBox } from 'react-native-elements';
+import ImgToBase64 from 'react-native-image-base64';
 
 class ResumeViewScreen extends Component {
   
@@ -41,7 +43,11 @@ class ResumeViewScreen extends Component {
         payment: "",
         payments: [],
         wifi: true,
+        waitingTitle: "",
+        waiting: "",
+        isSending: false,
         openDatePicker: false,
+        success: false,
         fulldate: "Ej: " + ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear() + ""
       }
       this.init()
@@ -94,14 +100,6 @@ class ResumeViewScreen extends Component {
       NetInfo.addEventListener(networkState => {
         this.setState({ wifi: networkState.isConnected })
       })
-      /*var newID = this.state.petitionID+"_"+(this.state.imgs.length+1)
-      this.state.imgs.push({
-        id: newID,
-        nombre: newID,
-        id_drive:"1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX",
-        urid: "1o4klNg4jXvJSOQ4_VAFKSFsUPOKWoMBR",
-        uri: "file:///data/user/0/com.contavoz/cache/rn_image_picker_lib_temp_17ac4003-f056-4d7c-b66b-d35174385156.jpg"
-      })*/
     }
     
     componentDidMount(){
@@ -204,10 +202,10 @@ class ResumeViewScreen extends Component {
 
     async goHome() {
       var list = []
-      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
+      await AsyncStorage.getItem(this.state.petitionType + "").then((value) => {
         if (value != null) list = JSON.parse(value) 
       })
-      var index = list.findIndex(obj => JSON.stringify(obj.id) == this.state.petitionID)
+      var index = list.findIndex(obj => obj.id == this.state.petitionID)
       list[index].doc = this.state.doc
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
       this.props.navigation.push("Main")
@@ -224,7 +222,8 @@ class ResumeViewScreen extends Component {
     }
   
     checkBoxDoc() {
-      if (this.state.imgs.length>0) return<View style={styles.checkboxContainer}><CheckBox value={this.state.documentVoice} onValueChange={() => this.changeCheckBoxDoc()}/><Text style={styles.checkbox}>Añadir datos del documento</Text></View>
+      if (this.state.isSending) return null
+      if (this.state.imgs.length>0) return <View style={styles.checkboxContainer}><CheckBox checked={this.state.documentVoice} onPress={() => this.changeCheckBoxDoc()}/><Text style={styles.checkbox}>Añadir datos del documento</Text></View>
       return null
     }
 
@@ -294,35 +293,59 @@ class ResumeViewScreen extends Component {
       await AsyncStorage.setItem(this.state.petitionID+".payment", itemValue)
     }
 
-    async uploadImages() {
-      const requestOptions = {
-        method: 'POST',
-        headers: {'Content-Type': 'multipart/form-data', 'Accept': "application/json"}, 
-        body: JSON.stringify({ img: this.state.imgs })
-      };
-      //console.log(JSON.stringify(requestOptions))
-      fetch("https://app.dicloud.es/trataimagen.asp", requestOptions)
-          .then((response) => response.json())
-          .then((responseJson) => {
-            console.log('responseJson',responseJson);
-          })
-          .catch((error) => {  
-            console.log('error',error);
-          });
+    async updateState(isSending,waiting,success) {
+      await this.setState({isSending: isSending})
+      await this.setState({waiting: waiting})
+      await this.setState({success: success })
     }
 
+    async uploadImages() {
+      var j = 0
+      await Promise.all(this.state.imgs.map(async i => {
+        var img = {
+          uri: Platform.OS === "android"
+            ? i.uri
+            : i.uri.replace("file:///", ""),
+          name: i.nombre,
+          id: i.id,
+          data: ""
+        }
+        await ImgToBase64.getBase64String(img.uri).then(base64String => {
+          img.data = base64String
+        }).catch(err => console.log("ImgToBase64_error:"+err));
+        this.state.imgs[j] = img
+        j = j + 1
+      }))
+      await this.setState({isSending: true})
+      await this.setState({waitingTitle: "Por favor, no cierre esta pantalla"})
+      await this.setState({waiting: "Enviando imágenes al servidor. Este proceso puede tardar algunos minutos..."})
+      await Promise.all(this.state.imgs.map(async i => {
+        await this.postImages(i)
+      }))
+    }
+
+    async postImages(i) {
+      var postData = {
+        method: 'POST',
+        headers: {'Content-Type': 'multipart/form-data'},
+        body: JSON.stringify({company_padisoft:this.state.company_padisoft, imgs:[i]})
+      }
+      await fetch("https://app.dicloud.es/trataimagen.asp", postData)
+      .then((response) => response.json())
+        .then((responseJson) => {
+          this.updateState(false,"",true)
+        }).catch((error) => {
+          this.updateState(false,"",false)
+        });
+    }
 
     async sentLinkedDoc() {
       var importe = ""
+      importe = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("importe"))
+      importe = this.state.conexionDoc.campos[importe].valor
       var fecha = ""
       var fechaIndex = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("fecha"))
-      if (this.state.documentVoice) {
-        importe = this.state.conexionDoc.campos.findIndex(obj => obj.idcampo.includes("importe"))
-        importe = this.state.conexionDoc.campos[importe].valor
-        fecha = this.state.conexionDoc.campos[fechaIndex].valor
-        var newDate = fecha.split("/")
-        fecha = newDate[2]+"/"+newDate[1]+"/"+newDate[0]
-      } else fecha = new Date().getFullYear() + "/" + ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + ("0" + (new Date().getDate())).slice(-2)
+      fecha = this.state.conexionDoc.campos[fechaIndex].valor
       this.state.conexionDoc.campos[fechaIndex].valor = fecha
       this.state.conexionDoc.tipo=this.state.conexionDoc.tipo
       this.state.conexionDoc.importe=importe
@@ -336,32 +359,36 @@ class ResumeViewScreen extends Component {
       this.state.conexionDoc.campos=this.state.conexionDoc.campos
       this.state.conexionDoc.img = this.state.imgs
       const requestOptions = { method: 'POST', body: JSON.stringify(this.state.conexionDoc) };
-      console.log("Documento linkeado : " +requestOptions.body)
-      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      await fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
-        if (error=="true") this.showAlert("Error", "Hubo un error al subir el documento")
+        if (error=="true") {
+          this.showAlert("Error", "Hubo un error al subir el documento")
+          this.updateState(false,"",false)
+        } else this.updateState(false,"",true)
       }).catch((error) => {});
     }
 
     async proceedSent() {
-      if (this.state.imgs.length>0) await this.uploadImages()
-      if (this.state.thereIsConexion) await this.sentLinkedDoc()
-      await this.uploadDoc()
+      if (this.state.imgs.length>0 && !this.state.success) await this.uploadImages()
+      if (this.state.imgs.length>0 && this.state.success && this.state.documentVoice || this.state.imgs.length==0 && this.state.documentVoice) {
+        if (this.state.thereIsConexion) await this.sentLinkedDoc()
+        await this.uploadDoc()
+      }
+      if (this.state.success) await this.uploadSucceeded()
     }
 
     async uploadDoc() {
+      await this.setState({isSending: true})
+      await this.setState({waitingTitle: "Por favor, no cierre esta pantalla"})
+      await this.setState({waiting: "Enviando documento al servidor"})
       var importe = ""
+      importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
+      importe = this.state.doc[importe].valor
       var fecha = ""
       var fechaIndex = this.state.doc.findIndex(obj => obj.idcampo.includes("fecha"))
-      if (this.state.documentVoice) {
-        importe = this.state.doc.findIndex(obj => obj.idcampo.includes("importe"))
-        importe = this.state.doc[importe].valor
-        fecha = this.state.doc[fechaIndex].valor
-        var newDate = fecha.split("/")
-        fecha = newDate[2]+"/"+newDate[1]+"/"+newDate[0]
-      } else fecha = new Date().getFullYear() + "/" + ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + ("0" + (new Date().getDate())).slice(-2)
+      fecha = this.state.doc[fechaIndex].valor
       this.state.doc[fechaIndex].valor = fecha
       this.state.data.tipo=this.state.type
       this.state.data.importe=importe
@@ -375,14 +402,14 @@ class ResumeViewScreen extends Component {
       this.state.data.campos=this.state.doc
       this.state.data.img=this.state.imgs
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
-      console.log("Documento original:"+requestOptions.body)
-      fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
+      await fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
       .then((responseJson) => {
         var error = JSON.parse(JSON.stringify(responseJson)).error
         if (error=="true") {
           this.showAlert("Error", "Hubo un error al subir el documento")
-        } else this.uploadSucceeded()
+          this.updateState(false,"",false)
+        } else this.updateState(false,"",true)
       }).catch((error) => {});
     }
 
@@ -432,10 +459,10 @@ class ResumeViewScreen extends Component {
 
     async saveDocument() {
       var list = []
-      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
+      await AsyncStorage.getItem(this.state.petitionType + "").then((value) => {
         if (value != null) list = JSON.parse(value) 
       })
-      var index = list.findIndex(obj => JSON.stringify(obj.id) == this.state.petitionID)
+      var index = list.findIndex(obj => obj.id == this.state.petitionID)
       list[index].savedData = this.state.doc
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
     }
@@ -591,6 +618,10 @@ class ResumeViewScreen extends Component {
         var array = JSON.parse(config)
         array.forEach(c=> {
           if (c.idcfg == this.state.doc[conexionIndex].valor) {
+            this.state.doc.forEach(x => {
+              var sameidcampo = c.campos.findIndex(i=>i.idcampo.includes(x.idcampo))
+              if (sameidcampo>-1) c.campos[sameidcampo].valores = x.valor
+            })
             this.setState({conexionDoc:c})
             this.setState({conexionType:c.titulo})
             var formapc = c.campos.findIndex(i=>i.idcampo.includes("formapc"))
@@ -601,7 +632,7 @@ class ResumeViewScreen extends Component {
           }
         });
         this.state.doc.forEach(i=> {
-          var index = this.state.conexionDoc.campos.findIndex(obj=>obj.idcampo==i.idcampo)
+          var index = this.state.conexionDoc.findIndex(obj=>obj.idcampo==i.idcampo)
           if (index > -1) this.state.conexionDoc.campos[index].valor = i.valor
         })
       } else if (formapc>-1) {
@@ -612,12 +643,12 @@ class ResumeViewScreen extends Component {
 
       setFootbar() {
         return (<View style={styles.navBarBackHeader}>
-          <View style={{textAlign:'center', paddingLeft: 30, paddingRight: 30 }}>
+          {!this.state.isSending && <View style={{textAlign:'center', paddingLeft: 30, paddingRight: 30 }}>
             <TouchableOpacity onPress={() => this.goHome()} style={styles.deleteButton}>
               <Text style={styles.button}>Guardar y salir</Text>
             </TouchableOpacity>
-          </View>
-          {this.state.wifi && <View style={{textAlign:'center', paddingLeft: 30, paddingRight: 30 }}>
+          </View>}
+          {this.state.wifi && !this.state.isSending && <View style={{textAlign:'center', paddingLeft: 30, paddingRight: 30 }}>
             <TouchableOpacity onPress={() => this.askSaveDoc()} style={styles.sendButton}>
               <Text style={styles.button}>Enviar</Text>
             </TouchableOpacity>
@@ -630,6 +661,11 @@ class ResumeViewScreen extends Component {
         return <View style={styles.navBarHeader}>
         <Text style={styles.mainHeader}>{this.state.title}</Text>
       </View>
+      }
+
+      waitingBox() {
+        if (this.state.waiting.length==0) return null
+        return <View style={styles.waitingBox}><Text style={styles.waitingText}>{this.state.waiting}</Text><Text style={styles.waitingTitle}>{this.state.waitingTitle}</Text></View>
       }
 
       render () {
@@ -648,6 +684,7 @@ class ResumeViewScreen extends Component {
               {this.setAllFlags()}
               {this.checkBoxDoc()}
               {this.setControlVoice()}
+              {this.waitingBox()}
             </View>
             {!this.state.wifi && <Text style={styles.wifiText}>Para enviar el documento debe tener conexión a Internet</Text>}
             {this.setFootbar()}
@@ -688,7 +725,7 @@ class ResumeViewScreen extends Component {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 6,
-        borderRadius: 50,
+        borderRadius:20*0.125*0.5,
         borderWidth:2,
         borderColor: '#1A5276',
       },
@@ -698,7 +735,7 @@ class ResumeViewScreen extends Component {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 6,
-        borderRadius: 50,
+        borderRadius:20*0.125*0.5,
         backgroundColor: '#1A5276',
         borderWidth:2,
         borderColor: '#1A5276',
@@ -747,8 +784,8 @@ class ResumeViewScreen extends Component {
         color: "#8A8887"
       },
       resumeView: {
-        paddingTop: 20,
-        paddingBottom: 20,
+        paddingTop: 10,
+        paddingBottom: 10,
         paddingLeft: 30,
         width:"100%",
         backgroundColor: "#FFF"
@@ -761,13 +798,6 @@ class ResumeViewScreen extends Component {
         fontWeight: 'bold',
         width:"90%"
       },
-      resumeLinkedDoc: {
-        fontSize: RFPercentage(3),
-        textAlign: "justify",
-        paddingTop: 20,
-        color: "#922B21",
-        fontWeight: 'bold',
-      },
       changeTranscript: {
         color: '#000',
         fontSize: RFPercentage(2.5),
@@ -775,8 +805,8 @@ class ResumeViewScreen extends Component {
         width:"100%",
         borderWidth: 0.5,
         borderColor: "darkgray",
-        borderRadius: 20,
-        padding: 10
+        borderRadius: 15,
+        paddingLeft: 5,
       },
       pickerView: {
         color: '#000',
@@ -835,6 +865,30 @@ class ResumeViewScreen extends Component {
         paddingBottom: 20,
         paddingTop: 20
       },
+      waitingBox: {
+        width:"100%",
+        alignContent: "center",
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      waitingTitle: {
+        textAlign: 'center',
+        color: '#C70039',
+        fontWeight: 'bold',
+        fontSize: 20,
+        width: "100%",
+        paddingBottom: 20,
+        paddingTop: 20
+      },
+      waitingText: {
+        textAlign: 'center',
+        color: '#154360',
+        fontWeight: 'bold',
+        fontSize: 20,
+        width: "90%",
+        paddingBottom: 20,
+        paddingTop: 20
+      },
       button: {
         fontWeight: 'bold',
         color: "white",
@@ -850,7 +904,6 @@ class ResumeViewScreen extends Component {
         flexDirection: "row",
         alignContent:"center",
         alignItems:"center",
-        paddingTop: 20,
         paddingLeft: 10,
         paddingRight: 10,
       },

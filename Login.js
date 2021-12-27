@@ -50,7 +50,6 @@ class LoginScreen extends Component {
     }
   
     handleError = (error_code) => {
-      console.log("handleError:"+error_code)
       var error = ""
       switch(error_code) {
         case "1":

@@ -4,7 +4,6 @@ import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
 import * as ImagePicker from 'react-native-image-picker';
-import ImageZoom from 'react-native-image-pan-zoom';
 import { RFPercentage } from "react-native-responsive-fontsize";
 
 class ImageViewerScreen extends Component {
@@ -46,23 +45,19 @@ class ImageViewerScreen extends Component {
       await AsyncStorage.setItem(key, value)
     }
   
-    updateImage = async(uri, urid) => {
+    updateImage = async(uri) => {
       var arrayImages = []
       for (let i = 0; i < this.state.images.length; i++) {
         if (this.state.images[i].id != this.state.image.id) {
           arrayImages.push({
             id: this.state.images[i].id,
             nombre: this.state.images[i].nombre,
-            id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
-            urid: this.state.images[i].urid,
             uri: this.state.images[i].uri
           })
         } else {
           var newImage = {
             id: this.state.images.id,
             nombre: this.state.image.nombre,
-            id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
-            urid: urid,
             uri: uri
           }
           arrayImages.push(newImage)
@@ -91,7 +86,7 @@ class ImageViewerScreen extends Component {
           if (response.didCancel || response.error || response.customButton) {
           } else {
             var uri = JSON.stringify(response.assets[0]["uri"])
-            this.updateImage(uri.replace(/['"]+/g, ''), "")
+            this.updateImage(uri.replace(/['"]+/g, ''))
           }
         })
       } else {
@@ -117,7 +112,7 @@ class ImageViewerScreen extends Component {
           if (response.didCancel || response.error || response.customButton) {
           } else {
             var uri = JSON.stringify(response.assets[0]["uri"])
-            this.updateImage(uri.replace(/['"]+/g, ''), "")
+            this.updateImage(uri.replace(/['"]+/g, ''))
           }
         })
       } else {
@@ -130,10 +125,8 @@ class ImageViewerScreen extends Component {
       for (let i = 0; i < this.state.images.length; i++) {
         if (this.state.images[i].id != this.state.image.id) {
           arrayImages.push({
-            id: this.state.image.id + "_" + i,
+            id: this.state.image.id.split("_")[0] + "_" + i,
             nombre: this.state.images[i].nombre,
-            id_drive:'1qdFovzRbbT2rBKm2WdOMEXmO5quFHDgX',
-            urid: this.state.images[i].urid,
             uri: this.state.images[i].uri
           })
         }
@@ -149,10 +142,8 @@ class ImageViewerScreen extends Component {
 
     async saveImages() {
       var list = []
-      await AsyncStorage.getItem(this.state.petitionType).then((value) => {
-        if (value != null) {
-          list = JSON.parse(value) 
-        }
+      await AsyncStorage.getItem(this.state.petitionType + "").then((value) => {
+        if (value != null) list = JSON.parse(value) 
       })
       var index = list.findIndex(obj => obj.id == this.state.petitionID)
       list[index].images = this.state.images

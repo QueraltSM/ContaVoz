@@ -44,7 +44,7 @@ class LaunchScreen extends Component {
     return(
     <View style={styles.mainView}>
       <Image source={require('./assets/main.png')} style={{ width: 80, height: 80, alignSelf: "center", marginBottom:20 }}/>
-      <Text style={styles.mainHeader}>ContaVoz</Text>
+      <Text style={styles.mainHeader}>Dicontavoz</Text>
     </View>)
   }
 }

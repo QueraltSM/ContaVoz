@@ -54,7 +54,7 @@ class PetitionHistoryScreen extends Component {
       var array = this.state.list
       var today = new Date()
       var document = {
-        id: new Date().getTime(),
+        id: this.state.idempresa + "-" + this.state.userid + "-" + new Date().getTime(),
         name: this.state.type.substring(0, 1).toUpperCase()+ "_"+ this.state.idempresa+"-"+this.state.userid+"-"+today.getFullYear()+""+("0" + (today.getMonth() + 1)).slice(-2)+""+("0" + (today.getDate())).slice(-2)+ "-" + ("0" + (today.getHours())).slice(-2)+ ":" + ("0" + (today.getMinutes())).slice(-2) + ":" + ("0" + (today.getSeconds())).slice(-2),
         title: ("0" + (today.getDate())).slice(-2)+"/"+("0" + (today.getMonth() + 1)).slice(-2)+"/"+today.getFullYear()+"  " + ("0" + (today.getHours())).slice(-2)+ ":"+("0" + (today.getMinutes())).slice(-2),
         images: [],
