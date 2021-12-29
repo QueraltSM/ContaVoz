@@ -35,11 +35,8 @@ class PetitionListScreen extends Component {
       var array = []
       for (let i = 0; i < this.state.config.length; i++) {
         await AsyncStorage.getItem(this.state.type+"."+i).then((value) => {
-          if (value != null) {
-            array.push(JSON.parse(value).length)
-          } else {
-            array.push(0)
-          }
+          if (value != null) array.push(JSON.parse(value).length)
+          else array.push(0)
           this.setState({loaded:true})
         })
       }
@@ -57,7 +54,6 @@ class PetitionListScreen extends Component {
   
     openDocument = async (item, index) => {
       await AsyncStorage.setItem("petitionType", this.state.type+"."+index)
-      await AsyncStorage.setItem("data", JSON.stringify(item))
       await AsyncStorage.setItem("historial", item.titulo)
       this.props.navigation.push("PetitionHistory")
     }

@@ -330,13 +330,14 @@ class ResumeViewScreen extends Component {
         headers: {'Content-Type': 'multipart/form-data'},
         body: JSON.stringify({company_padisoft:this.state.company_padisoft, imgs:[i]})
       }
+      this.updateState(false,"",true)
       await fetch("https://app.dicloud.es/trataimagen.asp", postData)
       .then((response) => response.json())
         .then((responseJson) => {
           this.updateState(false,"",true)
         }).catch((error) => {
           this.updateState(false,"",false)
-        });
+      });
     }
 
     async sentLinkedDoc() {
@@ -357,7 +358,16 @@ class ResumeViewScreen extends Component {
       this.state.conexionDoc.titulo=this.state.conexionDoc.titulo
       this.state.conexionDoc.cif=this.state.cifValue 
       this.state.conexionDoc.campos=this.state.conexionDoc.campos
-      this.state.conexionDoc.img = this.state.imgs
+      var aux_imgs=[]
+      if (this.state.imgs.length>0) {
+        await Promise.all(this.state.imgs.map(async i => {
+          var img = {
+            id: i.id
+          }
+          aux_imgs.push(img)
+        }))
+      }
+      this.state.conexionDoc.imgs = aux_imgs
       const requestOptions = { method: 'POST', body: JSON.stringify(this.state.conexionDoc) };
       await fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())
@@ -371,12 +381,13 @@ class ResumeViewScreen extends Component {
     }
 
     async proceedSent() {
-      if (this.state.imgs.length>0 && !this.state.success) await this.uploadImages()
+      /*if (this.state.imgs.length>0 && !this.state.success) await this.uploadImages()
       if (this.state.imgs.length>0 && this.state.success && this.state.documentVoice || this.state.imgs.length==0 && this.state.documentVoice) {
         if (this.state.thereIsConexion) await this.sentLinkedDoc()
         await this.uploadDoc()
       }
-      if (this.state.success) await this.uploadSucceeded()
+      if (this.state.success) await this.uploadSucceeded()*/
+      await this.uploadDoc()
     }
 
     async uploadDoc() {
@@ -400,7 +411,17 @@ class ResumeViewScreen extends Component {
       this.state.data.titulo=this.state.data.titulo
       this.state.data.cif=this.state.cifValue
       this.state.data.campos=this.state.doc
-      this.state.data.img=this.state.imgs
+      this.state.data.idcfg=this.state.petitionID
+      var aux_imgs=[]
+      if (this.state.imgs.length>0) {
+        await Promise.all(this.state.imgs.map(async i => {
+          var img = {
+            id: i.id
+          }
+          aux_imgs.push(img)
+        }))
+      }
+      this.state.data.imgs = aux_imgs
       const requestOptions = {method: 'POST', body: JSON.stringify(this.state.data) };
       await fetch('https://app.dicloud.es/trataconvozapp.asp', requestOptions)
       .then((response) => response.json())

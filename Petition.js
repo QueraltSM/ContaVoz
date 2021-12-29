@@ -73,7 +73,9 @@ class PetitionScreen extends Component {
       await AsyncStorage.getItem("data").then((value) => {
         this.setState({ title: JSON.parse(value).titulo }) 
         this.setState({ data: JSON.parse(value).campos })  
+        console.log("123."+JSON.parse(value).idcfg )
       })
+      console.log("petitionID:"+this.state.petitionID)
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
       })
