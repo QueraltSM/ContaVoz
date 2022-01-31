@@ -249,6 +249,8 @@ class ResumeViewScreen extends Component {
     }
     
     setImageZoom() {
+      var imageuri = this.state.imgs[this.state.flag].uri
+      if (Platform.OS === 'ios') imageuri = '~' + imageuri.substring(imageuri.indexOf('/tmp'));
       return (<ImageZoom
         cropWidth={Dimensions.get('window').width}
         cropHeight={Dimensions.get('window').height/2.5}
@@ -257,12 +259,11 @@ class ResumeViewScreen extends Component {
           <TouchableOpacity onPress={() => this.seeImage(this.state.imgs[this.state.flag])}>
             <Image
               source={{
-                uri: this.state.imgs[this.state.flag].uri,
+                uri: imageuri,
               }}
               resizeMode="cover"
               key={this.state.flag}
-              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2.5 }}
-          />
+              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/2.5 }}/>
         </TouchableOpacity>
       </ImageZoom>)
     } 
@@ -381,13 +382,12 @@ class ResumeViewScreen extends Component {
     }
 
     async proceedSent() {
-      /*if (this.state.imgs.length>0 && !this.state.success) await this.uploadImages()
+      if (this.state.imgs.length>0 && !this.state.success) await this.uploadImages()
       if (this.state.imgs.length>0 && this.state.success && this.state.documentVoice || this.state.imgs.length==0 && this.state.documentVoice) {
         if (this.state.thereIsConexion) await this.sentLinkedDoc()
         await this.uploadDoc()
       }
-      if (this.state.success) await this.uploadSucceeded()*/
-      await this.uploadDoc()
+      if (this.state.success) await this.uploadSucceeded()
     }
 
     async uploadDoc() {
@@ -415,9 +415,7 @@ class ResumeViewScreen extends Component {
       var aux_imgs=[]
       if (this.state.imgs.length>0) {
         await Promise.all(this.state.imgs.map(async i => {
-          var img = {
-            id: i.id
-          }
+          var img = { id: i.id }
           aux_imgs.push(img)
         }))
       }
@@ -506,42 +504,42 @@ class ResumeViewScreen extends Component {
       else if (this.state.imgs.length>0) this.showAskDoc()
     }
 
-    setDate = async (index, date) => {
+    setDate = async (date) => {
+      var index = this.state.doc.findIndex(i=>i.idcampo.includes("fecha"))
       var d = ("0" + (date.getDate())).slice(-2)+"/"+("0" + (date.getMonth() + 1)).slice(-2)+"/"+date.getFullYear()
       this.state.doc[index].valor = d
       this.setState({doc:this.state.doc})
       await AsyncStorage.setItem(this.state.petitionID+".savedData", JSON.stringify(this.state.doc))
     }
 
-    openDatePicker = (value) => {
+    setDatePickerValue = async (value) => {
       this.setState({openDatePicker: value})
     }
 
-    setDatePicker(index) {
-      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.doc[index].valor}</TextInput></TouchableOpacity>
-      return <View><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.doc[index].valor}</TextInput></TouchableOpacity><DatePicker
-      modal
-      mode="date"
-      open={this.state.openDatePicker}
-      date={new Date()}
+    setDatePicker() {
+      var fecha = this.state.doc.findIndex(i=>i.idcampo.includes("fecha"))
+      fecha = this.state.doc[fecha].valor
+      if (fecha==null) fecha = this.state.fulldate
+      if (!this.state.openDatePicker && fecha.length==0) return <TouchableOpacity onPress={() => this.setDatePickerValue(true)} style={{width:"100%"}}><Text placeholderTextColor="darkgray" editable={false} placeholderTextColor="darkgray" style={styles.changeTranscript}>{this.state.fulldate}</Text></TouchableOpacity>
+      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.setDatePickerValue(true)} style={{width:"100%"}}><Text placeholderTextColor="darkgray" editable={false} placeholderTextColor="darkgray" style={styles.changeTranscript}>{fecha}</Text></TouchableOpacity>
+      return <View style={{width:"100%"}}><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><Text placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{fecha}</Text></TouchableOpacity>
+      <DatePicker modal mode="date" title="Selecciona fecha" confirmText="OK" cancelText="Cancelar" open={this.state.openDatePicker} date={new Date()}
       onConfirm={(date) => {
-        this.openDatePicker(false)
-        this.setDate(index,date)
+        this.setDatePickerValue(false)
+        this.setDate(date)
       }}
       onCancel={() => {
-        this.openDatePicker(false)
-      }}/></View> 
+        this.setDatePickerValue(false)
+      }}/></View>
     }
 
     setInput(item, index) {
       var importe = this.state.doc.findIndex(i=>i.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
       if (item.idcampo.includes("cuenta")) return <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      if (item.idcampo.includes("fecha")) return this.setDatePicker(index)
+      if (item.idcampo.includes("fecha")) return this.setDatePicker()
       if (item.idcampo.includes("factura")) return <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 1217 o F-1217" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      if (item.idcampo.includes("importe")) return <TextInput placeholderTextColor="darkgray" keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0,00" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      if (item.idcampo.includes("base")) return <TextInput placeholderTextColor="darkgray" keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
-      if (item.idcampo.includes("cuota")) return <TextInput placeholderTextColor="darkgray" keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
+      if (item.tipoexp=="N") return <TextInput placeholderTextColor="darkgray" keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 0,00" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       if (item.idcampo.includes("porcentaje")) return <View style={{width:"100%"}}>
       <TextInput placeholderTextColor="darkgray" keyboardType='numeric' blurOnSubmit={true} multiline={true} style={styles.changeTranscript} placeholder="Ej: 7 o 3" onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput>
       <TouchableOpacity onPressIn={() => this.calculateResult(item, index)}><Text style={styles.calculateButton}>Calcular resultados</Text></TouchableOpacity>
@@ -557,24 +555,21 @@ class ResumeViewScreen extends Component {
         <Text style={styles.resumeText}>{item.titulo}{item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
         <View style={{flexDirection:'row', width:"90%"}}>{this.setInput(item, index)}</View></View>)}   
         {item.tipoexp.includes("E") && <View>
-        <Text style={styles.resumeText}>CIF de la empresa*</Text>
-        <View style={{flexDirection:'row', width:"90%"}}>
-        <TextInput placeholderTextColor="darkgray" placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
-        </View>
-      </View>}
-      {this.state.doc.length > 0 && (item.idcampo.includes("formapc") || item.idcampo.includes("conexion")) && (<View>
-        <Text style={styles.resumeText}>{item.titulo}{item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
-        <View style={styles.pickerView}>
-          <Picker
-          selectedValue={this.state.payment}
-          onValueChange={(itemValue) =>
-            this.setSelectedPayment(itemValue)}>
-            {this.state.payments.map((i) => {
-              return <Picker.Item label={i} value={i} key={i} />
-          })}
-        </Picker>
-        </View>
-      </View>)} 
+          <Text style={styles.resumeText}>CIF de la empresa*</Text>
+          <View style={{flexDirection:'row', width:"90%"}}>
+          <TextInput placeholderTextColor="darkgray" placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
+          </View>
+        </View>}
+        {this.state.doc.length > 0 && (item.idcampo.includes("formapc") || item.idcampo.includes("conexion")) && (<View>
+          <Text style={styles.resumeText}>{item.titulo}{item.obligatorio=="S" && <Text style={styles.resumeText}>*</Text>}</Text>
+          <View style={styles.pickerView}>
+            <Picker selectedValue={this.state.payment} onValueChange={(itemValue) =>
+              this.setSelectedPayment(itemValue)}>
+              {this.state.payments.map((i) => {
+                return <Picker.Item label={i} value={i} key={i} />})}
+            </Picker>
+          </View>
+        </View>)} 
       </View>)
     }
 
@@ -828,6 +823,7 @@ class ResumeViewScreen extends Component {
         borderColor: "darkgray",
         borderRadius: 15,
         paddingLeft: 5,
+        padding: 10,
       },
       pickerView: {
         color: '#000',

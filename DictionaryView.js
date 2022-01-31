@@ -111,9 +111,11 @@ class DictionaryViewScreen extends Component {
     }
 
     async updateAllWords() {
-      this.showAlert("Proceso completado", "Se han actualizado los datos")
-      await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(this.state.copyWords))
-      this.reset()
+      if (this.state.words.length > 0) {
+        this.showAlert("Proceso completado", "Se han actualizado los datos")
+        await AsyncStorage.setItem(this.state.userid+".words", JSON.stringify(this.state.copyWords))
+        this.reset()
+      } else this.showAlert("Atención", "No hay entidades registradas")
     }
 
     updateWord = async (index) => {
@@ -137,7 +139,7 @@ class DictionaryViewScreen extends Component {
     }
 
     _addWord = async () => {
-      if (this.state.addKeywords == "" || this.state.addEntity == "" || this.state.addCIF == "") this.showAlert("Error", "Complete todos los campos")
+      if (this.state.addKeywords == "" || this.state.addEntity == "" || this.state.addCIF == "") this.showAlert("Error", "Complete todos los campos para registrar una entidad")
       else await this.pushArrayWords()
     }
   
@@ -153,7 +155,6 @@ class DictionaryViewScreen extends Component {
     setAddWordBox() {
       if (this.state.showForm) {
         return (
-          <View>
           <View style={styles.dictionaryView}>
             <Text style={styles.resumeText}>Nombre de la entidad</Text>
             <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} value={this.state.addEntity} multiline={true} style={styles.changeTranscript} placeholder="Ej: Disoft Servicios Informáticos S.L." onChangeText={addEntity => this.setState({addEntity})}></TextInput>
@@ -162,8 +163,7 @@ class DictionaryViewScreen extends Component {
             <Text style={styles.resumeText}>CIF de la entidad</Text>
             <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} value={this.state.addCIF} multiline={true} style={styles.changeTranscript} placeholder="Ej: B35222249" onChangeText={addCIF => this.setState({addCIF})}></TextInput>
             <Text style={styles.transcript}></Text>
-          </View>
-          <View style={{flexDirection:"row", justifyContent:"center"}}>
+          <View style={{flexDirection:"row", justifyContent:"center", paddingBottom: 100 }}>
             <TouchableOpacity onPress={() => this._addWord()}><Text style={styles.saveNewValue}>Grabar</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => this.formAction(false)}>
               <Text style={styles.exitForm}>Cerrar</Text>
@@ -390,7 +390,7 @@ class DictionaryViewScreen extends Component {
       },
       changeTranscript: {
         color: '#000',
-        fontSize: RFPercentage(3),
+        fontSize: RFPercentage(2.5),
         width: "90%",
         borderWidth: 0.5,
         borderColor: "darkgray",
@@ -416,7 +416,7 @@ class DictionaryViewScreen extends Component {
       dictionaryView: {
         paddingLeft: 40,
         backgroundColor: "#FFF",
-        width:"95%",
+        width:"95%"
       },
       dictionaryValues: {
         padding: 5,

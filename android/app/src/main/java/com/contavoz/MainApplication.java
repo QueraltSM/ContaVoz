@@ -6,6 +6,7 @@ import android.net.Uri;
 
 import com.facebook.react.PackageList;
 import com.facebook.react.ReactApplication;
+import com.henninghall.date_picker.DatePickerPackage;
 import fr.snapp.imagebase64.RNImgToBase64Package;
 import fr.snapp.imagebase64.RNImgToBase64Package;
 import fr.snapp.imagebase64.RNImgToBase64Package;

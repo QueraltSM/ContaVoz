@@ -177,15 +177,14 @@ class ImageViewerScreen extends Component {
     }
   
     setImageZoom() {
+      var imageuri = this.state.image.uri
+      if (Platform.OS === 'ios') imageuri = '~' + imageuri.substring(imageuri.indexOf('/tmp'));
       return (<Image
           source={{
-            uri: this.state.image.uri
+            uri: imageuri 
           }}
           resizeMode="contain"
-          
-          key={this.state.image}
-          style={{ width: "100%", height: "100%" }}
-        />
+          style={{ width: "100%", height: "100%" }}/>
       )
     }
 

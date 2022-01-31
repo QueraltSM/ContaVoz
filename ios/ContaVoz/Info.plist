@@ -2,8 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Dicontavoz</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -36,13 +40,13 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>ContaVoz requiere su permiso para utilizar la cámara para sacar fotos</string>
+	<string>Dicontavoz requiere su permiso para utilizar la cámara para sacar fotos</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>ContaVoz requiere su permiso para utilizar el micrófono para capturar su voz</string>
+	<string>Dicontavoz requiere su permiso para utilizar el micrófono para capturar su voz</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>ContaVoz requiere su permiso para acceder a su galería para adjuntar fotos</string>
+	<string>Dicontavoz requiere su permiso para acceder a su galería para adjuntar fotos</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>ContaVoz requiere su permiso para utilizar el micrófono para capturar su voz</string>
+	<string>Dicontavoz requiere su permiso para utilizar el micrófono para capturar su voz</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -42,6 +42,7 @@ class PetitionScreen extends Component {
         payments: [],
         savedDataCopy: [],
         openDatePicker: false,
+        errorMsg: "",
         fulldate: "Ej: " + ("0" + (new Date().getDate())).slice(-2)+ "/"+ ("0" + (new Date().getMonth() + 1)).slice(-2) + "/" + new Date().getFullYear() + ""
       }
       this.init()
@@ -72,10 +73,8 @@ class PetitionScreen extends Component {
       })
       await AsyncStorage.getItem("data").then((value) => {
         this.setState({ title: JSON.parse(value).titulo }) 
-        this.setState({ data: JSON.parse(value).campos })  
-        console.log("123."+JSON.parse(value).idcfg )
+        this.setState({ data: JSON.parse(value).campos })
       })
-      console.log("petitionID:"+this.state.petitionID)
       await AsyncStorage.getItem("userid").then((value) => {
         this.setState({ userid: value })
       })
@@ -159,9 +158,9 @@ class PetitionScreen extends Component {
         });
       };
 
-    async dataError(msg) {
+    async dataError() {
       await this.setState({listenedData: ""})
-      await this.showAlert("Error", msg)
+      await this.showAlert("Error", this.state.errorMsg)
       this.state.savedDataCopy[this.state.listenFlag].valor = null
       this.state.savedDataCopy[this.state.listenFlag].escuchado = ""
       await this.setState({savedDataCopy: this.state.savedDataCopy})
@@ -215,7 +214,7 @@ class PetitionScreen extends Component {
           var d = ("0" + day).slice(-2)
           var m = ("0" + indexM).slice(-2)
           if (months[indexM-1].last < day) {
-            this.dataError("la fecha que ha dicho es incorrecta")
+            this.setState({errorMsg: "La fecha que ha dicho es incorrecta"})
           } else {
             var year = /[0-9]{4}/
             if (year.test(this.state.listenedData)) {
@@ -238,7 +237,7 @@ class PetitionScreen extends Component {
             this.setState({ interpretedData: d + "/" + (("0" + (new Date().getMonth() + 1)).slice(-2)) + "/" + new Date().getFullYear() })
           }
         } else {
-          this.dataError("la fecha que ha dicho es incorrecta")
+          this.setState({errorMsg: "La fecha que ha dicho es incorrecta"})
         }
       }
       this.resetListening()
@@ -249,7 +248,7 @@ class PetitionScreen extends Component {
       var number = evaluate(this.state.listenedData);
       if (number==0) {
         if (isNaN(this.state.listenedData)) {
-          this.dataError("El dato que ha dicho no es numérico")
+          this.setState({errorMsg: "El dato aportado no es válido, debe ser numérico"})
         } else {
           if (this.state.listenedData.includes(".")) this.setState({listenedData: this.state.listenedData.replace(".", ",")})
           if (!this.state.savedData[this.state.listenFlag].idcampo.includes("porcentaje") && this.state.savedData[this.state.listenFlag].tipoexp=="N" && !this.state.listenedData.includes(",")) this.setState({ listenedData: this.state.listenedData + ",00" })
@@ -355,7 +354,10 @@ class PetitionScreen extends Component {
     async _stopRecognition(e) {
       await this.setState({ is_recording: false })
       try {
-        if (this.state.savedDataCopy[this.state.listenFlag].escuchado.length>0) await this.updateListen(1)
+        if (this.state.errorMsg.length==0 && this.state.savedDataCopy[this.state.listenFlag].escuchado.length>0) await this.updateListen(1)
+        if (this.state.errorMsg.length>0) {
+          await this.dataError()
+        }
         await Voice.stop()
       } catch (e) {}
     }
@@ -367,6 +369,7 @@ class PetitionScreen extends Component {
 
     async saveResponseAsImage(response) {
       var arrayImages = this.state.images
+      console.log("timessss:"+JSON.stringify(response.assets[0]))
       var uri = JSON.stringify(response.assets[0]["uri"])
       var newID = this.state.petitionID+"-"+(this.state.images.length+1)
       arrayImages.push({
@@ -387,15 +390,15 @@ class PetitionScreen extends Component {
         maxHeight: 1334,
         customButtons: [ { name: 'customOptionKey', title: 'Choose Photo from Custom Option' }, ],
         storageOptions: {
-          skipBackup: true,
           path: 'images',
-          privateDirectory: true,
+          saveToPhotos: true
         },
         includeBase64: false
       };
       if (this.state.images.length <= 9) {
         ImagePicker.launchCamera(options, (response) => {
           if (response.didCancel || response.error || response.customButton) {
+            console.log("error:"+response)
           } else this.saveResponseAsImage(response)
         })
       } else this.showAlert("Error", "Solo puede adjuntar 10 imágenes")
@@ -415,6 +418,10 @@ class PetitionScreen extends Component {
     goGallery = async() =>{
       let options = {
         title: 'Foto desde la galería',
+        quality: 0.5,
+        aspect:[4,3],
+        maxWidth: 750,
+        maxHeight: 1334,
         customButtons: [
           { name: 'customOptionKey', title: 'Choose Photo from Custom Option' },
         ],
@@ -480,6 +487,8 @@ class PetitionScreen extends Component {
     }
   
     setImageZoom() {
+      var imageuri = this.state.images[this.state.flag].uri
+      if (Platform.OS === 'ios') imageuri = '~' + imageuri.substring(imageuri.indexOf('/tmp'));
       return (<ImageZoom
           cropWidth={Dimensions.get('window').width}
           cropHeight={Dimensions.get('window').height/3}
@@ -488,11 +497,10 @@ class PetitionScreen extends Component {
             <TouchableOpacity onPress={() => this.seeImage(this.state.images[this.state.flag])}>
             <Image
               source={{
-                uri: this.state.images[this.state.flag].uri,
+                uri: imageuri,
               }}
               resizeMode="cover"
-              key={this.state.flag}
-              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/3}}
+              style={{ width: Dimensions.get('window').width, height: (Dimensions.get('window').height)/3, backgroundColor: "red"}}
             />
             </TouchableOpacity>
         </ImageZoom>)
@@ -507,11 +515,6 @@ class PetitionScreen extends Component {
           </View>
           </View>
         )}
-      /*return (
-        <View style={styles.imagesSection}>
-          <Image source={require('./assets/no-photo.png')} resizeMode="contain" key="0" style={{ width: 150, height: 150 }} />
-        </View>
-      )*/
       return null
     }
 
@@ -606,20 +609,21 @@ class PetitionScreen extends Component {
       this.updateSavedData()
     }
 
-    openDatePicker = (value) => {
+    setDatePickerValue = async (value) => {
       this.setState({openDatePicker: value})
     }
 
     setDatePicker() {
-      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity>
-      return <View><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><TextInput placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.savedDataCopy[this.state.listenFlag].valor}</TextInput></TouchableOpacity>
+      if (!this.state.openDatePicker && this.state.savedDataCopy[this.state.listenFlag].valor==null || this.state.savedDataCopy[this.state.listenFlag].valor.length==0) return <TouchableOpacity onPress={() => this.setDatePickerValue(true)} style={{width:"100%"}}><Text placeholderTextColor="darkgray" editable={false} placeholderTextColor="darkgray" style={styles.changeTranscript}>{this.state.fulldate}</Text></TouchableOpacity>
+      if (!this.state.openDatePicker) return <TouchableOpacity onPress={() => this.setDatePickerValue(true)} style={{width:"100%"}}><Text placeholderTextColor="darkgray" editable={false} placeholderTextColor="darkgray" style={styles.changeTranscript}>{this.state.savedDataCopy[this.state.listenFlag].valor}</Text></TouchableOpacity>
+      return <View><TouchableOpacity onPress={() => this.openDatePicker(true)} style={{width:"100%"}}><Text placeholderTextColor="darkgray" editable={false} style={styles.changeTranscript} placeholder={this.state.fulldate}>{this.state.savedDataCopy[this.state.listenFlag].valor}</Text></TouchableOpacity>
       <DatePicker modal mode="date" title="Selecciona fecha" confirmText="OK" cancelText="Cancelar" open={this.state.openDatePicker} date={new Date()}
       onConfirm={(date) => {
-        this.openDatePicker(false)
+        this.setDatePickerValue(false)
         this.setDate(date)
       }}
       onCancel={() => {
-        this.openDatePicker(false)
+        this.setDatePickerValue(false)
       }}/></View>
     }
 
@@ -663,7 +667,7 @@ class PetitionScreen extends Component {
       await AsyncStorage.getItem(this.state.petitionType).then((value) => {
         if (value != null) list = JSON.parse(value) 
       })
-      var index = list.findIndex(obj => JSON.stringify(obj.id) == this.state.petitionID)
+      var index = list.findIndex(obj => obj.id == this.state.petitionID)
       list[index].savedData = this.state.savedData
       await AsyncStorage.setItem(this.state.petitionType, JSON.stringify(list))
     }
@@ -1039,6 +1043,7 @@ class PetitionScreen extends Component {
         borderColor: "darkgray",
         borderRadius: 15,
         paddingLeft: 5,
+        padding: 10,
       },
       resumeText: {
         fontSize: RFPercentage(3),
