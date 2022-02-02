@@ -8,8 +8,8 @@ import NetInfo from "@react-native-community/netinfo";
 import { Picker } from '@react-native-picker/picker';
 import DatePicker from 'react-native-date-picker';
 import { CheckBox } from 'react-native-elements';
-import ImgToBase64 from 'react-native-image-base64';
 import { Icon } from 'react-native-elements';
+import RNFS from 'react-native-fs';
 
 class ResumeViewScreen extends Component {
   
@@ -252,6 +252,7 @@ class ResumeViewScreen extends Component {
     setImageZoom() {
       var imageuri = this.state.imgs[this.state.flag].uri
       if (Platform.OS === 'ios') imageuri = '~' + imageuri.substring(imageuri.indexOf('/tmp'));
+      console.log("imageuri9999.:"+imageuri)
       return (<ImageZoom
         cropWidth={Dimensions.get('window').width}
         cropHeight={Dimensions.get('window').height/2.5}
@@ -313,11 +314,11 @@ class ResumeViewScreen extends Component {
           data: ""
         }
         var imageuri = img.uri
-        if (Platform.OS === 'ios') imageuri = '~' + imageuri.substring(imageuri.indexOf('/tmp'));
-        console.log("imageuri000:"+imageuri)
-        await ImgToBase64.getBase64String(imageuri).then(base64String => {
-          img.data = base64String
-        }).catch(err => console.log("ImgToBase64_error:"+err));
+        var realPath = decodeURIComponent(imageuri);
+        await RNFS.readFile(realPath, 'base64')
+        .then(res =>{
+          img.data = res
+        });
         this.state.imgs[j] = img
         j = j + 1
       }))
@@ -802,6 +803,7 @@ class ResumeViewScreen extends Component {
       sections: {
         flex: 1,
         backgroundColor:"#FFF",
+        top: 10,
         width:"100%"
       },
       calculateButton: {
@@ -858,7 +860,7 @@ class ResumeViewScreen extends Component {
         textAlign: "center",
         fontWeight: "bold",
         color: "black",
-        fontSize: RFPercentage(3),
+        fontSize: RFPercentage(3.5),
         paddingTop: 20
       },
       saveButton: {
