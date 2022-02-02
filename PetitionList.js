@@ -139,11 +139,25 @@ class PetitionListScreen extends Component {
     </View>)
     }
 
+    setBackButton() {
+      return <View style={{alignSelf: 'flex-start', left: 20}}>
+      <TouchableOpacity onPress={() => this.goBack()} >
+          <Icon
+            name='chevron-left'
+            type='font-awesome'
+            color='#1A5276'
+            size={30}
+          />
+          </TouchableOpacity>
+      </View>
+    }
+
     render () {
       if (!this.state.loaded) return null
       return (
         <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
         <View style={styles.container}>
+          {this.setBackButton()}
           {this.setMenu()}
           <ScrollView 
             vertical 

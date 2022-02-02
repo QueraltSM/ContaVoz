@@ -75,42 +75,42 @@ const AppNavigator = createStackNavigator({
     screen: PetitionScreen,
     navigationOptions: {
       header: null,
-      //animationEnabled: false // quitar para ios
+      animationEnabled: false
     }
   },
   PetitionList: {
     screen: PetitionListScreen,
     navigationOptions: {
       header: null,
-      //animationEnabled: false // quitar para ios
+      animationEnabled: false
     }
   },
   PetitionHistory: {
     screen: PetitionHistoryScreen,
     navigationOptions: {
       header: null,
-      //animationEnabled: false // quitar para ios
+      animationEnabled: false
     }
   },
   ImageViewer: {
     screen: ImageViewerScreen,
     navigationOptions: {
       header: null,
-      //animationEnabled: false // quitar para ios
+      animationEnabled: false
     }
   },
   ResumeView: {    
     screen: ResumeViewScreen,
     navigationOptions: {
       header: null,
-      //animationEnabled: false // quitar para ios
+      animationEnabled: false
     }
   },
   DictionaryView: {    
     screen: DictionaryViewScreen,
     navigationOptions: {
       header: null,
-      //animationEnabled: false // quitar para ios
+      animationEnabled: false
     }
   },
 });

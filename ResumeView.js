@@ -9,6 +9,7 @@ import { Picker } from '@react-native-picker/picker';
 import DatePicker from 'react-native-date-picker';
 import { CheckBox } from 'react-native-elements';
 import ImgToBase64 from 'react-native-image-base64';
+import { Icon } from 'react-native-elements';
 
 class ResumeViewScreen extends Component {
   
@@ -311,7 +312,10 @@ class ResumeViewScreen extends Component {
           id: i.id,
           data: ""
         }
-        await ImgToBase64.getBase64String(img.uri).then(base64String => {
+        var imageuri = img.uri
+        if (Platform.OS === 'ios') imageuri = '~' + imageuri.substring(imageuri.indexOf('/tmp'));
+        console.log("imageuri000:"+imageuri)
+        await ImgToBase64.getBase64String(imageuri).then(base64String => {
           img.data = base64String
         }).catch(err => console.log("ImgToBase64_error:"+err));
         this.state.imgs[j] = img
@@ -684,10 +688,24 @@ class ResumeViewScreen extends Component {
         return <View style={styles.waitingBox}><Text style={styles.waitingText}>{this.state.waiting}</Text><Text style={styles.waitingTitle}>{this.state.waitingTitle}</Text></View>
       }
 
+      setBackButton() {
+        return <View style={{alignSelf: 'flex-start', left: 20}}>
+        <TouchableOpacity onPress={() => this.goBack()} >
+            <Icon
+              name='chevron-left'
+              type='font-awesome'
+              color='#1A5276'
+              size={30}
+            />
+            </TouchableOpacity>
+        </View>
+      }
+
       render () {
         if (this.state.not_loaded) return null
         return (
           <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
+            {this.setBackButton()}
           <View style={{flex: 1, backgroundColor:"#FFF" }}>
             <ScrollView 
               showsVerticalScrollIndicator ={false}

@@ -799,10 +799,24 @@ class PetitionScreen extends Component {
         )
     }
 
+    setBackButton() {
+      return <View style={{alignSelf: 'flex-start', left: 20}}>
+      <TouchableOpacity onPress={() => this.goBack()} >
+          <Icon
+            name='chevron-left'
+            type='font-awesome'
+            color='#1A5276'
+            size={30}
+          />
+          </TouchableOpacity>
+      </View>
+    }
+    
     render () {
       if (this.state.savedData.length==0) return null
       return (
         <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
+          {this.setBackButton()}
         <View style={{ flex: 1 }}>
             <View style={styles.navBarHeader}>
               <Text style={styles.mainHeader}>{this.state.title}</Text>
@@ -1117,7 +1131,7 @@ class PetitionScreen extends Component {
         textAlign: "center",
         fontWeight: "bold",
         color: "black",
-        fontSize: RFPercentage(4),
+        fontSize: RFPercentage(3.5),
         paddingTop: 20
       },
       roundButton: {

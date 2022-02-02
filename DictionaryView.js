@@ -334,16 +334,30 @@ class DictionaryViewScreen extends Component {
     )}/>)
   }
 
-    setWords() {
+  setWords() {
       return <View style={styles.resumeView}>
       <Text style={styles.showTitle}>{this.state.message}</Text>
       {!this.state.isSearching && this.state.words.length > 0 && !this.state.showSeach && !this.state.showForm && this.setFlatList()}
+      </View>
+  }
+
+  setBackButton() {
+      return <View style={{alignSelf: 'flex-start', left: 20}}>
+      <TouchableOpacity onPress={() => this.goBack()} >
+          <Icon
+            name='chevron-left'
+            type='font-awesome'
+            color='#1A5276'
+            size={30}
+          />
+          </TouchableOpacity>
       </View>
     }
   
     render() {
       return (
         <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
+        {this.setBackButton()}
         <View style={{flex: 1}}>
           <ScrollView style={{backgroundColor: "#fff"}}>
           {this.setMenu()}

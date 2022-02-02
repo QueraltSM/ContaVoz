@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {StyleSheet, View, Alert, Image, BackHandler, Dimensions, PermissionsAndroid, SafeAreaView, Text} from 'react-native';
+import {StyleSheet, View, Alert, Image, BackHandler, TouchableOpacity, SafeAreaView} from 'react-native';
 import { createAppContainer } from 'react-navigation';
 import { Icon } from 'react-native-elements'
 import AsyncStorage from '@react-native-community/async-storage';
@@ -237,10 +237,24 @@ class ImageViewerScreen extends Component {
         />
       </View>)
     }
+
+    setBackButton() {
+      return <View style={{alignSelf: 'flex-start', left: 20}}>
+      <TouchableOpacity onPress={() => this.goBack()} >
+          <Icon
+            name='chevron-left'
+            type='font-awesome'
+            color='#1A5276'
+            size={30}
+          />
+          </TouchableOpacity>
+      </View>
+    }
   
     render () {
       return (
         <SafeAreaView style={{flex: 1,backgroundColor:"white"}}>
+        {this.setBackButton()}
         <View style={styles.imageView}>
           <View style={styles.selectedImageView}>
           {this.setImageZoom()}
