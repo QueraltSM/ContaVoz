@@ -11,9 +11,8 @@ Forget the burden of posting at the last moment, filing them and even locating t
 With Contavoz you won't have to change your accounting program since it has an integration system with the main programs on the market.
 Contavoz is the definitive tool to increase and improve the performance of your company.
 <br><br><br>
-<img width="494" alt="Captura de pantalla 2022-02-17 a las 15 49 56" src="https://user-images.githubusercontent.com/26334453/154518375-cacd09e9-c7b7-4c6e-9a1f-f02cf3df6b94.png">
-<img width="494" alt="Captura de pantalla 2022-02-17 a las 15 51 00" src="https://user-images.githubusercontent.com/26334453/154518580-7c82381d-4672-43d0-8024-bd6bd49cae2d.png">
+<img width="494" alt="Captura de pantalla 2022-02-17 a las 15 49 56" src="https://user-images.githubusercontent.com/26334453/154518375-cacd09e9-c7b7-4c6e-9a1f-f02cf3df6b94.png"><br>
+<img width="494" alt="Captura de pantalla 2022-02-17 a las 15 51 00" src="https://user-images.githubusercontent.com/26334453/154518580-7c82381d-4672-43d0-8024-bd6bd49cae2d.png"><br>
 <img width="300" alt="Captura de pantalla 2022-02-17 a las 15 51 11" src="https://user-images.githubusercontent.com/26334453/154518661-baa72781-7dfe-447d-81d2-a06712af2268.png">
-<br><br>
 <br><br>
 Download this app on the App Store: https://apps.apple.com/tt/app/dicontavoz/id1608057932
