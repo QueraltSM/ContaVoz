@@ -252,7 +252,6 @@ class ResumeViewScreen extends Component {
     setImageZoom() {
       var imageuri = this.state.imgs[this.state.flag].uri
       if (Platform.OS === 'ios') imageuri = '~' + imageuri.substring(imageuri.indexOf('/tmp'));
-      console.log("imageuri9999.:"+imageuri)
       return (<ImageZoom
         cropWidth={Dimensions.get('window').width}
         cropHeight={Dimensions.get('window').height/2.5}
@@ -552,6 +551,11 @@ class ResumeViewScreen extends Component {
       return <TextInput placeholderTextColor="darkgray" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({interpretedData: result, interpretedIndex: index})}>{this.state.doc[index].valor}</TextInput> 
     }
 
+    setNewCif = async (value) => {
+      this.setState({cifValue: value})
+      await AsyncStorage.setItem(this.state.petitionID+".cifValue", this.state.cifValue)
+    }
+
     setData = (item, index) => {
       var importe = this.state.doc.findIndex(i=>i.idcampo.includes("importe"))
       importe = this.state.doc[importe].valor
@@ -562,7 +566,7 @@ class ResumeViewScreen extends Component {
         {item.tipoexp.includes("E") && <View>
           <Text style={styles.resumeText}>CIF de la empresa*</Text>
           <View style={{flexDirection:'row', width:"90%"}}>
-          <TextInput placeholderTextColor="darkgray" placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setState({cifValue: result})}>{this.state.cifValue}</TextInput>
+          <TextInput placeholderTextColor="darkgray" placeholder="Ej: B35222249" blurOnSubmit={true} multiline={true} style={styles.changeTranscript} onChangeText={result => this.setNewCif(result)}>{this.state.cifValue}</TextInput>
           </View>
         </View>}
         {this.state.doc.length > 0 && (item.idcampo.includes("formapc") || item.idcampo.includes("conexion")) && (<View>
@@ -690,6 +694,7 @@ class ResumeViewScreen extends Component {
       }
 
       setBackButton() {
+        if (Platform.OS !== 'ios') return null
         return <View style={{alignSelf: 'flex-start', left: 20}}>
         <TouchableOpacity onPress={() => this.goBack()} >
             <Icon

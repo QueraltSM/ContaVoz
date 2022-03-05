@@ -174,6 +174,7 @@ class PetitionHistoryScreen extends Component {
     }
     
     setBackButton() {
+      if (Platform.OS !== 'ios') return null
       return <View style={{alignSelf: 'flex-start', left: 20}}>
       <TouchableOpacity onPress={() => this.goBack()} >
           <Icon

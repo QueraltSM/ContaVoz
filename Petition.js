@@ -369,7 +369,6 @@ class PetitionScreen extends Component {
 
     async saveResponseAsImage(response) {
       var arrayImages = this.state.images
-      console.log("timessss:"+JSON.stringify(response.assets[0]))
       var uri = JSON.stringify(response.assets[0]["uri"])
       var newID = this.state.petitionID+"-"+(this.state.images.length+1)
       arrayImages.push({
@@ -800,6 +799,7 @@ class PetitionScreen extends Component {
     }
 
     setBackButton() {
+      if (Platform.OS !== 'ios') return null
       return <View style={{alignSelf: 'flex-start', left: 20}}>
       <TouchableOpacity onPress={() => this.goBack()} >
           <Icon
